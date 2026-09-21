@@ -64,6 +64,7 @@ export const TEXT_META: Record<string, { label: string; group: TextGroupId }> = 
   products: { label: 'كلمة «منتجًا متاحًا»', group: 'catalog' },
   noProducts: { label: 'لا توجد منتجات — النص', group: 'catalog' },
   back: { label: 'زر العودة للتسوّق', group: 'catalog' },
+  galleryTitle: { label: 'شريط صور القسم — العنوان', group: 'catalog' },
   // pdp
   addToBag: { label: 'زر أضيفي إلى السلة', group: 'pdp' },
   buyNow: { label: 'زر اشتري الآن', group: 'pdp' },
@@ -75,6 +76,11 @@ export const TEXT_META: Record<string, { label: string; group: TextGroupId }> = 
   shipReturns: { label: 'تبويب الشحن والإرجاع', group: 'pdp' },
   shipReturnsBody: { label: 'نص الشحن والإرجاع', group: 'pdp' },
   addToCartTitle: { label: 'تنبيه الإضافة للسلة — العنوان', group: 'pdp' },
+  // U58-GALLERY
+  gallerySwipeHint: { label: 'تلميح «اسحبي لمشاهدة المزيد من الصور»', group: 'pdp' },
+  lbCloseAria: { label: 'زر إغلاق عرض الصور (لتمييز القارئ)', group: 'pdp' },
+  lbPrevAria: { label: 'زر الصورة السابقة (لتمييز القارئ)', group: 'pdp' },
+  lbNextAria: { label: 'زر الصورة التالية (لتمييز القارئ)', group: 'pdp' },
   // cart
   emptyCart: { label: 'السلة الفارغة — العنوان', group: 'cart' },
   emptyCartSub: { label: 'السلة الفارغة — الوصف', group: 'cart' },

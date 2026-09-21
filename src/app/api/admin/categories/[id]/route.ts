@@ -30,6 +30,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
     if (b.sortOrder !== undefined) data.sortOrder = Number(b.sortOrder) || 0;
     if (b.image !== undefined) data.image = b.image ? String(b.image) : null;
+    // U58 — صور إضافية للقسم (JSON string array، حتى 8 صور؛ الفاضي = مسح الكل)
+    if (b.gallery !== undefined) {
+      data.gallery = Array.isArray(b.gallery) && b.gallery.length > 0
+        ? JSON.stringify(b.gallery.map((g: unknown) => String(g)).filter(Boolean).slice(0, 8))
+        : null;
+    }
     const category = await db.category.update({ where: { id }, data });
     await writeAudit({ actor: admin.username, action: 'category.updated', entity: 'category', entityId: id });
     invalidateCatalog(); // U54-PERF-ROBUST

@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ExternalLink, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { apiJson } from '../helpers';
 import ImageField from '../image-field';
+import MultiImageField from '../multi-image-field'; // U58-GALLERY
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +24,7 @@ type Category = {
   nameAr: string;
   nameEn: string;
   image: string | null;
+  gallery?: string | null; // U58 — JSON string array (صور إضافية للقسم)
   sortOrder: number;
   _count: { products: number };
 };
@@ -36,6 +38,7 @@ type CatForm = {
   image: string;
   intro: string;
   banner: string;
+  gallery: string[]; // U58
 };
 
 const EMPTY_FORM: CatForm = {
@@ -47,6 +50,7 @@ const EMPTY_FORM: CatForm = {
   image: '',
   intro: '',
   banner: '',
+  gallery: [],
 };
 
 /** «صفحة القسم /c/…» — intro line + page banner + mini preview (her block). */
@@ -133,7 +137,7 @@ export default function CategoriesSection() {
     setSaving(true);
     const { ok, data } = await apiJson<{ ok: boolean; error?: string }>('/api/admin/categories', {
       method: 'POST',
-      body: JSON.stringify({ ...form, sortOrder: Number(form.sortOrder) || 99 }),
+      body: JSON.stringify({ ...form, gallery: form.gallery, sortOrder: Number(form.sortOrder) || 99 }),
     });
     setSaving(false);
     if (!ok || !data?.ok) {
@@ -159,6 +163,12 @@ export default function CategoriesSection() {
   const [savingEdit, setSavingEdit] = useState(false);
 
   function openEdit(c: Category) {
+    let galleryArr: string[] = [];
+    try {
+      galleryArr = c.gallery ? (JSON.parse(c.gallery) as string[]) : [];
+    } catch {
+      galleryArr = [];
+    }
     setEditing(c);
     setEditForm({
       nameAr: c.nameAr,
@@ -169,6 +179,7 @@ export default function CategoriesSection() {
       banner: (c as Category & { banner?: string | null }).banner || '',
       sortOrder: String(c.sortOrder),
       image: c.image || '',
+      gallery: galleryArr, // U58
     });
   }
 
@@ -187,6 +198,7 @@ export default function CategoriesSection() {
         banner: editForm.banner,
         sortOrder: Number(editForm.sortOrder) || 0,
         image: editForm.image,
+        gallery: editForm.gallery, // U58
       }),
     });
     setSavingEdit(false);
@@ -323,6 +335,19 @@ export default function CategoriesSection() {
               <Label>صورة الفئة (رفع من الجهاز / المكتبة / رابط)</Label>
               <ImageField value={editForm.image} onChange={(url) => setEditForm({ ...editForm, image: url })} placeholder="/products/example.jpg" />
             </div>
+            {/* U58-GALLERY — صور إضافية للقسم */}
+            <div className="grid gap-1.5">
+              <Label>صور إضافية للقسم (Gallery — حتى 8 صور)</Label>
+              <MultiImageField
+                images={editForm.gallery}
+                onChange={(next) => setEditForm({ ...editForm, gallery: next })}
+                max={8}
+                addLabel="رفع صور القسم (متعدد)"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                تظهر بشريط صور احترافي في صفحة القسم /c/{editForm.slug || '…'} تحت الترويسة.
+              </p>
+            </div>
             <CategoryPageBlock form={editForm} setForm={setEditForm} slug={editForm.slug} />
             <div className="flex justify-end gap-2">
               <Button variant="outline" className="rounded-full" onClick={() => setEditing(null)}>إلغاء</Button>
@@ -367,6 +392,19 @@ export default function CategoriesSection() {
             <div className="grid gap-1.5">
               <Label>صورة الفئة (رفع من الجهاز / المكتبة / رابط)</Label>
               <ImageField value={form.image} onChange={(url) => setForm({ ...form, image: url })} placeholder="/products/placeholder.svg" />
+            </div>
+            {/* U58-GALLERY — صور إضافية للقسم */}
+            <div className="grid gap-1.5">
+              <Label>صور إضافية للقسم (Gallery — حتى 8 صور)</Label>
+              <MultiImageField
+                images={form.gallery}
+                onChange={(next) => setForm({ ...form, gallery: next })}
+                max={8}
+                addLabel="رفع صور القسم (متعدد)"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                تظهر بشريط صور احترافي في صفحة القسم /c/{form.slug || '…'} تحت الترويسة.
+              </p>
             </div>
             <CategoryPageBlock form={form} setForm={setForm} slug={form.slug} />
             <div className="flex justify-end gap-2 pt-1">

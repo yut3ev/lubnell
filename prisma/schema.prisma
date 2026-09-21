@@ -16,6 +16,7 @@ model Category {
   intro       String? // U22 — سطر تعريفي أعلى العنوان في صفحة القسم /c/… (اختياري)
   banner      String? // U22 — بانر صفحة القسم (اختياري — غير صورة البطاقة؛ الفاضي = صورة الفئة)
   image       String?
+  gallery     String? // U58 — JSON string array — صور إضافية للقسم تظهر بشريط احترافي في صفحة /c/…
   sortOrder   Int       @default(0)
   products    Product[]
   createdAt   DateTime  @default(now())

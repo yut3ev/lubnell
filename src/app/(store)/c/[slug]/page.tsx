@@ -55,6 +55,14 @@ export default async function CategoryPage({
   const category = await db.category.findUnique({ where: { slug } });
   if (!category) notFound();
 
+  // U58-GALLERY — صور القسم الإضافية (JSON string array → string[])
+  let catGallery: string[] = [];
+  try {
+    catGallery = category.gallery ? (JSON.parse(category.gallery) as string[]).filter(Boolean) : [];
+  } catch {
+    catGallery = [];
+  }
+
   const products = await db.product.findMany({
     where: { categoryId: category.id, published: true },
     orderBy: [{ featured: 'desc' }, { createdAt: 'asc' }],
@@ -71,6 +79,7 @@ export default async function CategoryPage({
         intro: category.intro,
         banner: category.banner,
         image: category.image,
+        gallery: catGallery, // U58
       }}
       count={products.length}
       products={products.map((p) => ({

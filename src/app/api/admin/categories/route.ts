@@ -39,6 +39,10 @@ export async function POST(req: NextRequest) {
         intro: b.intro ? String(b.intro) : null,
         banner: b.banner ? String(b.banner) : null,
         image: b.image ? String(b.image) : null,
+        // U58 — صور إضافية للقسم (JSON string array، حتى 8 صور)
+        gallery: Array.isArray(b.gallery)
+          ? JSON.stringify(b.gallery.map((g: unknown) => String(g)).filter(Boolean).slice(0, 8))
+          : null,
         sortOrder: Number.isFinite(Number(b.sortOrder)) ? Number(b.sortOrder) : 99,
       },
     });

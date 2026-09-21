@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Download, Eye, EyeOff, Loader2, Pencil, Plus, Search, Star, Trash2, X } from 'lucide-react';
 import { apiJson, EGP } from '../helpers';
 import ImageField from '../image-field';
+import MultiImageField from '../multi-image-field'; // U58-GALLERY
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -137,9 +138,7 @@ export default function ProductsSection() {
     } else toast({ title: 'تعذر الحذف', variant: 'destructive' });
   }
 
-  function addToGallery(url: string) {
-    setGallery((g) => (g.includes(url) || g.length >= 12 ? g : [...g, url]));
-  }
+  // U58-GALLERY — «تعيين كصورة رئيسية» ينتقل من الـ MultiImageField إلى حقل الصورة الرئيسية
 
   if (!products)
     return (
@@ -301,26 +300,20 @@ export default function ProductsSection() {
             </div>
             <div className="grid gap-2">
               <Label>صور إضافية (Gallery — حتى 12 صورة)</Label>
-              {gallery.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {gallery.map((g) => (
-                    <div key={g} className="group relative h-16 w-16 overflow-hidden rounded-xl border border-border/60">
-                      <img src={g} alt="صورة إضافية" className="h-full w-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => setGallery((list) => list.filter((x) => x !== g))}
-                        className="absolute left-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-background/90 text-destructive opacity-0 shadow transition-opacity group-hover:opacity-100"
-                        aria-label="إزالة الصورة"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {gallery.length < 12 && (
-                <ImageField onPick={addToGallery} label="" placeholder="ارفعي من جهازكِ أو اختاري من المكتبة ثم تُضاف تلقائيًا" />
-              )}
+              {/* U58-GALLERY — رفع متعدد + ترتيب بالأسهم + مكتبة متعددة + رابط */}
+              <MultiImageField
+                images={gallery}
+                onChange={setGallery}
+                max={12}
+                primaryUrl={form.image}
+                onMakePrimary={(url) => {
+                  setGallery((list) => list.filter((x) => x !== url));
+                  setForm((f) => ({ ...f, image: url }));
+                }}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                اضغطي النجمة على أي صورة لتجعليها صورة المنتج الرئيسية — الترتيب هنا هو ترتيب الظهور في صفحة المنتج.
+              </p>
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="p-badge">شريط البادج (عربي)</Label>

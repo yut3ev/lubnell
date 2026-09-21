@@ -12,8 +12,8 @@ import {
   Zap,
   MessageCircle,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { ChevronDown, ZoomIn } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ChevronDown, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useCart, WHATSAPP_NUMBER } from '@/lib/cart-store';
 import { useT } from '@/lib/i18n';
@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ProductReviews } from '@/components/store/product-reviews';
+import { ImageLightbox } from '@/components/store/image-lightbox'; // U58-GALLERY
 
 export interface ProductDetailData {
   id: string;
@@ -59,8 +60,14 @@ export function ProductDetail({
   const add = useCart((s) => s.add);
   const [qty, setQty] = useState(1);
   // U14 — gallery selector + hover zoom + selectable variants + sticky mobile ATC
-  const [imgIdx, setImgIdx] = useState(0);
+  // U58-GALLERY — professional gallery: swipe + arrows + counter + dots + lightbox
+  // Selected image is stored as URL (not index) so switching products
+  // auto-resets to the first image — no state-sync effect needed.
+  const [sel, setSel] = useState<string | null>(null);
   const [zoomed, setZoomed] = useState(false);
+  const [lightbox, setLightbox] = useState(false);
+  const touchX = useRef<number | null>(null);
+  const thumbsRef = useRef<HTMLDivElement>(null);
   const [picked, setPicked] = useState<Record<string, string>>(() =>
     Object.fromEntries(product.variants.map((v) => [v.label, v.value]))
   );
@@ -70,8 +77,18 @@ export function ProductDetail({
     product.compareAt && product.compareAt > product.price
       ? Math.round((1 - product.price / product.compareAt) * 100)
       : 0;
-  const images = product.gallery.length > 0 ? product.gallery : [product.image];
-  const activeImg = images[Math.min(imgIdx, images.length - 1)];
+  // U58-GALLERY — the primary image is ALWAYS first, then the owner-ordered
+  // gallery (dedup) — matches the «تعيين كصورة رئيسية» star in Studio.
+  const images = Array.from(new Set([product.image, ...product.gallery]));
+  const activeImg = sel && images.includes(sel) ? sel : images[0];
+  const imgIdx = Math.max(0, images.indexOf(activeImg));
+  const select = (i: number) => setSel(images[((i % images.length) + images.length) % images.length]);
+
+  // keep the active thumb visible in the strip
+  useEffect(() => {
+    const el = thumbsRef.current?.children[Math.min(imgIdx, images.length - 1)] as HTMLElement | undefined;
+    el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, [imgIdx, images.length]);
 
   function addToCart(then?: 'cart') {
     add(
@@ -102,45 +119,106 @@ export function ProductDetail({
       </nav>
 
       <div className="grid gap-8 md:grid-cols-2">
-        {/* gallery — U14: clickable thumbs + hover zoom (desktop) */}
+        {/* gallery — U14 thumbs + hover zoom (desktop) — U58 swipe/arrows/counter/dots/lightbox */}
         <div>
           <div
-            className="relative overflow-hidden rounded-3xl border border-border/60 bg-secondary/30 shadow-lg shadow-primary/5"
+            className="group relative touch-pan-y select-none overflow-hidden rounded-3xl border border-border/60 bg-secondary/30 shadow-lg shadow-primary/5"
             onMouseEnter={() => setZoomed(true)}
             onMouseLeave={() => setZoomed(false)}
+            onTouchStart={(e) => {
+              touchX.current = e.touches[0]?.clientX ?? null;
+            }}
+            onTouchEnd={(e) => {
+              const start = touchX.current;
+              touchX.current = null;
+              if (start === null || images.length <= 1) return;
+              const dx = e.changedTouches[0]?.clientX - start;
+              if (Math.abs(dx) < 40) return;
+              // RTL: swiping right reveals the next image (visual flow right→left)
+              if (ar ? dx > 0 : dx < 0) select(imgIdx + 1);
+              else select(imgIdx - 1);
+            }}
           >
-            <img
-              src={activeImg}
-              alt={name}
-              className={`aspect-square w-full object-cover transition-transform duration-500 ${zoomed ? 'scale-125' : 'scale-100'}`}
-            />
+            <button
+              type="button"
+              onClick={() => setLightbox(true)}
+              className="block w-full cursor-zoom-in"
+              aria-label={`${ar ? 'فتح الصور بالحجم الكامل' : 'Open full-size gallery'} — ${name}`}
+            >
+              <img
+                src={activeImg}
+                alt={name}
+                className={`aspect-square w-full object-cover transition-transform duration-500 ${zoomed ? 'scale-125' : 'scale-100'}`}
+              />
+            </button>
             {product.badgeAr && (
-              <Badge className="absolute top-4 right-4 rounded-full bg-primary px-3 py-1 text-sm font-bold">
+              <Badge className="pointer-events-none absolute top-4 right-4 rounded-full bg-primary px-3 py-1 text-sm font-bold">
                 {ar ? product.badgeAr : product.badgeEn || product.badgeAr}
               </Badge>
             )}
             {discount > 0 && (
-              <Badge className="absolute top-4 left-4 rounded-full bg-accent px-3 py-1 text-sm font-bold text-accent-foreground">
+              <Badge className="pointer-events-none absolute top-4 left-4 rounded-full bg-accent px-3 py-1 text-sm font-bold text-accent-foreground">
                 وفّري {discount}%
               </Badge>
+            )}
+            {/* arrows — desktop (mobile swipes) */}
+            {images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => select(ar ? imgIdx - 1 : imgIdx + 1)}
+                  aria-label={ar ? t.lbPrevAria : t.lbNextAria}
+                  className="absolute right-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-background/85 text-foreground opacity-0 shadow-md backdrop-blur transition-all hover:scale-110 hover:bg-primary hover:text-primary-foreground focus-visible:opacity-100 group-hover:opacity-100 max-sm:hidden"
+                >
+                  <ChevronRight className="h-5 w-5" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => select(ar ? imgIdx + 1 : imgIdx - 1)}
+                  aria-label={ar ? t.lbNextAria : t.lbPrevAria}
+                  className="absolute left-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-background/85 text-foreground opacity-0 shadow-md backdrop-blur transition-all hover:scale-110 hover:bg-primary hover:text-primary-foreground focus-visible:opacity-100 group-hover:opacity-100 max-sm:hidden"
+                >
+                  <ChevronLeft className="h-5 w-5" aria-hidden />
+                </button>
+              </>
+            )}
+            {/* counter chip */}
+            {images.length > 1 && (
+              <span
+                className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-background/85 px-2.5 py-1 text-[11px] font-black tabular-nums text-foreground shadow-sm backdrop-blur"
+                aria-live="polite"
+              >
+                {imgIdx + 1} / {images.length}
+              </span>
             )}
             <span
               className="pointer-events-none absolute bottom-3 left-3 hidden items-center gap-1 rounded-full bg-background/80 px-2.5 py-1 text-[11px] font-bold text-muted-foreground backdrop-blur sm:inline-flex"
               aria-hidden
             >
-              <ZoomIn className="h-3 w-3" /> {ar ? 'مرّري الماوس للتكبير' : 'Hover to zoom'}
+              <ZoomIn className="h-3 w-3" /> {ar ? 'اضغطي للتكبير' : 'Click to zoom'}
             </span>
           </div>
+          {/* dots — mobile */}
           {images.length > 1 && (
-            <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+            <div className="mt-2.5 flex justify-center gap-1.5 sm:hidden" aria-hidden>
+              {images.map((img, i) => (
+                <span
+                  key={`dot-${img.slice(-24)}-${i}`}
+                  className={`h-1.5 rounded-full transition-all ${i === imgIdx ? 'w-5 bg-primary' : 'w-1.5 bg-primary/25'}`}
+                />
+              ))}
+            </div>
+          )}
+          {images.length > 1 && (
+            <div ref={thumbsRef} className="mt-3 flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {images.map((img, i) => (
                 <button
-                  key={img}
+                  key={img + i}
                   type="button"
-                  onClick={() => setImgIdx(i)}
+                  onClick={() => select(i)}
                   aria-label={`${ar ? 'صورة' : 'Image'} ${i + 1}`}
                   aria-pressed={imgIdx === i}
-                  className={`h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 bg-secondary/30 transition-all ${
+                  className={`h-20 w-20 shrink-0 snap-center overflow-hidden rounded-xl border-2 bg-secondary/30 transition-all ${
                     imgIdx === i ? 'border-primary shadow-md' : 'border-border/70 opacity-75 hover:opacity-100'
                   }`}
                 >
@@ -332,6 +410,17 @@ export function ProductDetail({
 
       {/* U18-REVIEWS — real reviews + write form (شاركي تجربتكِ) on EVERY product */}
       <ProductReviews slug={product.slug} rating={product.rating} reviewsCount={product.reviews} />
+
+      {/* U58-GALLERY — fullscreen lightbox */}
+      {lightbox && (
+        <ImageLightbox
+          images={images}
+          index={Math.min(imgIdx, images.length - 1)}
+          onClose={() => setLightbox(false)}
+          onIndexChange={select}
+          alt={name}
+        />
+      )}
 
       {/* U14 — sticky mobile add-to-cart bar (above the bottom nav) */}
       <div
