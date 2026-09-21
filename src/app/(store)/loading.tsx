@@ -11,7 +11,7 @@ export default function StoreLoading() {
       <div className="flex items-center justify-center pt-10" aria-hidden>
         <img
           src="/brand/logo-dark.png"
-          alt=""
+          alt="LUBNÉL"
           className="h-8 w-auto animate-pulse object-contain opacity-80"
           draggable={false}
         />
