@@ -129,7 +129,6 @@ export function SearchDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                     onClick={() => onOpenChange(false)}
                     className="flex items-center gap-3 rounded-2xl p-2.5 transition-colors hover:bg-secondary"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={h.image} alt="" aria-hidden className="h-12 w-12 rounded-xl object-cover" />
                     <span className="flex-1">
                       <span className="block text-sm font-bold leading-snug">{ar ? h.nameAr : h.nameEn}</span>
