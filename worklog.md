@@ -1175,3 +1175,22 @@ Work Log:
 
 Stage Summary:
 - Both audit items resolved: 4 alt instances cleared by one code-level fix (effective on next republish), X-Powered-By was already disabled and verified absent live. Zero other changes (owner's no-touch mandate honored).
+
+---
+Task ID: U59-SEO-ABOUT
+Agent: Z.ai Code (main)
+Task: Owner SEO checklist for /info/about: (1) confirm «عن لوبنيل» is a real H1 (2) explicit definitional sentence «لوبنيل (Lubnel) هو متجر إلكتروني مصري لبيع مستحضرات التجميل والعناية والعطور الأصلية أونلاين.» first/last (3) page meta description containing لوبنيل + Lubnel once each (4) image alt texts with the brand name (5) homepage→about internal link with name anchor (6) verify no platform noindex.
+
+Work Log:
+- Pre-checks: git log clean of autonomous reverts; H1 already real <h1> via InfoHeader (curl-verified sandbox+prod); footer anchor href="/info/about">عن لوبنيل present; sitemap.xml includes /info/about; desktop nav ALSO carries «عن لوبنيل» link (bonus anchor).
+- Found DB pages row holds an about override identical to code defaults → changes had to land in BOTH src/lib/info-pages.ts (defaults) and the DB row (live serving) or the fix would be invisible.
+- (2)+(3): definitional sentence prepended as its own paragraph (AR+EN mirror «Lubnel (لوبنيل) is an Egyptian online store…») in code defaults AND DB override (idempotent script, contentAr 952→1047 chars). Because generateMetadata uses the first line of the custom content, the meta description now IS the exact requested sentence — لوبنيل ×1 + Lubnel ×1. descAr rewritten («تعرّفي على لوبنيل (Lubnel) — متجر إلكتروني مصري…») + descEn added (optional InfoPageSeed field, documented) for fresh installs/no-override path.
+- (4): about page previously had ZERO images → added brand hero (public/og-image.jpg 1200×630, next/image, rounded-3xl card, sizes=(max-width:640px) 100vw,768px) with alt=«لوبنيل LUBNÉL — متجر إلكتروني مصري لبيع مستحضرات التجميل والعناية والعطور الأصلية أونلاين», rendered only for slug==='about'.
+- (6) + BUG FOUND: /robots.txt returned HTTP 500 on sandbox («conflicting public file and page file» — stale public/robots.txt vs app/robots.ts coexisting) and prod was serving the stale all-allow static file (no Sitemap line, no /admin disallow). Deleted public/robots.txt → robots.ts now serves Allow:/ Disallow:/admin,/api/ + Sitemap: https://lubnel.space-z.ai/sitemap.xml. noindex audit: 0 hits on sandbox+prod, no X-Robots-Tag header, no robots meta on /info/about (only /search, /s/[id], missing products intentionally noindex).
+- Verify: SSR curls (h1/meta/img-alt/noindex/title/robots 200), 6 sibling info pages 200, body sentence ×3 (meta+og+prose), agent-browser 390+1440 screenshots (hero card + sentence first, RTL clean), console clean. One dev-server crash after build gate (pgrep empty) → restarted setsid, re-verified.
+- OPS: lint 65+2 baseline exact, NEXT_BUILD_DIST_DIR build Compiled successfully EXIT 0, .next-verify + .tmp-scripts removed, commit 7a00f1b.
+
+Stage Summary:
+- All 6 owner checklist items pass on sandbox: real H1, definitional sentence first paragraph, meta description = her exact sentence (لوبنيل+Lubnel), brand hero image with keyword-rich alt, footer+nav internal anchors, NO noindex anywhere (platform included). Bonus: /robots.txt 500 fixed + proper robots with Sitemap line after republish.
+- Owner-editable as always via Studio → «الصفحات» → عن لوبنيل (sentence is normal content she can tweak).
+- Production lubnel.space-z.ai STILL owes its single re-publish (U36→U59) — sandbox shows it all now; prod gets it after she publishes. Prod currently already passes items 1/5/6.
