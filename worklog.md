@@ -1138,3 +1138,26 @@ Stage Summary:
 - The one visible bug found this round (invisible 404 CTA from a U29-era CSS substring selector) is fixed with a :not guard — second beneficiary: search page pill buttons.
 - Residual hardcoded strings are intentional DB-fallbacks (hero slides + trust strip) editable from their own admin editors; search-dialog.tsx v1 is dead code (v2 in use).
 - Production lubnel.space-z.ai STILL owes its single re-publish (U36→U57) — almost certainly why she couldn't see «كل النصوص» when she re-asked.
+
+---
+Task ID: U58-GALLERY
+Agent: Z.ai Code (main)
+Task: Owner: «ضيف اوبشن انه يقدر يضيف كذا صوره للمنتج او المجموعه والمستخدمه يقدر يشوفهم بشكل احترافي ف الجزء لخاص بيهم» — multi-image upload for products AND categories, with a professional storefront viewer.
+
+Work Log:
+- Audit: Product.gallery (JSON) + admin gallery block already existed (U14) but was one-image-at-a-time (no reorder, no primary, no batch); Category had NO multi-image at all (image + banner only). PDP gallery was basic thumbs+hover-zoom; /c/ page had no image showcase.
+- Schema: Category.gallery String? (JSON string array, max 8) + db:push. API: categories POST/PATCH accept gallery (string[] → JSON, empty array = null; invalidateCatalog already wired).
+- NEW src/components/admin/multi-image-field.tsx — shared manager: (1) multi-file input + drop zone, sequential upload with «جاري الرفع… باقي N» progress and per-file error toast; (2) library MULTI-select (toggle + «إضافة (n)», already-added assets disabled «مضافة»); (3) external URL add (Enter or زر); (4) thumb grid with remove X, reorder chevrons (تقديم/تأخير — array order = storefront order), optional star «تعيين كصورة رئيسية» handing the URL to the parent, primaryUrl highlight + «الرئيسية» ribbon, n/max counter chip, max-reached state; imagesRef mirror guards in-flight batches; action buttons disabled while uploading.
+- products.tsx: gallery block replaced by MultiImageField (max 12) + star → setGallery(filter) + setForm(image). categories.tsx: gallery in CatForm (EMPTY_FORM/openEdit JSON.parse/save/patch) + MultiImageField (max 8) in BOTH add & edit dialogs.
+- NEW src/components/store/image-lightbox.tsx — fullscreen viewer: RTL-aware keyboard (ArrowRight=prev in RTL) + swipe (swipe right=next in RTL), counter chip, thumbnail strip, Esc/click-outside close, body scroll lock, z-[70].
+- PDP product-detail.tsx rebuilt: images = union [primary, ...gallery] dedup (primary ALWAYS first — matches the star); selected-image-as-URL state (sel) instead of index → auto-reset on product switch, zero state-sync effects; touch swipe (40px threshold, RTL wrap-around via modulo select()); desktop RTL arrows (right=prev, left=next — consistent with lightbox; aria-labels direction-correct); counter chip «1 / 2»; mobile dots (active = elongated pill, first=right in RTL); thumb auto-scrollIntoView center; hover zoom kept; click main image → lightbox; badges pointer-events-none.
+- /c/[slug]/page.tsx: parse Category.gallery (try/catch → string[]) → CategoryGrid renders «صور من هذا القسم» strip: scroll-snap cards (aspect-4/3, 260/320px, hover lift+zoom), per-card «i / n» chip, count chip «2 صورة», mobile swipe hint (t.gallerySwipeHint), click → shared lightbox.
+- i18n/texts (U57 compliance): +5 keys in both DICT.ar/en (gallerySwipeHint, galleryTitle, lbCloseAria, lbPrevAria, lbNextAria) registered in TEXT_META (pdp/catalog groups, a11y ones marked لتمييز القارئ) — owner-editable from «كل النصوص».
+- E2E (agent-browser, temp owner session u58-diagnostic, deleted after): ADMIN product: dispatched 2-file DataTransfer change on input[multiple] (React path — U56 documented trap avoided) → 2 thumbs + controls ✓; تأخير swapped order (verified srcs) ✓; star on image 2 → main preview changed + gallery 1/12 ✓; save → DB image=multi-a, gallery=[multi-b] ✓. PDP: 2 thumbs, counter «1 / 2», dots, thumb switch→«2 / 2» pressed=1, lightbox open (counter/big img/lb-thumbs), ArrowLeft navigated RTL, Esc closed ✓; touch swipe both directions with wrap-around ✓. CATEGORY: MultiImageField in dialog, 2 URL adds → 2/8, save → DB gallery JSON ✓; /c/skincare strip (section, title, «2 صورة», 2 cards, hint, no h-scroll @390) + lightbox ✓. RTL-arrow consistency bug FOUND & FIXED pre-commit (PDP frame arrows were inverted vs lightbox). Post-restart re-verified: thumbs/counter/strip/0 errors.
+- Demo data kept LIVE on purpose: «بوكس الجامعة» now has primary multi-a + gallery [multi-b]; «عناية بالبشرة» has 2 gallery images — owner sees the feature working immediately.
+- OPS: lint 65+2 exact baseline (new set-state-in-effect error caught & eliminated by the sel-as-URL pattern), tsc scan of changed files clean (275 pre-existing sandbox errors untouched), NEXT_BUILD_DIST_DIR build Compiled successfully EXIT 0, dev restarted + warmed (home/PDP/c all 200), temp session + .tmp-scripts removed, screenshots /tmp/u58-{pdp-m390,cat-m390,pdp-1440,cat-1440}.png.
+
+Stage Summary:
+- «كذا صورة للمنتج والمجموعة» is live: batch upload + reorder + primary-star in Studio; storefront gets a professional RTL gallery (swipe/arrows/counter/dots/lightbox) on the PDP and a scroll-snap gallery strip on every category page — all with owner-editable strings and instant cache invalidation.
+- Production lubnel.space-z.ai STILL owes its single re-publish (U36→U58).
+- Anti-rollback armor refreshed below.
