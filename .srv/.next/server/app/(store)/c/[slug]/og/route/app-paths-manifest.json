@@ -1,0 +1,3 @@
+{
+  "/(store)/c/[slug]/og/route": "app/(store)/c/[slug]/og/route.js"
+}

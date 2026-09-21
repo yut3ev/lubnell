@@ -1,0 +1,91 @@
+import { notFound } from 'next/navigation';
+import { db } from '@/lib/db';
+import { ProductDetail } from '@/components/store/product-detail';
+import { ProductCard } from '@/components/store/product-card';
+import { ProductRelated } from '@/components/store/product-related';
+
+export const dynamic = 'force-dynamic';
+
+export default async function ProductPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+
+  const product = await db.product.findUnique({
+    where: { slug },
+    include: { category: true },
+  });
+  if (!product) notFound();
+
+  const related = await db.product.findMany({
+    where: { categoryId: product.categoryId, id: { not: product.id } },
+    take: 4,
+  });
+
+  let gallery: string[] = [];
+  try {
+    gallery = product.gallery ? (JSON.parse(product.gallery) as string[]) : [];
+  } catch {
+    gallery = [];
+  }
+  let variants: { label: string; value: string }[] = [];
+  try {
+    variants = product.variants ? (JSON.parse(product.variants) as { label: string; value: string }[]) : [];
+  } catch {
+    variants = [];
+  }
+
+  return (
+    <>
+      <ProductDetail
+        product={{
+          id: product.id,
+          slug: product.slug,
+          nameAr: product.nameAr,
+          nameEn: product.nameEn,
+          description: product.description,
+          price: product.price,
+          compareAt: product.compareAt,
+          image: product.image,
+          gallery,
+          badgeAr: product.badgeAr,
+          badgeEn: product.badgeEn,
+          variants,
+          stock: product.stock,
+          rating: product.rating,
+          reviews: product.reviews,
+          categoryName: { ar: product.category.nameAr, en: product.category.nameEn, slug: product.category.slug },
+        }}
+      />
+
+      {related.length > 0 && (
+        <section className="mx-auto w-full max-w-6xl px-4 pb-14 sm:px-6">
+          <ProductRelated headingAr="كمّلي طقسكِ" headingEn="Complete the ritual." />
+          <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {related.map((p) => (
+              <ProductCard
+                key={p.id}
+                product={{
+                  id: p.id,
+                  slug: p.slug,
+                  nameAr: p.nameAr,
+                  nameEn: p.nameEn,
+                  price: p.price,
+                  compareAt: p.compareAt,
+                  image: p.image,
+                  rating: p.rating,
+                  reviews: p.reviews,
+                  stock: p.stock,
+                  badgeAr: p.badgeAr,
+                  badgeEn: p.badgeEn,
+                }}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+    </>
+  );
+}

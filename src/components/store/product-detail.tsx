@@ -1,0 +1,366 @@
+'use client';
+
+import Link from 'next/link';
+import {
+  Star,
+  ShieldCheck,
+  Truck,
+  RotateCcw,
+  Minus,
+  Plus,
+  ShoppingBag,
+  Zap,
+  MessageCircle,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ChevronDown, ZoomIn } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { useCart, WHATSAPP_NUMBER } from '@/lib/cart-store';
+import { useT } from '@/lib/i18n';
+import { useStorePrefs } from '@/lib/store-prefs';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { ProductReviews } from '@/components/store/product-reviews';
+
+export interface ProductDetailData {
+  id: string;
+  slug: string;
+  nameAr: string;
+  nameEn: string;
+  description: string;
+  price: number;
+  compareAt: number | null;
+  image: string;
+  gallery: string[];
+  badgeAr: string | null;
+  badgeEn: string | null;
+  variants: { label: string; value: string }[];
+  stock: number;
+  rating: number;
+  reviews: number;
+  categoryName: { ar: string; en: string; slug: string };
+}
+
+export function ProductDetail({
+  product,
+  whatsapp,
+  deliveryTime,
+}: {
+  product: ProductDetailData;
+  // U19-SETTINGS — orders WhatsApp number + delivery window from Studio
+  whatsapp?: string;
+  deliveryTime?: string;
+}) {
+  const { ar, t } = useT();
+  // U19-SETTINGS — currency label from Studio
+  const currency = useStorePrefs((s) => s.currency);
+  useEffect(() => { void useStorePrefs.getState().ensure(); }, []);
+  const add = useCart((s) => s.add);
+  const [qty, setQty] = useState(1);
+  // U14 — gallery selector + hover zoom + selectable variants + sticky mobile ATC
+  const [imgIdx, setImgIdx] = useState(0);
+  const [zoomed, setZoomed] = useState(false);
+  const [picked, setPicked] = useState<Record<string, string>>(() =>
+    Object.fromEntries(product.variants.map((v) => [v.label, v.value]))
+  );
+
+  const name = ar ? product.nameAr : product.nameEn;
+  const discount =
+    product.compareAt && product.compareAt > product.price
+      ? Math.round((1 - product.price / product.compareAt) * 100)
+      : 0;
+  const images = product.gallery.length > 0 ? product.gallery : [product.image];
+  const activeImg = images[Math.min(imgIdx, images.length - 1)];
+
+  function addToCart(then?: 'cart') {
+    add(
+      {
+        id: product.id,
+        slug: product.slug,
+        nameAr: name,
+        price: product.price,
+        image: product.image,
+      },
+      qty
+    );
+    toast({ title: t.addToCartTitle, description: t.addedDesc(name) });
+    if (then === 'cart') window.location.href = '/cart';
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
+      {/* breadcrumb */}
+      <nav aria-label="مسار التنقل" className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
+        <Link href="/" className="transition-colors hover:text-primary">{t.home}</Link>
+        <span aria-hidden>/</span>
+        <Link href={`/c/${product.categoryName.slug}`} className="transition-colors hover:text-primary">
+          {ar ? product.categoryName.ar : product.categoryName.en}
+        </Link>
+        <span aria-hidden>/</span>
+        <span className="truncate font-semibold text-foreground">{name}</span>
+      </nav>
+
+      <div className="grid gap-8 md:grid-cols-2">
+        {/* gallery — U14: clickable thumbs + hover zoom (desktop) */}
+        <div>
+          <div
+            className="relative overflow-hidden rounded-3xl border border-border/60 bg-secondary/30 shadow-lg shadow-primary/5"
+            onMouseEnter={() => setZoomed(true)}
+            onMouseLeave={() => setZoomed(false)}
+          >
+            <img
+              src={activeImg}
+              alt={name}
+              className={`aspect-square w-full object-cover transition-transform duration-500 ${zoomed ? 'scale-125' : 'scale-100'}`}
+            />
+            {product.badgeAr && (
+              <Badge className="absolute top-4 right-4 rounded-full bg-primary px-3 py-1 text-sm font-bold">
+                {ar ? product.badgeAr : product.badgeEn || product.badgeAr}
+              </Badge>
+            )}
+            {discount > 0 && (
+              <Badge className="absolute top-4 left-4 rounded-full bg-accent px-3 py-1 text-sm font-bold text-accent-foreground">
+                وفّري {discount}%
+              </Badge>
+            )}
+            <span
+              className="pointer-events-none absolute bottom-3 left-3 hidden items-center gap-1 rounded-full bg-background/80 px-2.5 py-1 text-[11px] font-bold text-muted-foreground backdrop-blur sm:inline-flex"
+              aria-hidden
+            >
+              <ZoomIn className="h-3 w-3" /> {ar ? 'مرّري الماوس للتكبير' : 'Hover to zoom'}
+            </span>
+          </div>
+          {images.length > 1 && (
+            <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+              {images.map((img, i) => (
+                <button
+                  key={img}
+                  type="button"
+                  onClick={() => setImgIdx(i)}
+                  aria-label={`${ar ? 'صورة' : 'Image'} ${i + 1}`}
+                  aria-pressed={imgIdx === i}
+                  className={`h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 bg-secondary/30 transition-all ${
+                    imgIdx === i ? 'border-primary shadow-md' : 'border-border/70 opacity-75 hover:opacity-100'
+                  }`}
+                >
+                  <img src={img} alt="" aria-hidden className="h-full w-full object-cover" loading="lazy" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* info */}
+        <div className="flex flex-col">
+          <div className="flex items-center gap-1.5 text-sm">
+            <span className="flex items-center gap-0.5" aria-hidden>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                  key={i}
+                  className={
+                    i < Math.round(product.rating)
+                      ? 'h-4 w-4 fill-amber-400 text-amber-400'
+                      : 'h-4 w-4 text-muted-foreground/40'
+                  }
+                />
+              ))}
+            </span>
+            <span className="font-bold">{product.rating.toFixed(1)}</span>
+            <span className="text-muted-foreground">
+              ({product.reviews} {t.reviews})
+            </span>
+          </div>
+
+          <h1 className="mt-3 text-2xl font-extrabold leading-snug sm:text-3xl">{name}</h1>
+          <p className="mt-1 text-sm font-semibold text-muted-foreground" dir="ltr">
+            {product.nameEn}
+          </p>
+
+          <div className="mt-5 flex flex-wrap items-baseline gap-3">
+            <span className="text-3xl font-extrabold text-primary">
+              {product.price.toLocaleString('en-US')}
+            </span>
+            <span className="text-base font-bold text-muted-foreground">{currency || t.egp}</span>
+            {product.compareAt && product.compareAt > product.price && (
+              <del className="text-lg font-bold text-muted-foreground/70">
+                {product.compareAt.toLocaleString('en-US')} {currency || t.egp}
+              </del>
+            )}
+          </div>
+
+          <p className="mt-5 leading-loose text-foreground/85">{product.description}</p>
+
+          {/* variants — U14: selectable choice chips */}
+          {product.variants.length > 0 && (
+            <div className="mt-5 grid gap-2.5">
+              {[...new Set(product.variants.map((v) => v.label))].map((label) => (
+                <div key={label}>
+                  <span className="mb-1.5 block text-sm font-bold">{label}</span>
+                  <div className="flex flex-wrap gap-2">
+                    {product.variants
+                      .filter((v) => v.label === label)
+                      .map((v) => {
+                        const on = picked[label] === v.value;
+                        return (
+                          <button
+                            key={v.value}
+                            type="button"
+                            onClick={() => setPicked((p) => ({ ...p, [label]: v.value }))}
+                            aria-pressed={on}
+                            className={`rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all ${
+                              on
+                                ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                                : 'border-primary/20 bg-secondary/60 text-primary hover:bg-secondary'
+                            }`}
+                          >
+                            {v.value}
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <Separator className="my-6" />
+
+          {/* quantity */}
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-bold">{t.quantity}</span>
+            <div className="flex items-center rounded-full border border-border bg-card">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="+"
+                className="h-10 w-10 rounded-full"
+                disabled={qty >= Math.min(20, Math.max(1, product.stock))}
+                onClick={() => setQty((q) => Math.min(20, q + 1))}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+              <span className="w-10 text-center text-base font-bold" aria-live="polite">{qty}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="-"
+                className="h-10 w-10 rounded-full"
+                disabled={qty <= 1}
+                onClick={() => setQty((q) => Math.max(1, q - 1))}
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+            </div>
+            {product.stock > 0 && product.stock <= 10 && (
+              <span className="text-xs font-bold text-destructive">
+                {ar ? `باقي ${product.stock} قطع فقط!` : `Only ${product.stock} left!`}
+              </span>
+            )}
+          </div>
+
+          {/* actions */}
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+            <Button
+              size="lg"
+              disabled={product.stock <= 0}
+              onClick={() => addToCart()}
+              className="h-13 flex-1 rounded-full bg-primary text-base font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-transform hover:scale-[1.02]"
+            >
+              <ShoppingBag className="h-5 w-5" />
+              {product.stock <= 0 ? (ar ? 'نفدت الكمية' : 'Sold out') : t.addToBag}
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              disabled={product.stock <= 0}
+              className="h-13 flex-1 rounded-full border-primary/30 bg-card text-base font-bold text-primary hover:bg-secondary"
+              onClick={() => addToCart('cart')}
+            >
+              <Zap className="h-5 w-5" />
+              {t.buyNow}
+            </Button>
+          </div>
+
+          {/* whatsapp direct order — number from Studio settings when set */}
+          <a
+            href={`https://wa.me/${(whatsapp || WHATSAPP_NUMBER).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+              `مرحبًا LUBNÉL، أريد طلب: ${product.nameAr} (${product.price} ج.م) — الكمية: ${qty}`
+            )}`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-4 flex items-center justify-center gap-2 rounded-full border border-emerald-600/30 bg-emerald-50 px-5 py-3 text-sm font-bold text-emerald-800 transition-colors hover:bg-emerald-100"
+          >
+            <MessageCircle className="h-4.5 w-4.5" aria-hidden />
+            {t.orderViaWa}
+          </a>
+
+          {/* guarantees */}
+          <ul className="mt-7 grid gap-3 text-sm sm:grid-cols-3">
+            <li className="flex items-center gap-2 rounded-xl bg-secondary/50 px-3 py-2.5">
+              <Truck className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+              {deliveryTime ? (ar ? `شحن ${deliveryTime}` : `${deliveryTime} shipping`) : ar ? 'شحن 2–5 أيام' : '2–5 day shipping'}
+            </li>
+            <li className="flex items-center gap-2 rounded-xl bg-secondary/50 px-3 py-2.5">
+              <ShieldCheck className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+              {ar ? 'أصلي 100%' : '100% authentic'}
+            </li>
+            <li className="flex items-center gap-2 rounded-xl bg-secondary/50 px-3 py-2.5">
+              <RotateCcw className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+              {ar ? 'إرجاع 14 يومًا' : '14-day returns'}
+            </li>
+          </ul>
+          {/* U14 — shipping/returns quick info (trust) */}
+          <details className="mt-4 rounded-2xl border border-border/60 bg-card px-4 py-3">
+            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold">
+              {ar ? 'معلومات الشحن والاسترجاع' : 'Shipping & returns'}
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
+            </summary>
+            <div className="mt-2.5 grid gap-2 text-xs leading-relaxed text-muted-foreground">
+              <p>
+                {ar
+                  ? 'شحن مجاني للطلبات فوق الحد المحدد، والتوصيل خلال 2–5 أيام عمل داخل مصر. الاستبدال والإرجاع متاح خلال 14 يومًا من الاستلام بنفس حالة المنتج.'
+                  : 'Free shipping over the set threshold; delivery in 2–5 working days across Egypt. Exchange & returns within 14 days in original condition.'}
+              </p>
+              <Link href="/info/shipping" className="text-xs font-semibold text-primary underline-offset-4 hover:underline">
+                {ar ? 'التفاصيل الكاملة ←' : 'Full details →'}
+              </Link>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      {/* U18-REVIEWS — real reviews + write form (شاركي تجربتكِ) on EVERY product */}
+      <ProductReviews slug={product.slug} rating={product.rating} reviewsCount={product.reviews} />
+
+      {/* U14 — sticky mobile add-to-cart bar (above the bottom nav) */}
+      <div
+        className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-30 border-t border-border/60 bg-background/95 p-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur md:hidden"
+        data-testid="sticky-atc"
+      >
+        <div className="mx-auto flex max-w-6xl items-center gap-3">
+          <img src={activeImg} alt="" aria-hidden className="h-11 w-11 rounded-xl border border-border/60 object-cover" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-bold">{name}</p>
+            <p className="text-sm font-bold text-primary">
+              {(product.price * qty).toLocaleString('en-US')} {currency || t.egp}
+              {discount > 0 && product.compareAt ? (
+                <del className="mr-1.5 text-[11px] font-bold text-muted-foreground">
+                  {(product.compareAt * qty).toLocaleString('en-US')}
+                </del>
+              ) : null}
+            </p>
+          </div>
+          <Button
+            disabled={product.stock <= 0}
+            onClick={() => addToCart()}
+            className="h-11 rounded-full bg-primary px-6 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/25"
+          >
+            <ShoppingBag className="h-4.5 w-4.5" aria-hidden />
+            {product.stock <= 0 ? (ar ? 'نفدت' : 'Sold out') : t.addToBag}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

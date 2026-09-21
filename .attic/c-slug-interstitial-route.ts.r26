@@ -1,0 +1,138 @@
+import { db } from "@/lib/db";
+import { findShareCategory, shareOrigin } from "@/lib/share-helpers";
+
+// R26 — category share deep link: /c/[slug]
+// Crawlers (WhatsApp/Facebook/X) get real collection OG meta + CollectionPage
+// JSON-LD with an ItemList of the category's products; human browsers are
+// bounced into the hash-routed shop with the category filter pre-applied via
+// meta-refresh + JS + noscript fallbacks. noindex,follow like /p/[id].
+
+export const dynamic = "force-dynamic";
+
+const esc = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
+const clamp = (s: string, n: number) =>
+  s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s;
+
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ slug: string }> },
+) {
+  const { slug: id } = await params;
+  const origin = await shareOrigin();
+
+  let found: Awaited<ReturnType<typeof findShareCategory>> = null;
+  try {
+    found = await findShareCategory(id);
+  } catch {
+    found = null;
+  }
+
+  if (!found) {
+    return Response.redirect(`${origin}/`, 302);
+  }
+
+  const { category, count } = found;
+
+  // ItemList of the category's visible products (name + deep link), curated order
+  const items = await db.storeProduct.findMany({
+    where: { category: category.name, visible: true },
+    orderBy: [{ featured: "desc" }, { id: "asc" }],
+    take: 25,
+    select: { slug: true, name: true, nameAr: true, price: true },
+  });
+
+  const name = category.nameAr || category.name;
+  const title = `${name} — LUBNÉL`;
+  const desc =
+    count > 0
+      ? clamp(`تسوّقي ${count} منتج من ${category.nameAr} بأفضل الأسعار — توصيل ٢-٥ أيام، الدفع عند الاستلام`, 160)
+      : clamp(`مجموعة ${category.nameAr} من LUBNÉL — قريبًا`, 160);
+  const ogImage = `${origin}/c/${encodeURIComponent(category.slug)}/og`;
+  const appUrl = `${origin}/#/shop?category=${encodeURIComponent(category.name)}`;
+
+  const ld = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name,
+    description: desc,
+    url: `${origin}/c/${category.slug}`,
+    inLanguage: "ar-EG",
+    isPartOf: { "@type": "WebSite", name: "LUBNÉL", url: `${origin}/` },
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: items.length,
+      itemListElement: items.map((p, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        url: `${origin}/p/${p.slug}`,
+        name: p.nameAr || p.name,
+      })),
+    },
+  };
+  const ldJson = JSON.stringify(ld).replace(/</g, "\\u003c");
+
+  const html = `<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(desc)}"/>
+<meta property="og:title" content="${esc(title)}"/>
+<meta property="og:description" content="${esc(desc)}"/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="${esc(`${origin}/c/${category.slug}`)}"/>
+<meta property="og:image" content="${esc(ogImage)}"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+<meta property="og:image:alt" content="${esc(name)}"/>
+<meta property="og:site_name" content="LUBNÉL"/>
+<meta property="og:locale" content="ar_EG"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="${esc(title)}"/>
+<meta name="twitter:description" content="${esc(desc)}"/>
+<meta name="twitter:image" content="${esc(ogImage)}"/>
+<meta name="twitter:image:alt" content="${esc(name)}"/>
+<meta name="robots" content="noindex, follow"/>
+<link rel="icon" href="/icon.svg" type="image/svg+xml"/>
+<meta http-equiv="refresh" content="0;url=${esc(appUrl)}"/>
+<script type="application/ld+json">${ldJson}</script>
+<style>
+  html, body { margin: 0; height: 100%; }
+  body { display: grid; place-items: center; background: #11100f; color: #fdfcfa;
+         font-family: Georgia, "Times New Roman", serif; text-align: center; }
+  .mark { font-size: 30px; letter-spacing: .22em; }
+  .mark span { color: #d9b8ae; }
+  .dot { width: 9px; height: 9px; margin: 18px auto 0; border-radius: 50%;
+         background: #d9b8ae; animation: pulse 1s ease-in-out infinite; }
+  .pname { max-width: 560px; margin: 22px auto 0; padding: 0 24px;
+           font: 600 20px/1.5 "Noto Kufi Arabic", Tahoma, sans-serif; color: #fdfcfa;
+           overflow-wrap: anywhere; }
+  .note { margin-top: 10px; font: 13px/1.8 "Noto Kufi Arabic", Tahoma, sans-serif; color: #9d958f; }
+  a { color: #d9b8ae; }
+  @keyframes pulse { 50% { transform: scale(.55); opacity: .4; } }
+  @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="mark">LUBNÉL<span>.</span></div>
+  <div class="dot" aria-hidden="true"></div>
+  <p class="pname">${esc(name)}</p>
+  <p class="note">${esc("جارٍ فتح المجموعة…")} · Opening collection…</p>
+  <noscript><a href="${esc(appUrl)}">${esc("افتحي المجموعة في المتجر")} / Open in store</a></noscript>
+</main>
+<script>try { location.replace(${JSON.stringify(appUrl)}); } catch (e) {}</script>
+</body>
+</html>`;
+
+  return new Response(html, {
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "public, max-age=60",
+    },
+  });
+}

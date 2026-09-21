@@ -1,0 +1,231 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  nameAr      String
+  nameEn      String
+  description String?
+  intro       String? // U22 — سطر تعريفي أعلى العنوان في صفحة القسم /c/… (اختياري)
+  banner      String? // U22 — بانر صفحة القسم (اختياري — غير صورة البطاقة؛ الفاضي = صورة الفئة)
+  image       String?
+  sortOrder   Int       @default(0)
+  products    Product[]
+  createdAt   DateTime  @default(now())
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  nameAr      String
+  nameEn      String
+  description String
+  price       Float
+  compareAt   Float?
+  image       String
+  gallery     String? // JSON string array
+  categoryId  String
+  category    Category    @relation(fields: [categoryId], references: [id])
+  badgeAr     String?
+  badgeEn     String?
+  variants    String? // JSON string [{label,value}]
+  stock       Int         @default(20)
+  featured    Boolean     @default(false)
+  published   Boolean     @default(true) // storefront visibility toggle (unpublished = hidden from catalog)
+  rating      Float       @default(4.8)
+  reviews     Int         @default(0)
+  orderItems  OrderItem[]
+  createdAt   DateTime    @default(now())
+}
+
+model Order {
+  id                String      @id @default(cuid())
+  orderNumber       String?     @unique // human-readable LN-… reference (null for legacy rows)
+  customerName      String
+  phone             String
+  city              String
+  address           String
+  notes             String?
+  giftNote          String?
+  subtotal          Float
+  shipping          Float       @default(0)
+  discount          Float       @default(0)
+  couponCode        String?
+  total             Float
+  status            String      @default("pending") // pending | confirmed | shipped | delivered | cancelled
+  customerIp        String?     // placement IP — shown in Studio orders/customers log
+  userAgent         String?
+  cancelRequested   Boolean     @default(false)
+  cancelRequestedAt DateTime?
+  items             OrderItem[]
+  createdAt         DateTime    @default(now())
+}
+
+model AdminUser {
+  id                   String         @id @default(cuid())
+  username             String         @unique
+  displayName          String
+  passwordHash         String
+  verificationCodeHash String
+  role                 String         @default("owner") // owner | staff
+  permissions          String? // JSON string array of permission keys (staff only)
+  active               Boolean        @default(true)
+  lastLoginAt          DateTime?
+  createdAt            DateTime       @default(now())
+  sessions             AdminSession[]
+}
+
+model AdminSession {
+  id          String    @id @default(cuid())
+  tokenHash   String    @unique
+  adminUserId String
+  admin       AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime  @default(now())
+}
+
+model AdminAudit {
+  id        String   @id @default(cuid())
+  actor     String?
+  action    String
+  entity    String?
+  entityId  String?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+}
+
+model Coupon {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  type        String    @default("percent") // percent | fixed
+  value       Float
+  minSubtotal Float     @default(0)
+  maxDiscount Float?
+  label       String?
+  active      Boolean   @default(true)
+  usageCount  Int       @default(0)
+  usageLimit  Int?
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  /* U50-ORDER-DELETE-FK — «انا الاونر والمسؤول عن كله وبيجبلي كده» (تعذر الحذف Owner فقط):
+     بدون Cascade كانت حذف أي طلب فيه عناصر بيرفضه قيد FK (Restrict افتراضيًا)
+     والرسالة بتطلع كأنها مشكلة صلاحيات. الآن حذف الطلب ينضّف عناصره تلقائيًا. */
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+  nameAr    String
+  image     String?
+  price     Float
+  qty       Int
+}
+
+// ---- admin panel extended models (SUP-6 full-panel build) ----
+
+model StoreSettings {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model MediaAsset {
+  id         String   @id @default(cuid())
+  fileName   String
+  storageKey String
+  url        String
+  mimeType   String
+  altText    String   @default("")
+  crop       String   @default("cover")
+  createdBy  String?
+  data       Bytes?
+  createdAt  DateTime @default(now())
+}
+
+model HeroSlide {
+  id        String  @id
+  eyebrow   String  @default("LUBNÉL")
+  titleAr   String
+  titleEn   String
+  bodyAr    String  @default("")
+  bodyEn    String  @default("")
+  ctaAr     String  @default("تسوّقي الآن")
+  ctaEn     String  @default("Shop now")
+  image     String
+  imageMobile String? // U21-MOBILE-HERO — optional portrait/square crop for phones; falls back to image
+  video     String? // U19 — optional MP4 (upload or URL); plays muted/looped with image as poster
+  href      String  @default("/")
+  active    Boolean @default(true)
+  sortOrder Int     @default(99)
+}
+
+// productId stores the product slug (matching admin reviews route lookup)
+model Review {
+  id           String   @id @default(cuid())
+  productId    String
+  name         String
+  text         String
+  rating       Int      @default(5)
+  image        String?
+  approved     Boolean  @default(false)
+  featured     Boolean  @default(false)
+  helpfulCount Int      @default(0)
+  createdAt    DateTime @default(now())
+}
+
+model RolePermission {
+  id          String   @id @default(cuid())
+  roleName    String   @unique
+  permissions String   @default("[]")
+  createdBy   String?
+  updatedAt   DateTime @updatedAt
+}
+
+model Subscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+// VISITS-1 — storefront visitor log («سجل الزيارات» in Studio).
+// One Visit row per browser session (client UUID); every tracked action
+// appends a VisitEvent. Powers the admin visits section: IP, device,
+// entry/last path, and a replayable event trail per visit.
+model Visit {
+  id          String       @id @default(cuid())
+  sessionId   String       @unique
+  ip          String?
+  userAgent   String?
+  device      String? // mobile | tablet | desktop
+  deviceLabel String? // parsed "Safari on iPhone" style label
+  entryPath   String?
+  lastPath    String?
+  events      Int          @default(0)
+  startedAt   DateTime     @default(now())
+  lastSeenAt  DateTime     @default(now())
+  visitEvents VisitEvent[]
+}
+
+model VisitEvent {
+  id        String   @id @default(cuid())
+  visitId   String
+  visit     Visit    @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  path      String?
+  action    String
+  detail    String?
+  createdAt DateTime @default(now())
+}

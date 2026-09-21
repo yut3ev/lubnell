@@ -1,0 +1,150 @@
+import { db } from "@/lib/db";
+import type { StoreProduct } from "@prisma/client";
+import { findShareProduct, shareOrigin } from "@/lib/share-helpers";
+
+// R25 — per-product share deep link: /p/[slug]
+// Crawlers (WhatsApp/Facebook/X) get real product OG meta + Product JSON-LD;
+// human browsers are bounced into the hash-routed SPA via meta-refresh + JS +
+// noscript fallbacks. Interstitial is noindex,follow — scrapers read, Google
+// passes through to the canonical SPA.
+
+export const dynamic = "force-dynamic";
+
+const esc = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
+const clamp = (s: string, n: number) =>
+  s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s;
+
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const origin = await shareOrigin();
+
+  let product: StoreProduct | null = null;
+  try {
+    product = await findShareProduct(id);
+  } catch {
+    product = null;
+  }
+
+  if (!product) {
+    return Response.redirect(`${origin}/`, 302);
+  }
+
+  // Approved-reviews snapshot → AggregateRating for scrapers (same source as bootstrap)
+  let rating: { average: number; count: number } | null = null;
+  try {
+    const [group] = await db.review.groupBy({
+      by: ["productId"],
+      where: { approved: true, productId: product.slug },
+      _avg: { rating: true },
+      _count: { productId: true },
+    });
+    if (group) {
+      rating = {
+        average: Math.round((group._avg.rating || 0) * 10) / 10,
+        count: group._count.productId,
+      };
+    }
+  } catch {
+    rating = null;
+  }
+
+  const name = product.nameAr || product.name;
+  const title = `${clamp(name, 70)} — LUBNÉL`;
+  const desc = clamp(product.description || name, 160);
+  const ogImage = `${origin}/p/${encodeURIComponent(product.slug)}/og`;
+  const appUrl = `${origin}/#/product/${encodeURIComponent(product.slug)}`;
+  const price = product.price.toFixed(2);
+
+  const ld = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name,
+    image: [ogImage],
+    description: desc,
+    sku: product.slug,
+    brand: { "@type": "Brand", name: "LUBNÉL" },
+    offers: {
+      "@type": "Offer",
+      url: `${origin}/p/${product.slug}`,
+      priceCurrency: "EGP",
+      price,
+      availability: `https://schema.org/${product.stock > 0 ? "InStock" : "OutOfStock"}`,
+      itemCondition: "https://schema.org/NewCondition",
+    },
+    ...(rating
+      ? { aggregateRating: { "@type": "AggregateRating", ratingValue: rating.average, reviewCount: rating.count } }
+      : {}),
+  };
+  const ldJson = JSON.stringify(ld).replace(/</g, "\\u003c");
+
+  const html = `<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(desc)}"/>
+<meta property="og:title" content="${esc(title)}"/>
+<meta property="og:description" content="${esc(desc)}"/>
+<meta property="og:type" content="product"/>
+<meta property="og:url" content="${esc(`${origin}/p/${product.slug}`)}"/>
+<meta property="og:image" content="${esc(ogImage)}"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+<meta property="og:image:alt" content="${esc(name)}"/>
+<meta property="og:site_name" content="LUBNÉL"/>
+<meta property="og:locale" content="ar_EG"/>
+<meta property="product:price:amount" content="${price}"/>
+<meta property="product:price:currency" content="EGP"/>
+<meta property="product:availability" content="${product.stock > 0 ? "in stock" : "out of stock"}"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="${esc(title)}"/>
+<meta name="twitter:description" content="${esc(desc)}"/>
+<meta name="twitter:image" content="${esc(ogImage)}"/>
+<meta name="twitter:image:alt" content="${esc(name)}"/>
+<meta name="robots" content="noindex, follow"/>
+<link rel="icon" href="/icon.svg" type="image/svg+xml"/>
+<meta http-equiv="refresh" content="0;url=${esc(appUrl)}"/>
+<script type="application/ld+json">${ldJson}</script>
+<style>
+  html, body { margin: 0; height: 100%; }
+  body { display: grid; place-items: center; background: #11100f; color: #fdfcfa;
+         font-family: Georgia, "Times New Roman", serif; text-align: center; }
+  .mark { font-size: 30px; letter-spacing: .22em; }
+  .mark span { color: #d9b8ae; }
+  .dot { width: 9px; height: 9px; margin: 18px auto 0; border-radius: 50%;
+         background: #d9b8ae; animation: pulse 1s ease-in-out infinite; }
+  .pname { max-width: 560px; margin: 22px auto 0; padding: 0 24px;
+           font: 600 20px/1.5 "Noto Kufi Arabic", Tahoma, sans-serif; color: #fdfcfa;
+           overflow-wrap: anywhere; }
+  .note { margin-top: 10px; font: 13px/1.8 "Noto Kufi Arabic", Tahoma, sans-serif; color: #9d958f; }
+  a { color: #d9b8ae; }
+  @keyframes pulse { 50% { transform: scale(.55); opacity: .4; } }
+  @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="mark">LUBNÉL<span>.</span></div>
+  <div class="dot" aria-hidden="true"></div>
+  <p class="pname">${esc(name)}</p>
+  <p class="note">${esc("جارٍ فتح المنتج…")} · Opening product…</p>
+  <noscript><a href="${esc(appUrl)}">${esc("افتحي المنتج في المتجر")} / Open in store</a></noscript>
+</main>
+<script>try { location.replace(${JSON.stringify(appUrl)}); } catch (e) {}</script>
+</body>
+</html>`;
+
+  return new Response(html, {
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "public, max-age=60",
+    },
+  });
+}

@@ -1,0 +1,41 @@
+{
+  "savedAt": "2026-09-20T11:24:38.060Z",
+  "note": "pre-U24-CATS-EDITORIAL images + sortOrder",
+  "rows": [
+    {
+      "slug": "sets",
+      "image": "/products/promo-collage.jpg",
+      "sortOrder": 1
+    },
+    {
+      "slug": "makeup",
+      "image": "/products/yardbeauty-blush.jpg",
+      "sortOrder": 2
+    },
+    {
+      "slug": "skincare",
+      "image": "/products/sheglam-remover.jpg",
+      "sortOrder": 3
+    },
+    {
+      "slug": "fragrance",
+      "image": "/products/strawberry-body-mist.jpg",
+      "sortOrder": 4
+    },
+    {
+      "slug": "body-care",
+      "image": "/products/care-more-lotion.jpg",
+      "sortOrder": 5
+    },
+    {
+      "slug": "eyes",
+      "image": "/products/placeholder-skincare.svg",
+      "sortOrder": 6
+    },
+    {
+      "slug": "lips",
+      "image": "/products/placeholder-editorial.svg",
+      "sortOrder": 7
+    }
+  ]
+}

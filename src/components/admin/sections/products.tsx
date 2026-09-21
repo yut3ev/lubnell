@@ -1,0 +1,352 @@
+'use client';
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Download, Eye, EyeOff, Loader2, Pencil, Plus, Search, Star, Trash2, X } from 'lucide-react';
+import { apiJson, EGP } from '../helpers';
+import ImageField from '../image-field';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+
+type Category = { id: string; slug: string; nameAr: string };
+type Product = {
+  id: string;
+  slug: string;
+  nameAr: string;
+  nameEn: string;
+  description: string;
+  price: number;
+  compareAt: number | null;
+  image: string;
+  gallery: string | null;
+  categoryId: string;
+  category: Category;
+  badgeAr: string | null;
+  stock: number;
+  featured: boolean;
+  published: boolean;
+};
+
+const EMPTY = {
+  nameAr: '', nameEn: '', slug: '', price: '', compareAt: '', stock: '20',
+  description: '', image: '', badgeAr: '', categoryId: '', featured: false, published: true,
+};
+
+export default function ProductsSection() {
+  const [products, setProducts] = useState<Product[] | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [query, setQuery] = useState('');
+  const [modal, setModal] = useState<'new' | Product | null>(null);
+  const [form, setForm] = useState(EMPTY);
+  const [gallery, setGallery] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+
+  const load = useCallback(async () => {
+    const [p, c] = await Promise.all([
+      apiJson<{ ok: boolean; products: Product[] }>('/api/admin/products'),
+      apiJson<{ ok: boolean; categories: Category[] }>('/api/admin/categories'),
+    ]);
+    if (p.ok && p.data?.ok) setProducts(p.data.products);
+    else setProducts([]);
+    if (c.ok && c.data?.ok) setCategories(c.data.categories);
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(load, 0);
+    return () => clearTimeout(t);
+  }, [load]);
+
+  const visible = useMemo(
+    () =>
+      products?.filter((p) =>
+        query.trim() ? (p.nameAr + ' ' + p.nameEn + ' ' + p.category.nameAr).includes(query.trim()) : true
+      ),
+    [products, query]
+  );
+
+  function openNew() {
+    setForm(EMPTY);
+    setGallery([]);
+    setModal('new');
+  }
+
+  function openEdit(p: Product) {
+    setForm({
+      nameAr: p.nameAr, nameEn: p.nameEn, slug: p.slug,
+      price: String(p.price), compareAt: p.compareAt ? String(p.compareAt) : '',
+      stock: String(p.stock), description: p.description, image: p.image,
+      badgeAr: p.badgeAr || '', categoryId: p.categoryId, featured: p.featured,
+      published: p.published,
+    });
+    try {
+      setGallery(p.gallery ? (JSON.parse(p.gallery) as string[]) : []);
+    } catch {
+      setGallery([]);
+    }
+    setModal(p);
+  }
+
+  async function save() {
+    if (!modal) return;
+    setSaving(true);
+    const editing = modal !== 'new';
+    const body = {
+      nameAr: form.nameAr,
+      nameEn: form.nameEn,
+      price: Number(form.price),
+      compareAt: form.compareAt ? Number(form.compareAt) : null,
+      stock: Number(form.stock),
+      description: form.description,
+      image: form.image || undefined,
+      badgeAr: form.badgeAr,
+      categoryId: form.categoryId || categories[0]?.id,
+      featured: form.featured,
+      published: form.published,
+      gallery,
+    };
+    const { ok, data } = editing
+      ? await apiJson(`/api/admin/products/${(modal as Product).id}`, { method: 'PATCH', body: JSON.stringify(body) })
+      : await apiJson('/api/admin/products', { method: 'POST', body: JSON.stringify(body) });
+    setSaving(false);
+    if (!ok || !data?.ok) {
+      toast({ title: editing ? 'تعذر تحديث المنتج' : 'تعذر إنشاء المنتج', description: data?.error, variant: 'destructive' });
+      return;
+    }
+    toast({ title: editing ? 'تم تحديث المنتج ✓' : 'تمت إضافة المنتج ✓' });
+    setModal(null);
+    load();
+  }
+
+  async function patch(id: string, body: Record<string, unknown>, msg: string) {
+    const { ok } = await apiJson(`/api/admin/products/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+    if (ok) {
+      toast({ title: msg });
+      load();
+    } else toast({ title: 'تعذر التحديث', variant: 'destructive' });
+  }
+
+  async function remove(p: Product) {
+    if (!window.confirm(`حذف "${p.nameAr}"؟`)) return;
+    const { ok, data } = await apiJson<{ ok: boolean; softCleared?: boolean }>(`/api/admin/products/${p.id}`, { method: 'DELETE' });
+    if (ok) {
+      toast({ title: data?.softCleared ? 'المنتج مرتبط بطلبات — تم تصفير مخزونه وتمييزه' : 'تم حذف المنتج' });
+      load();
+    } else toast({ title: 'تعذر الحذف', variant: 'destructive' });
+  }
+
+  function addToGallery(url: string) {
+    setGallery((g) => (g.includes(url) || g.length >= 12 ? g : [...g, url]));
+  }
+
+  if (!products)
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-7 w-7 animate-spin text-primary" aria-label="جاري التحميل" />
+      </div>
+    );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2.5">
+        <div className="relative min-w-52 flex-1 sm:max-w-xs">
+          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحثي باسم المنتج أو القسم…" className="rounded-full bg-card pr-9" />
+        </div>
+        <Button className="rounded-full gap-1.5 bg-primary font-bold text-primary-foreground" onClick={openNew}>
+          <Plus className="h-4 w-4" /> إضافة منتج
+        </Button>
+        <a href="/api/admin/export?type=products" download>
+          <Button variant="outline" size="sm" className="rounded-full gap-1.5">
+            <Download className="h-3.5 w-3.5" /> تصدير CSV
+          </Button>
+        </a>
+        <span className="mr-auto text-xs font-bold text-muted-foreground">{products.length} منتج</span>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[820px] text-sm">
+            <thead className="bg-secondary/50 text-right text-xs text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3 font-bold">المنتج</th>
+                <th className="px-4 py-3 font-bold">القسم</th>
+                <th className="px-4 py-3 font-bold">السعر</th>
+                <th className="px-4 py-3 font-bold">المخزون</th>
+                <th className="px-4 py-3 font-bold">مميز</th>
+                <th className="px-4 py-3 font-bold">منشور</th>
+                <th className="px-4 py-3 font-bold">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible?.length === 0 && (
+                <tr><td colSpan={7} className="py-10 text-center text-muted-foreground">لا نتائج مطابقة.</td></tr>
+              )}
+              {visible?.map((p) => (
+                <tr key={p.id} className={`border-t border-border/50 ${p.published ? '' : 'opacity-55'}`}>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <img src={p.image} alt={p.nameAr} className="h-11 w-11 rounded-xl border border-border/60 object-cover" />
+                      <div className="min-w-0">
+                        <strong className="block truncate">{p.nameAr}</strong>
+                        <span className="block truncate text-xs text-muted-foreground" dir="ltr">{p.slug}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">{p.category.nameAr}</td>
+                  <td className="px-4 py-3 font-bold">
+                    {EGP(p.price)}
+                    {p.compareAt ? <del className="mr-1.5 text-xs text-muted-foreground">{EGP(p.compareAt)}</del> : null}
+                  </td>
+                  <td className="px-4 py-3">
+                    <input
+                      type="number"
+                      min={0}
+                      defaultValue={p.stock}
+                      onBlur={(e) => {
+                        const v = Math.max(0, Math.floor(Number(e.target.value) || 0));
+                        if (v !== p.stock) patch(p.id, { stock: v }, `تم تحديث مخزون ${p.nameAr} → ${v}`);
+                      }}
+                      className={`w-20 rounded-lg border px-2 py-1 text-sm font-bold ${p.stock < 10 ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-border bg-background'}`}
+                      aria-label={`مخزون ${p.nameAr}`}
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => patch(p.id, { featured: !p.featured }, p.featured ? 'أُزيل التمييز' : 'تم تمييز المنتج ★')}
+                      className="grid h-8 w-8 place-items-center rounded-lg transition-colors hover:bg-secondary"
+                      aria-label={p.featured ? `إزالة تمييز ${p.nameAr}` : `تمييز ${p.nameAr}`}
+                    >
+                      <Star className={`h-4 w-4 ${p.featured ? 'fill-primary text-primary' : 'text-muted-foreground'}`} />
+                    </button>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => patch(p.id, { published: !p.published }, p.published ? 'تم إلغاء نشر المنتج — اختفى من المتجر' : 'تم نشر المنتج — ظهر في المتجر')}
+                      className={`grid h-8 w-8 place-items-center rounded-lg transition-colors ${p.published ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-100 text-stone-400'}`}
+                      aria-label={p.published ? `إلغاء نشر ${p.nameAr}` : `نشر ${p.nameAr}`}
+                      title={p.published ? 'منشور — ظاهر في المتجر' : 'غير منشور — مخفي من المتجر'}
+                    >
+                      {p.published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-1">
+                      <button onClick={() => openEdit(p)} className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground" aria-label={`تعديل ${p.nameAr}`}>
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button onClick={() => remove(p)} className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-rose-50 hover:text-destructive" aria-label={`حذف ${p.nameAr}`}>
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* add / edit modal */}
+      <Dialog open={!!modal} onOpenChange={(o) => !o && setModal(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto rounded-3xl sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black">
+              {modal === 'new' ? 'إضافة منتج جديد' : modal ? `تعديل: ${modal.nameAr}` : ''}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3.5">
+            <div className="grid gap-1.5">
+              <Label htmlFor="p-nameAr">اسم المنتج (عربي) *</Label>
+              <Input id="p-nameAr" value={form.nameAr} onChange={(e) => setForm({ ...form, nameAr: e.target.value })} placeholder="مثال: بوكس الجامعة" />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="p-nameEn">الاسم (إنجليزي)</Label>
+              <Input id="p-nameEn" dir="ltr" className="text-left" value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} placeholder="University Box" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-1.5">
+                <Label htmlFor="p-price">السعر (ج.م) *</Label>
+                <Input id="p-price" type="number" min={0} value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="200" />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="p-compareAt">السعر قبل الخصم</Label>
+                <Input id="p-compareAt" type="number" min={0} value={form.compareAt} onChange={(e) => setForm({ ...form, compareAt: e.target.value })} placeholder="250" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-1.5">
+                <Label htmlFor="p-stock">المخزون</Label>
+                <Input id="p-stock" type="number" min={0} value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="p-category">القسم *</Label>
+                <select
+                  id="p-category"
+                  value={form.categoryId || categories[0]?.id || ''}
+                  onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nameAr}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>صورة المنتج الرئيسية</Label>
+              <ImageField value={form.image} onChange={(url) => setForm({ ...form, image: url })} label="" />
+            </div>
+            <div className="grid gap-2">
+              <Label>صور إضافية (Gallery — حتى 12 صورة)</Label>
+              {gallery.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {gallery.map((g) => (
+                    <div key={g} className="group relative h-16 w-16 overflow-hidden rounded-xl border border-border/60">
+                      <img src={g} alt="صورة إضافية" className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setGallery((list) => list.filter((x) => x !== g))}
+                        className="absolute left-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-background/90 text-destructive opacity-0 shadow transition-opacity group-hover:opacity-100"
+                        aria-label="إزالة الصورة"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {gallery.length < 12 && (
+                <ImageField onPick={addToGallery} label="" placeholder="ارفعي من جهازكِ أو اختاري من المكتبة ثم تُضاف تلقائيًا" />
+              )}
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="p-badge">شريط البادج (عربي)</Label>
+              <Input id="p-badge" value={form.badgeAr} onChange={(e) => setForm({ ...form, badgeAr: e.target.value })} placeholder="الأكثر طلبًا" />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="p-desc">الوصف</Label>
+              <textarea id="p-desc" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="resize-none rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            </div>
+            <label className="flex cursor-pointer items-center gap-2 text-sm font-bold">
+              <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} className="h-4 w-4 accent-[var(--primary)]" />
+              منتج مميز (يظهر في الواجهة)
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 text-sm font-bold">
+              <input type="checkbox" checked={form.published} onChange={(e) => setForm({ ...form, published: e.target.checked })} className="h-4 w-4 accent-[var(--primary)]" />
+              منشور في المتجر (إلغاء التأشيرة يُخفيه من الواجهة دون حذفه)
+            </label>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" className="rounded-full" onClick={() => setModal(null)}><X className="h-4 w-4" /> إلغاء</Button>
+              <Button disabled={saving || !form.nameAr.trim() || !form.price} onClick={save} className="rounded-full bg-primary font-bold text-primary-foreground">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'حفظ'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
