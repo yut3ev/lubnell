@@ -170,7 +170,15 @@ a.bg-primary:not([data-slot]):hover {
   background-color: var(--color-badge, var(--primary));
   color: var(--color-badge-foreground, var(--primary-foreground));
 }
-a[class*='text-primary'] {
+/* U57-TEXTS-FIX — this selector's intent is «anchors tinted text-primary»
+   (the theme studio's link token). The bare substring match also caught
+   text-primary-foreground (substring!) with HIGHER specificity (0,1,1) than
+   the utilities class (0,1,0), so every <a className="bg-primary text-primary-foreground">
+   (404 primary CTA, search page button) rendered wine-on-wine — invisible
+   text. :not([class*='-foreground']) restores the CTA copy to the
+   --primary-foreground cream while keeping text-primary / text-primary/NN
+   anchors under the link token. */
+a[class*='text-primary']:not([class*='-foreground']) {
   color: var(--color-link, var(--primary));
 }
 svg.lucide:not(button svg):not(a svg):not([data-slot] svg) {

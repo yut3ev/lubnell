@@ -25,15 +25,16 @@ import { useCart } from '@/lib/cart-store';
 import { useT } from '@/lib/i18n';
 
 
-const MORE_LINKS = [
-  { href: '/#offers', labelAr: '🔥 عروض اليوم', labelEn: '🔥 Today’s offers', icon: Flame },
-  { href: '/c/all', labelAr: 'كل المنتجات', labelEn: 'All products', icon: Package },
-  { href: '/info/about', labelAr: 'عن لوبنيل', labelEn: 'About LUBNÉL', icon: Info },
-  { href: '/info/shipping', labelAr: 'الشحن والتسليم', labelEn: 'Shipping & delivery', icon: Package },
-  { href: '/info/returns', labelAr: 'الاستبدال والإرجاع', labelEn: 'Returns & exchange', icon: Package },
-  { href: '/info/faq', labelAr: 'الأسئلة الشائعة', labelEn: 'FAQ', icon: Info },
-  { href: '/info/contact', labelAr: 'تواصلي معنا', labelEn: 'Contact us', icon: MessageCircle },
-  { href: '/admin', labelAr: 'لوحة الإدارة', labelEn: 'Admin dashboard', icon: LayoutDashboard },
+// U57-TEXTS-COMPLETE — labels are DICT keys (Studio → كل النصوص → القوائم والروابط).
+const MORE_LINKS: { href: string; k: 'navOffers' | 'allProducts' | 'navAbout' | 'navShipping' | 'navReturns' | 'navFaq' | 'navContact' | 'navAdmin'; icon: typeof Flame }[] = [
+  { href: '/#offers', k: 'navOffers', icon: Flame },
+  { href: '/c/all', k: 'allProducts', icon: Package },
+  { href: '/info/about', k: 'navAbout', icon: Info },
+  { href: '/info/shipping', k: 'navShipping', icon: Package },
+  { href: '/info/returns', k: 'navReturns', icon: Package },
+  { href: '/info/faq', k: 'navFaq', icon: Info },
+  { href: '/info/contact', k: 'navContact', icon: MessageCircle },
+  { href: '/admin', k: 'navAdmin', icon: LayoutDashboard },
 ];
 
 export function BottomNav() {
@@ -65,7 +66,7 @@ export function BottomNav() {
   return (
     <>
       <nav
-        aria-label={ar ? 'التنقل السفلي' : 'Bottom navigation'}
+        aria-label={t.navBottomAria}
         className="fixed inset-x-0 bottom-0 z-50 border-t border-border/70 bg-card/95 shadow-[0_-6px_24px_rgba(0,0,0,0.06)] backdrop-blur-md md:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
@@ -118,7 +119,7 @@ export function BottomNav() {
                 className="flex items-center gap-2.5 rounded-2xl border border-border/60 bg-secondary/40 px-3.5 py-3 text-[13px] font-bold text-foreground/85 transition-colors hover:border-primary/40 hover:text-primary"
               >
                 <l.icon className="h-4.5 w-4.5 shrink-0 text-primary" aria-hidden />
-                <span className="line-clamp-1">{ar ? l.labelAr : l.labelEn}</span>
+                <span className="line-clamp-1">{t[l.k]}</span>
               </Link>
             ))}
           </div>

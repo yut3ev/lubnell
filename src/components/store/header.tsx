@@ -33,23 +33,26 @@ import { useCart } from '@/lib/cart-store';
 // did nothing — the owner's «english بضغط عليه مش شغال» report.
 import { useT, useLang } from '@/lib/i18n';
 
-const NAV = [
-  { href: '/', labelAr: 'الرئيسية', labelEn: 'Home' },
-  { href: '/c/all', labelAr: 'كل المنتجات', labelEn: 'All products' },
-  { href: '/c/sets', labelAr: 'المجموعات', labelEn: 'Sets' },
-  { href: '/c/makeup', labelAr: 'مكياج', labelEn: 'Makeup' },
-  { href: '/c/skincare', labelAr: 'عناية بالبشرة', labelEn: 'Skincare' },
-  { href: '/c/body-care', labelAr: 'عناية بالجسم', labelEn: 'Body Care' },
+// U57-TEXTS-COMPLETE — every label is a DICT key: the owner edits these from
+// Studio → «كل النصوص» (group القوائم والروابط) and the change hits the site
+// on save. `k` is the dict key; no more hardcoded literals here.
+const NAV: { href: string; k: 'home' | 'allProducts' | 'navSets' | 'navMakeup' | 'navSkincare' | 'navBodyCare' }[] = [
+  { href: '/', k: 'home' },
+  { href: '/c/all', k: 'allProducts' },
+  { href: '/c/sets', k: 'navSets' },
+  { href: '/c/makeup', k: 'navMakeup' },
+  { href: '/c/skincare', k: 'navSkincare' },
+  { href: '/c/body-care', k: 'navBodyCare' },
 ];
 
 // U21-MENU — the mobile sheet gets a proper information section instead of
 // dead empty space under the category links.
-const INFO = [
-  { href: '/info/about', labelAr: 'عن لوبنيل', labelEn: 'About LUBNÉL', icon: Info },
-  { href: '/info/shipping', labelAr: 'الشحن والتسليم', labelEn: 'Shipping & delivery', icon: Truck },
-  { href: '/info/returns', labelAr: 'الاستبدال والإرجاع', labelEn: 'Returns & exchange', icon: RefreshCcw },
-  { href: '/info/faq', labelAr: 'الأسئلة الشائعة', labelEn: 'FAQ', icon: HelpCircle },
-  { href: '/info/contact', labelAr: 'تواصلي معنا', labelEn: 'Contact us', icon: MessageCircle },
+const INFO: { href: string; k: 'navAbout' | 'navShipping' | 'navReturns' | 'navFaq' | 'navContact'; icon: typeof Info }[] = [
+  { href: '/info/about', k: 'navAbout', icon: Info },
+  { href: '/info/shipping', k: 'navShipping', icon: Truck },
+  { href: '/info/returns', k: 'navReturns', icon: RefreshCcw },
+  { href: '/info/faq', k: 'navFaq', icon: HelpCircle },
+  { href: '/info/contact', k: 'navContact', icon: MessageCircle },
 ];
 
 export function StoreHeader({
@@ -159,7 +162,7 @@ export function StoreHeader({
                 variant="ghost"
                 size="icon"
                 className="lg:hidden"
-                aria-label="القائمة"
+                aria-label={t.menuAria}
                 suppressHydrationWarning
               >
                 <Menu className="h-5 w-5" />
@@ -185,15 +188,15 @@ export function StoreHeader({
                 </SheetTitle>
                 <SheetClose
                   className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-primary focus:outline-none focus:ring-2 focus:ring-ring"
-                  aria-label="إغلاق القائمة"
+                  aria-label={t.menuCloseAria}
                 >
                   <X className="h-5 w-5" />
                 </SheetClose>
               </div>
 
-              <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4" aria-label="قائمة الموبايل">
+              <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4" aria-label={t.menuMobileAria}>
                 <p className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                  {ar ? 'تسوّقي' : 'Shop'}
+                  {t.menuShopLabel}
                 </p>
                 {NAV.map((n) => {
                   const active = pathname === n.href;
@@ -210,7 +213,7 @@ export function StoreHeader({
                       }`}
                     >
                       {active && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />}
-                      <span className="flex-1">{ar ? n.labelAr : n.labelEn}</span>
+                      <span className="flex-1">{t[n.k]}</span>
                       <ChevronLeft
                         className="h-4 w-4 text-muted-foreground/40 transition-transform group-hover:-translate-x-0.5"
                         aria-hidden
@@ -220,7 +223,7 @@ export function StoreHeader({
                 })}
 
                 <p className="px-3 pb-1.5 pt-5 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                  {ar ? 'معلومات' : 'Information'}
+                  {t.menuInfoLabel}
                 </p>
                 {INFO.map((n) => {
                   const active = pathname === n.href;
@@ -237,7 +240,7 @@ export function StoreHeader({
                       }`}
                     >
                       <n.icon className="h-4.5 w-4.5 shrink-0 text-primary/70" aria-hidden />
-                      <span className="flex-1">{ar ? n.labelAr : n.labelEn}</span>
+                      <span className="flex-1">{t[n.k]}</span>
                     </Link>
                   );
                 })}
@@ -251,17 +254,17 @@ export function StoreHeader({
                   className="flex h-11 items-center justify-center gap-2 rounded-full bg-[#25D366] text-sm font-bold text-white shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98] [-webkit-tap-highlight-color:transparent]"
                 >
                   <WhatsAppGlyph className="h-4.5 w-4.5" aria-hidden />
-                  {ar ? 'اطلبي عبر واتساب' : 'Order via WhatsApp'}
+                  {t.orderViaWa}
                 </a>
                 <p className="pt-3 text-center text-[11px] font-semibold text-muted-foreground">
-                  {ar ? 'جمال يليق بكِ — LUBNÉL' : 'Beauty, made personal — LUBNÉL'}
+                  {t.navMoreTagline}
                 </p>
               </div>
             </SheetContent>
           </Sheet>
 
           {/* brand — U16-BRAND: owner's LUBNÉL wordmark + L-ring badge */}
-          <Link href="/" className="flex items-center transition-opacity hover:opacity-80" aria-label="LUBNÉL — الرئيسية">
+          <Link href="/" className="flex items-center transition-opacity hover:opacity-80" aria-label={`LUBNÉL — ${t.home}`}>
             <img
               src={brandLogo}
               alt="LUBNÉL"
@@ -271,7 +274,7 @@ export function StoreHeader({
           </Link>
 
           {/* desktop nav */}
-          <nav className="mr-auto hidden items-center gap-1 lg:flex" aria-label="التنقل الرئيسي">
+          <nav className="mr-auto hidden items-center gap-1 lg:flex" aria-label={t.navMainAria}>
             {NAV.map((n) => (
               <Link
                 key={n.href}
@@ -280,7 +283,7 @@ export function StoreHeader({
                   pathname === n.href ? 'bg-secondary text-primary' : 'text-foreground/80'
                 }`}
               >
-                {ar ? n.labelAr : n.labelEn}
+                {t[n.k]}
               </Link>
             ))}
           </nav>
@@ -292,7 +295,7 @@ export function StoreHeader({
               size="sm"
               onClick={() => useLang.getState().toggle()}
               className="h-10 rounded-full border-primary/25 bg-card px-3.5 font-bold text-primary hover:bg-secondary"
-              aria-label="تبديل اللغة"
+              aria-label={t.menuLangAria}
             >
               {ar ? 'EN' : 'ع'}
             </Button>
@@ -303,10 +306,10 @@ export function StoreHeader({
               size="sm"
               onClick={() => setSearchOpen(true)}
               className="h-10 gap-2 rounded-full border-primary/25 bg-card px-3.5 font-bold text-primary hover:bg-secondary"
-              aria-label={ar ? 'بحث سريع' : 'Quick search'}
+              aria-label={t.menuSearchAria}
             >
               <Search className="h-4.5 w-4.5" />
-              <span className="hidden md:inline">{ar ? 'بحث' : 'Search'}</span>
+              <span className="hidden md:inline">{t.search}</span>
             </Button>
 
             {/* cart */}

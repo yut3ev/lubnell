@@ -101,10 +101,8 @@ export function SearchDialogV2({ open, onOpenChange }: { open: boolean; onOpenCh
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="rounded-3xl p-0 sm:max-w-xl">
         <DialogHeader className="px-5 pt-5">
-          <DialogTitle className="text-lg font-bold">{ar ? 'ابحثي في لوبنيل' : 'Search LUBNÉL'}</DialogTitle>
-          <DialogDescription className="sr-only">
-            {ar ? 'اقتراحات فورية أثناء الكتابة' : 'Live suggestions as you type'}
-          </DialogDescription>
+          <DialogTitle className="text-lg font-bold">{t.searchTitle}</DialogTitle>
+          <DialogDescription className="sr-only">{t.searchHintAria}</DialogDescription>
         </DialogHeader>
 
         <div className="px-5">
@@ -120,8 +118,8 @@ export function SearchDialogV2({ open, onOpenChange }: { open: boolean; onOpenCh
               autoFocus
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder={ar ? 'مكياج، سيروم، هدية…' : 'lipstick, serum, gift…'}
-              aria-label={ar ? 'بحث' : 'Search'}
+              placeholder={t.searchPlaceholder}
+              aria-label={t.search}
               className="h-12 w-full rounded-full border border-border bg-background pr-11 pl-24 text-[15px] font-semibold outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/50"
             />
             {loading ? (
@@ -132,7 +130,7 @@ export function SearchDialogV2({ open, onOpenChange }: { open: boolean; onOpenCh
                 size="sm"
                 className="absolute left-1.5 top-1/2 h-8 -translate-y-1/2 rounded-full bg-primary px-4 text-xs font-bold text-primary-foreground"
               >
-                {ar ? 'بحث' : 'Search'}
+                {t.search}
               </Button>
             )}
           </form>
@@ -167,16 +165,14 @@ export function SearchDialogV2({ open, onOpenChange }: { open: boolean; onOpenCh
           {searched && !loading && hits.length === 0 && (
             <p className="flex flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
               <SearchX className="h-6 w-6 text-muted-foreground/50" aria-hidden />
-              {ar
-                ? `لا نتائج لـ "${q.trim()}" — جرّبي كلمة أخرى مثل: مكياج، سيروم، هدية.`
-                : `No results for "${q.trim()}" — try another term.`}
+              {t.searchNoResults.split('{q}').join(q.trim())}
             </p>
           )}
 
           {!searched && (
             <div className="flex flex-wrap items-center gap-2 px-2 py-3">
-              <span className="text-xs font-bold text-muted-foreground">{ar ? 'الأكثر بحثًا:' : 'Popular:'}</span>
-              {['مكياج', 'سيروم', 'هدية', 'عطر'].map((s) => (
+              <span className="text-xs font-bold text-muted-foreground">{t.searchTrending}</span>
+              {(t.searchTrends.split(/[,،]/).map((s) => s.trim()).filter(Boolean)).map((s) => (
                 <button
                   key={s}
                   type="button"

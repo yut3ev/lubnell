@@ -46,17 +46,17 @@ export function FbtRow({ products }: { products: ProductCardData[] }) {
       );
     }
     toast({
-      title: ar ? 'تمت إضافة المجموعة للسلة ✓' : 'Bundle added to bag ✓',
-      description: ar ? `${chosen.length} قطع — كمّلي طلبكِ من السلة` : `${chosen.length} items added`,
+      title: t.fbtToast,
+      description: t.fbtToastSub.split('{n}').join(String(chosen.length)),
     });
   }
 
   return (
-    <section className="mx-auto w-full max-w-6xl px-4 pb-2 sm:px-6" aria-label={ar ? 'اشتريهم مع بعض' : 'Frequently bought together'}>
+    <section className="mx-auto w-full max-w-6xl px-4 pb-2 sm:px-6" aria-label={t.fbtTitle}>
       <div className="rounded-3xl border border-border/60 bg-card p-5 shadow-sm">
         <div className="flex items-center gap-2">
           <ShoppingBag className="h-4.5 w-4.5 text-primary" aria-hidden />
-          <h2 className="text-base font-extrabold">{ar ? 'اشتريهم مع بعض' : 'Frequently bought together'}</h2>
+          <h2 className="text-base font-extrabold">{t.fbtTitle}</h2>
         </div>
 
         <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
@@ -96,14 +96,14 @@ export function FbtRow({ products }: { products: ProductCardData[] }) {
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <span className="text-sm font-bold text-muted-foreground">
-            {ar ? `إجمالي المجموعة (${chosen.length}):` : `Bundle total (${chosen.length}):`}
+            {t.fbtTotal.split('{n}').join(String(chosen.length))}
           </span>
           <strong className="text-lg font-bold text-primary">
             {total.toLocaleString('en-US')} {currency || t.egp}
           </strong>
           {bundleSaving > 0 && (
             <span className="rounded-full bg-accent px-2.5 py-1 text-[11px] font-bold text-accent-foreground">
-              {ar ? 'توفير عند الشراء المشترك' : 'Bundle value'}
+              {t.fbtSaving}
             </span>
           )}
           <Button
@@ -112,7 +112,7 @@ export function FbtRow({ products }: { products: ProductCardData[] }) {
             className="mr-auto h-10 rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground shadow-md shadow-primary/20"
           >
             <ShoppingBag className="h-4 w-4" aria-hidden />
-            {ar ? 'أضيفي المجموعة للسلة' : 'Add bundle to bag'}
+            {t.fbtAdd}
           </Button>
         </div>
       </div>

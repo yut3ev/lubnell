@@ -8,7 +8,8 @@
 // layout, so this page carries its own mini brand bar and footer line.
 import Link from "next/link";
 import type { Metadata } from "next";
-import { NotFoundHero, NotFoundShelf, fetchShelfProducts } from "@/components/store/not-found-parts";
+import { NotFoundHero, NotFoundShelf } from "@/components/store/not-found-parts";
+import { fetchShelfProducts } from "@/lib/nf-shelf";
 
 export const dynamic = "force-dynamic";
 

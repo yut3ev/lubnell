@@ -40,7 +40,7 @@ export function ProductReviews({
   rating: number;
   reviewsCount: number;
 }) {
-  const { ar } = useT();
+  const { ar, t } = useT();
   const [items, setItems] = useState<ReviewItem[]>([]);
   // U18 — live aggregates from the DB win over the server-rendered props, so
   // the numbers on screen are always the real approved reviews.
@@ -85,7 +85,7 @@ export function ProductReviews({
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       toast({
-        title: ar ? 'الملف لازم يكون صورة' : 'Please pick an image',
+        title: t.rvErrImage,
         variant: 'destructive',
       });
       return;
@@ -100,10 +100,10 @@ export function ProductReviews({
       if (res.ok && data?.url) {
         setPhoto(data.url);
       } else {
-        toast({ title: data?.error || (ar ? 'تعذر رفع الصورة' : 'Upload failed'), variant: 'destructive' });
+        toast({ title: data?.error || t.rvErrUpload, variant: 'destructive' });
       }
     } catch {
-      toast({ title: ar ? 'تعذر رفع الصورة — تأكدي من الشبكة' : 'Upload failed — check your connection', variant: 'destructive' });
+      toast({ title: t.rvErrUploadNet, variant: 'destructive' });
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -114,8 +114,8 @@ export function ProductReviews({
     if (submitting) return;
     if (!form.name.trim() || !form.text.trim()) {
       toast({
-        title: ar ? 'بيانات ناقصة' : 'Missing details',
-        description: ar ? 'اكتبي اسمكِ وتجربتكِ مع المنتج أولًا.' : 'Please add your name and review text.',
+        title: t.rvErrMissing,
+        description: t.rvErrMissingDesc,
         variant: 'destructive',
       });
       return;
@@ -152,33 +152,33 @@ export function ProductReviews({
           setSummary({ avg: data.summary.avg, count: data.summary.count });
         }
         toast({
-          title: ar ? 'تم نشر تقييمكِ 🌸' : 'Your review is live!',
-          description: ar ? 'شكرًا لمشاركة تجربتكِ — تقييمكِ ظاهر الآن للجميع.' : 'Thanks for sharing — your review is now visible to everyone.',
+          title: t.rvOkTitle,
+          description: t.rvOkDesc,
         });
         setForm({ name: '', text: '', rating: 5 });
         setPhoto(null);
         setFormOpen(false);
       } else {
-        toast({ title: data?.error || (ar ? 'تعذر حفظ التقييم' : 'Could not save review'), variant: 'destructive' });
+        toast({ title: data?.error || t.rvErrSave, variant: 'destructive' });
       }
     } catch {
-      toast({ title: ar ? 'خطأ في الاتصال' : 'Connection error', variant: 'destructive' });
+      toast({ title: t.rvErrConn, variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6" aria-label={ar ? 'التقييمات' : 'Reviews'}>
+    <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6" aria-label={t.rvSectionAria}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-xl font-extrabold">
           <MessageSquareQuote className="h-6 w-6 text-primary" aria-hidden />
-          {ar ? 'تقييمات العميلات' : 'Customer reviews'}
+          {t.rvTitle}
         </h2>
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1 text-sm font-bold">
             <Star className="h-4.5 w-4.5 fill-amber-400 text-amber-400" aria-hidden />
-            {summary.avg.toFixed(1)} · {summary.count} {ar ? 'تقييم' : 'reviews'}
+            {summary.avg.toFixed(1)} · {summary.count} {t.reviews}
           </span>
           <Button
             variant="outline"
@@ -186,18 +186,18 @@ export function ProductReviews({
             className="h-10 rounded-full border-primary/30 font-bold text-primary hover:bg-secondary"
           >
             <PenLine className="h-4 w-4" aria-hidden />
-            {ar ? 'اكتبي تقييمكِ' : 'Write a review'}
+            {t.rvWrite}
           </Button>
         </div>
       </div>
 
       {formOpen && (
         <div className="mt-5 rounded-3xl border border-border/70 bg-card p-5">
-          <h3 className="text-base font-extrabold">{ar ? 'شاركي تجربتكِ' : 'Share your experience'}</h3>
+          <h3 className="text-base font-extrabold">{t.rvShare}</h3>
           <div className="mt-4 grid gap-3.5">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold">{ar ? 'تقييمكِ:' : 'Your rating:'}</span>
-              <div className="flex items-center gap-0.5" role="radiogroup" aria-label={ar ? 'النجوم' : 'Stars'}>
+              <span className="text-sm font-bold">{t.rvYourRating}</span>
+              <div className="flex items-center gap-0.5" role="radiogroup" aria-label={t.rvStarsAria}>
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button
                     key={n}
@@ -220,41 +220,41 @@ export function ProductReviews({
               </div>
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="revName">{ar ? 'اسمكِ' : 'Your name'}</Label>
+              <Label htmlFor="revName">{t.rvName}</Label>
               <Input
                 id="revName"
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder={ar ? 'اسمكِ' : 'Your name'}
+                placeholder={t.rvName}
                 className="bg-background"
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="revText">{ar ? 'رأيكِ' : 'Your review'}</Label>
+              <Label htmlFor="revText">{t.rvOpinion}</Label>
               <Textarea
                 id="revText"
                 rows={3}
                 value={form.text}
                 onChange={(e) => setForm((f) => ({ ...f, text: e.target.value }))}
-                placeholder={ar ? 'اكتبي رأيكِ في المنتج...' : 'Write your review of the product...'}
+                placeholder={t.rvOpinionPh}
                 className="resize-none bg-background"
               />
             </div>
 
             {/* إرفاق صورة من تجربتكِ */}
             <div className="grid gap-1.5">
-              <Label>{ar ? 'إرفاق صورة من تجربتكِ' : 'Attach a photo of your experience'}</Label>
+              <Label>{t.rvPhotoLabel}</Label>
               {photo ? (
                 <div className="relative w-fit">
                   <img
                     src={photo}
-                    alt={ar ? 'صورة التجربة' : 'Review photo'}
+                    alt={t.rvPhotoAlt}
                     className="h-20 w-20 rounded-2xl border border-border object-cover"
                   />
                   <button
                     type="button"
                     onClick={() => setPhoto(null)}
-                    aria-label={ar ? 'إزالة الصورة' : 'Remove photo'}
+                    aria-label={t.rvPhotoRemoveAria}
                     className="absolute -top-2 -left-2 grid h-6 w-6 place-items-center rounded-full bg-foreground text-background shadow-md transition-transform hover:scale-110"
                   >
                     <X className="h-3.5 w-3.5" aria-hidden />
@@ -273,8 +273,8 @@ export function ProductReviews({
                     <ImagePlus className="h-4.5 w-4.5" aria-hidden />
                   )}
                   {uploading
-                    ? ar ? 'جاري رفع الصورة…' : 'Uploading…'
-                    : ar ? 'اختاري صورة من جهازكِ' : 'Choose a photo'}
+                    ? t.rvUploading
+                    : t.rvPickPhoto}
                 </button>
               )}
               <input
@@ -292,7 +292,7 @@ export function ProductReviews({
               className="h-11 w-fit rounded-full bg-primary px-6 font-bold text-primary-foreground"
             >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-              {ar ? 'نشر التقييم' : 'Post review'}
+              {t.rvSubmit}
             </Button>
           </div>
         </div>
@@ -319,7 +319,7 @@ export function ProductReviews({
                   {r.fresh && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
                       <BadgeCheck className="h-3 w-3" aria-hidden />
-                      {ar ? 'تقييمكِ' : 'yours'}
+                      {t.rvYoursBadge}
                     </span>
                   )}
                 </span>
@@ -341,7 +341,7 @@ export function ProductReviews({
                 <a href={r.image} target="_blank" rel="noreferrer" className="mt-2.5 block w-fit">
                   <img
                     src={r.image}
-                    alt={ar ? 'صورة من تجربة العيلة' : 'Customer photo'}
+                    alt={t.rvPhotoCustomerAlt}
                     loading="lazy"
                     decoding="async"
                     className="h-24 w-24 rounded-2xl border border-border object-cover transition-transform hover:scale-105"
@@ -356,9 +356,7 @@ export function ProductReviews({
         </ul>
       ) : (
         <p className="mt-5 rounded-3xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
-          {ar
-            ? 'لا توجد تقييمات منشورة بعد لهذا المنتج — كوني أول من يشارك تجربتها 🌸'
-            : 'No published reviews yet — be the first to share your experience 🌸'}
+          {t.rvEmpty}
         </p>
       )}
     </section>

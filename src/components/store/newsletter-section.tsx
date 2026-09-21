@@ -28,7 +28,8 @@ export function NewsletterSection({ copy }: { copy?: NewsletterCopy }) {
   const { ar, t } = useT();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<Status>('idle');
-  const sub = ar ? copy?.ar || 'إشعارات، وصول مبكر وتخفيضات حصرية لأعضاء النادي.' : copy?.en || t.newsletterSub;
+  // U57-TEXTS-COMPLETE — both languages fall back to the editable club copy
+  const sub = ar ? copy?.ar || t.newsletterSub : copy?.en || t.newsletterSub;
 
   const perks = [
     // U51-GLOBAL-TEXTS — perk chips are owner-editable (كل النصوص → نادي لوبنيل)

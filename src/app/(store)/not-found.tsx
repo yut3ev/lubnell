@@ -5,7 +5,8 @@
 // shopper who followed a stale link suddenly landed on an orphan page. This
 // boundary catches those misses INSIDE the store shell: same hero and
 // recovery shelf, wrapped by the live StoreHeader/StoreFooter.
-import { NotFoundHero, NotFoundShelf, fetchShelfProducts } from "@/components/store/not-found-parts";
+import { NotFoundHero, NotFoundShelf } from "@/components/store/not-found-parts";
+import { fetchShelfProducts } from "@/lib/nf-shelf";
 
 export const dynamic = "force-dynamic";
 

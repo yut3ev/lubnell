@@ -45,7 +45,7 @@ export function InfoHeader({ titleAr, titleEn }: { titleAr: string; titleEn?: st
     <div>
       <nav aria-label="مسار التنقل / Breadcrumb" className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
         <Link href="/" className="min-h-[44px] inline-flex items-center transition-colors hover:text-primary">
-          {ar ? 'الرئيسية' : t.home}
+          {t.home}
         </Link>
         <ChevronLeft className="h-4 w-4 rtl:rotate-180" aria-hidden />
         <span className="font-semibold text-foreground" aria-current="page">
@@ -197,13 +197,15 @@ export function ContactPanel({
   whatsappChannelUrl?: string;
   tiktokUrl?: string;
 }) {
-  const { ar } = useT();
-  const waText = encodeURIComponent(ar ? 'مرحبًا لوبنيل 🌸 لدي استفسار' : 'Hello LUBNÉL 🌸 I have a question');
+  const { ar, t } = useT();
+  // U57-TEXTS-COMPLETE — the WhatsApp prefill line is owner-editable
+  // (Studio → كل النصوص → صفحة تواصلي معنا).
+  const waText = encodeURIComponent(t.cpWaPrefill);
 
   const channels = [
-    { Icon: Mail, label: ar ? 'البريد الإلكتروني' : 'Email', value: email, href: `mailto:${email}`, ltr: true },
-    { Icon: Clock, label: ar ? 'ساعات الدعم' : 'Support hours', value: ar ? hoursAr : hoursEn },
-    { Icon: MapPin, label: ar ? 'العنوان' : 'Location', value: ar ? locationAr : locationEn },
+    { Icon: Mail, label: t.cpEmailLabel, value: email, href: `mailto:${email}`, ltr: true },
+    { Icon: Clock, label: t.cpHoursLabel, value: ar ? hoursAr : hoursEn },
+    { Icon: MapPin, label: t.cpAddressLabel, value: ar ? locationAr : locationEn },
   ];
 
   // U52-CONTACT-SOCIAL + owner follow-up: «خلي قناة الواتس والتيك توك متاحين
@@ -226,40 +228,40 @@ export function ContactPanel({
       key: 'wa-channel',
       Glyph: WhatsAppGlyph,
       chip: { background: '#25D366' },
-      labelAr: 'قناة الواتساب',
+      labelAr: t.cpWaChannel,
       labelEn: 'WhatsApp channel',
       href: whatsappChannelUrl || `https://wa.me/${waDigits}`,
-      badgeAr: whatsappChannelUrl ? 'انضمي للقناة' : 'تابعينا',
+      badgeAr: whatsappChannelUrl ? t.cpJoinChannel : t.cpFollowBadge,
       badgeEn: whatsappChannelUrl ? 'Join the channel' : 'Follow us',
     },
     {
       key: 'facebook',
       Glyph: FacebookGlyph,
       chip: { background: '#1877F2' },
-      labelAr: 'صفحة فيسبوك',
+      labelAr: t.cpFbPage,
       labelEn: 'Facebook page',
       href: facebookUrl || 'https://www.facebook.com',
-      badgeAr: 'تابعينا',
+      badgeAr: t.cpFollowBadge,
       badgeEn: 'Follow us',
     },
     {
       key: 'instagram',
       Glyph: InstagramGlyph,
       chip: { background: INSTAGRAM_GRADIENT },
-      labelAr: 'صفحة إنستجرام',
+      labelAr: t.cpIgPage,
       labelEn: 'Instagram page',
       href: instagramUrl || 'https://www.instagram.com',
-      badgeAr: 'تابعينا',
+      badgeAr: t.cpFollowBadge,
       badgeEn: 'Follow us',
     },
     {
       key: 'tiktok',
       Glyph: TikTokGlyph,
       chip: { background: '#010101' },
-      labelAr: 'صفحة تيك توك',
+      labelAr: t.cpTtPage,
       labelEn: 'TikTok page',
       href: tiktokUrl || 'https://www.tiktok.com',
-      badgeAr: 'تابعينا',
+      badgeAr: t.cpFollowBadge,
       badgeEn: 'Follow us',
     },
   ];
@@ -273,7 +275,7 @@ export function ContactPanel({
         className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-5 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-600/25 transition-all hover:-translate-y-0.5 hover:bg-emerald-700 active:translate-y-0 active:scale-[0.99]"
       >
         <MessageCircle className="h-5 w-5" aria-hidden />
-        {ar ? 'راسلينا على واتساب — رد سريع' : 'WhatsApp us — quick reply'}
+        {t.cpWaCta}
       </a>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -307,9 +309,9 @@ export function ContactPanel({
           / Facebook / Instagram / TikTok) — ALL live links (owner: «خليهم
           متاحين برضو»); unset URLs fall back instead of showing قريبًا, and
           the admin URL always wins when she adds it. */}
-      <section aria-label={ar ? 'تابعينا على السوشيال' : 'Follow LUBNÉL'} className="pt-3">
+      <section aria-label={t.cpSocialAria} className="pt-3">
         <h2 className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-primary">
-          {ar ? 'تابعينا على' : 'Follow us'}
+          {t.cpSocialTitle}
           <span className="h-px flex-1 bg-border" aria-hidden />
         </h2>
         <div className="mt-3.5 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -361,12 +363,14 @@ export function ShippingPanel({
   fee: number;
   freeThreshold: number;
 }) {
-  const { ar } = useT();
+  const { ar, t } = useT();
 
+  // U57-TEXTS-COMPLETE — fee chips are templates ({fee}/{threshold}) the
+  // owner can reword from كل النصوص → صفحة تواصلي معنا.
   const chips = [
-    { Icon: Truck, label: ar ? `رسوم الشحن ${fee} ج.م` : `Shipping fee ${fee} EGP` },
-    { Icon: Gift, label: ar ? `شحن مجاني فوق ${freeThreshold} ج.م` : `Free shipping over ${freeThreshold} EGP` },
-    { Icon: Banknote, label: ar ? 'الدفع عند الاستلام لكل المحافظات' : 'Cash on delivery nationwide' },
+    { Icon: Truck, label: t.cpShipFee.split('{fee}').join(String(fee)) },
+    { Icon: Gift, label: t.cpShipFree.split('{threshold}').join(String(freeThreshold)) },
+    { Icon: Banknote, label: t.cpCod },
   ];
 
   return (
@@ -385,17 +389,17 @@ export function ShippingPanel({
       <Card className="mt-6 overflow-hidden rounded-2xl border-border/60">
         <CardContent className="p-0">
           <p className="border-b border-border/60 px-5 py-3.5 text-sm font-bold text-primary">
-            {ar ? 'مدة التوصيل حسب المنطقة' : 'Delivery time by region'}
+            {t.cpDeliveryTitle}
           </p>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[420px] text-sm">
               <thead>
                 <tr className="border-b border-border/50 bg-secondary/40 text-xs font-bold text-muted-foreground">
                   <th scope="col" className="px-5 py-2.5 text-right font-bold">
-                    {ar ? 'المنطقة' : 'Region'}
+                    {t.cpZoneCol}
                   </th>
                   <th scope="col" className="px-5 py-2.5 text-right font-bold">
-                    {ar ? 'مدة التوصيل' : 'Delivery time'}
+                    {t.cpTimeCol}
                   </th>
                 </tr>
               </thead>
@@ -414,7 +418,7 @@ export function ShippingPanel({
 
       {/* processing steps */}
       <p className="mt-8 text-sm font-bold uppercase tracking-widest text-primary">
-        {ar ? 'رحلة طلبك' : 'Your order journey'}
+        {t.cpJourneyTitle}
       </p>
       <ol className="mt-4 grid gap-3 sm:grid-cols-2">
         {steps.map((s, i) => (

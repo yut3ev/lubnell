@@ -242,7 +242,7 @@ export function HomeSections({
               href="/c/all"
               className="inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/30 bg-card px-4 py-2 text-xs font-bold text-primary transition-all hover:bg-secondary active:scale-[0.97] sm:text-[13px]"
             >
-              {ar ? 'عرض الكل' : 'View all'}
+              {t.viewAll}
               <ArrowLeft className={`h-3.5 w-3.5 ${ar ? '' : 'rotate-180'}`} aria-hidden />
             </Link>
           </div>
@@ -275,7 +275,7 @@ export function HomeSections({
               className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-primary px-6 text-sm font-bold text-primary-foreground shadow-md transition-transform hover:scale-[1.03] active:scale-[0.97]"
             >
               <MessageCircleHeart className="h-4 w-4" aria-hidden />
-              {ar ? 'اسألي لُو الآن' : 'Ask Lou now'}
+              {t.louCta}
             </button>
           </div>
         ) : (
