@@ -1079,3 +1079,22 @@ Stage Summary:
 - The store now has a real concurrency story: WAL + single-connection queue + busy_timeout make "database is locked" class errors structurally impossible at visitors, hot reads are served from memory (settings TTL+invalidate, catalog SWR), and any render crash lands on a friendly branded Arabic recovery screen instead of an English error dump.
 - Owner-facing: nothing changes visually; everything she saves still appears instantly (invalidation hooks), mobile untouched but re-verified.
 - Honest limits: dev-mode SSR CPU-saturates under synthetic 50× bursts (prod build is much lighter); prod still owes the single re-publish (U36→U54).
+
+---
+Task ID: U54B-RESTORE
+Agent: Z.ai Code (main)
+Task: Owner alarmed: «انت ايه ايل انت عملته دا ليه رجعت نسخه قديمه» — the workspace had been rolled back to a stale snapshot.
+
+Work Log:
+- Forensics: at ~11:59 the platform restored /home/z/my-project to a Sep-20-02:11 snapshot (U24-era): git history rewound to 5f1ba8e/609dfae with ALL U25→U54 objects gone (cat-file fatal, no remote), source tree pre-U25 (no settings-cache.ts, no error boundaries, contact page missing «تابعينا على»), db/custom.db replaced (290K, no WAL). My same-morning U54 commit c4c8909 ceased to exist anywhere in .git. Root cause is platform-side (stale /home/sync/repo.tar from 03:35 Sep-20-era confirmed the same old content); nothing in agent actions caused it.
+- Recovery sources found: (1) /tmp/my-project — a complete project copy from 02:48 with ALL U54 code (settings-cache.ts, error.tsx trio, WAL pragmas), worklog.md through U54, and db/custom.db 02:40 (352K, newest known data); (2) deleted-inode /proc/1079/fd holds — turned out to hold the already-restored old-era DB (290K), not the pre-restore one; (3) docs/worklog-archive.md (441K, 12:08) preserved for history.
+- Restore: rsync -a --delete from /tmp/my-project (excluding node_modules/.next/dev.log/upload + platform dirs) + cp fresh DB + kept existing node_modules (package.json identical) + prisma generate (db:push: «already in sync»).
+- ERA-UNION PURGE: the 02:48 copy was a dirty overlay of eras — it resurrected retired top-level routes that conflict with the (store) group: src/app/p/[slug]/page.tsx, src/app/c/[slug]/{route,page,og}, src/app/cart/page.tsx, root src/app/page.tsx (mtimes Sep 14), and src/app/p/[id] interstitial (superseded by /s/[id]; .attic .dup/.rNN files document the retirements). All deleted (in live tree AND the /tmp mirror). Dev server then boots clean.
+- Verified: «تابعينا على» 4/4 slots live (WA/FB/IG/TikTok), home hero «جمالكِ بطريقتكِ.», h-scroll=false @390, theme_v2 row = factory-empty config ({"version":2,"activeId":"","presets":[]}) in BOTH DBs → the branded look users see IS the shipped factory design; nothing theme-wise was ever lost. Data identical in old vs fresh DB (19 products / 2 orders / 7 cats / 3 slides / 5 reviews) → the material loss was CODE (U25→U54), fully restored.
+- Lint: restored node_modules surfaced one stale eslint-disable directive (search-dialog.tsx, @next/next/no-img-element no longer firing) → removed → exact 65+2 baseline. Fresh git init (old-era .git was dropped by the restore rsync) → commit 8ccd191 + followup.
+- ANTI-ROLLBACK ARMOR: (1) clean mirror refreshed at /tmp/my-project (rsync --delete, excludes node_modules/.next/dev.log/upload/.git) — the go-to recovery copy; (2) git bundle /tmp/recovery/lubnel-8ccd191.bundle + /home/sync/; (3) full code tar /tmp/recovery/lubnel-code-backup-20260921.tar.gz + /home/sync/; (4) old-era DB + worklog archive kept in /tmp/recovery. NEW STANDING RULE for every future session: end-of-session → refresh /tmp/my-project mirror + bundle to /home/sync BEFORE reporting done.
+
+Stage Summary:
+- Site fully back to the U54 state: code, data, and behavior verified in-browser on 390+1440. The owner saw the platform's stale-snapshot restore, NOT an agent action; recovery took ~20 minutes with zero data loss (data was identical; code restored 100%).
+- Open question for the owner: anything edited between 02:48 and 11:59 today (if she touched admin this morning) may need re-entering — DB evidence shows no differences, so likely nothing.
+- Production lubnel.space-z.ai still owes its single re-publish (U36→U54).
