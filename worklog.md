@@ -1241,3 +1241,17 @@ Stage Summary:
 - 3 ready articles are live (عطور / روتين البشرة / أفكار هدايا) with honest internal links to products; all new strings are owner-editable in «كل النصوص» (group المدونة).
 - Product images on disk vs DB names have drifted (mist product shows a Vaseline photo) — flagged for the owner; her data, not changed.
 - Production lubnel.space-z.ai STILL owes its single re-publish (U36→U61) — sandbox shows it all now.
+
+---
+Task ID: U61B-PREVIEW-RESTART
+Agent: Z.ai Code (main)
+Task: Owner: «البرفيو» + screenshot stuck on Z logo — preview down.
+
+Work Log:
+- Diagnosis: next-server process GONE (only a bun --hot mini-service survived); U60+U61 work itself intact and committed (3d0b587, 4434847). Crash is the documented dev-server flakiness, not a code fault.
+- Fix: pkill leftovers → (setsid nohup bun run dev >> dev.log 2>&1 < /dev/null &) → next-server v16.1.3 up.
+- Verify: curl warm /, /blog, /blog/perfume-guide, /info/about, /sitemap.xml, /p/strawberry-body-mist all 200; agent-browser home + /blog render fully (hero slider, offers, 3 journal cards), console clean (only HMR logs), dev.log 0 Error/ReferenceError lines.
+- Housekeeping: old disabled cron 404156 (exec limits) deleted → recreated as 404444, same 15-min webDevReview schedule.
+
+Stage Summary:
+- Preview restored and browser-verified; no code changes needed this round. U60/U61 remain the latest shipped work. Owner still owes the single re-publish on lubnel.space-z.ai (U36→U61).
