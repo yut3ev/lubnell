@@ -1194,3 +1194,22 @@ Stage Summary:
 - All 6 owner checklist items pass on sandbox: real H1, definitional sentence first paragraph, meta description = her exact sentence (لوبنيل+Lubnel), brand hero image with keyword-rich alt, footer+nav internal anchors, NO noindex anywhere (platform included). Bonus: /robots.txt 500 fixed + proper robots with Sitemap line after republish.
 - Owner-editable as always via Studio → «الصفحات» → عن لوبنيل (sentence is normal content she can tweak).
 - Production lubnel.space-z.ai STILL owes its single re-publish (U36→U59) — sandbox shows it all now; prod gets it after she publishes. Prod currently already passes items 1/5/6.
+
+---
+Task ID: U60-CACHE-FLASH
+Agent: Z.ai Code (main)
+Task: Owner: «فيه مشكله ف الكاش — لما حد يخش الموقع يظهرله جزء من نسخه قديمه لمده ثانيه بعدين تظهر النسخه الجديده باخر التعديلات الي عملتها من البانل» — stale-content flash on entry.
+
+Work Log:
+- Audit trail: no service worker; zustand persist = cart/lang only (skipHydration, no content); settings/texts/theme/sections all server-rendered fresh via settings-cache (10s TTL + invalidated on every admin save — verified wiring); home/PDP/category pages read DB directly (force-dynamic). NOT the cause.
+- ROOT CAUSE found in src/components/store/hero-slider.tsx: useState(SLIDES) hardcoded fallback → client fetch('/api/store/slides') swaps in DB slides ~1s after mount (with setIdx(0) reset). Her DB slide 1 = same id 'soft-ritual' but title blanked in Studio → visitors literally saw the OLD title «جمالك يبدأ من هنا.» flash for a second, then her edited (blank) hero — exactly «جزء من نسخة قديمة لمده ثانية».
+- Fix: page.tsx Home() adds db.heroSlide.findMany (active, sortOrder) to the existing Promise.all (+ heroSlideRows destructuring) → maps with the exact same field mapping the fetch used → passes initialSlides to HeroSlider. HeroSlider: useState(initialSlides?.length ? initialSlides : SLIDES) + client fetch early-returns when server slides provided. First paint = her current slides; zero swap; one less request; fallback preserved for empty DB.
+- EN ROUTE BUG (self-inflicted, caught by SSR grep before commit): forgot heroSlideRows in the destructuring → ReferenceError on Home SSR (error boundary shell served). Fixed; lesson: always grep served HTML for the new marker AND for ReferenceError after touching server components.
+- Hardening: /api/store/bootstrap GET response now sends Cache-Control: no-store (was the only public API without it — consumers used no-store on fetch but response side was open to heuristic/proxy caching).
+- Verify: SSR HTML: DB-only markers present (skin-edit 1, soft-glow 1, hero-2-wide 2, hero-3-bag 2, «اكتشفي اختياراتك» 2) + fallback title «جمالك يبدأ» = 0 + no ReferenceError. Browser: performance.getEntriesByType('resource') has NO /api/store/slides entry, hero renders 3 DB imgs + her titles/CTAs, console clean, 390+1440 screenshots clean. bootstrap header curl-verified.
+- OPS: lint 65+2 exact (a self-added eslint-disable briefly created a 3rd warning → removed), build Compiled successfully EXIT 0, .next-verify/.tmp cleaned, dev restarted + warmed (home/bootstrap 200).
+
+Stage Summary:
+- The stale flash is dead: hero slides are server-rendered like every other section — visitors' first paint is her latest panel state; nothing swaps in afterwards.
+- Bootstrap responses now explicitly no-store at the HTTP layer.
+- Production lubnel.space-z.ai still owes its single re-publish (U36→U60) for visitors there to stop seeing any residual staleness.
