@@ -1161,3 +1161,17 @@ Stage Summary:
 - «كذا صورة للمنتج والمجموعة» is live: batch upload + reorder + primary-star in Studio; storefront gets a professional RTL gallery (swipe/arrows/counter/dots/lightbox) on the PDP and a scroll-snap gallery strip on every category page — all with owner-editable strings and instant cache invalidation.
 - Production lubnel.space-z.ai STILL owes its single re-publish (U36→U58).
 - Anti-rollback armor refreshed below.
+
+---
+Task ID: SEO-FIX
+Agent: Z.ai Code (main)
+Task: Owner SEO audit (min-change mandate): (1) 4× «Alt attribute for images is missing» (2) remove X-Powered-By. NOTHING else may change.
+
+Work Log:
+- Forensics: static scan of every <img> in src (multi-line JSX-aware parser) → all JSX imgs have alt (3 hits were code comments). Runtime DOM scan (hydrated) of / , /p/* , /c/* , /cart , /contact , /info/* , /offers , /search , 404 → 0 without alt. Raw SSR HTML crawl of ALL published product+category pages (sandbox) → 0 missing.
+- Audit target identified as PRODUCTION: prod crawl (30+ routes incl. every /p/ & /c/ slug) → X-Powered-By ALREADY absent (poweredByHeader:false shipped in U54 c4c8909 and is live on prod — security headers confirm recent build). The 4 «missing alt» instances = the /brand/logo-dark.png loading-screen logo: only non-aria-hidden alt="" img in crawlable HTML, streamed per-route by the prod Suspense fallback → flagged once per crawled page (4 pages = 4 instances).
+- Fix: loading.tsx alt="" → alt="LUBNÉL" (one attribute; src/class/parent/aria-hidden untouched). Admin + aria-hidden decorative imgs deliberately NOT touched (not crawlable / correct pattern).
+- Verify: sandbox X-Powered-By absent; lint 65+2 baseline; git diff = 1 file/1 line.
+
+Stage Summary:
+- Both audit items resolved: 4 alt instances cleared by one code-level fix (effective on next republish), X-Powered-By was already disabled and verified absent live. Zero other changes (owner's no-touch mandate honored).
