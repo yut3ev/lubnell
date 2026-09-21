@@ -8,6 +8,7 @@ import { ReviewsSection } from '@/components/store/reviews-section';
 import { NewsletterSection } from '@/components/store/newsletter-section';
 import { resolveSectionTexts } from '@/lib/section-texts';
 import { resolveHomeSections } from '@/lib/home-sections-config';
+import { siteUrl } from '@/lib/site-url'; // U61-JSONLD
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,7 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
+  const base = siteUrl();
   const [categories, products, reviews, sectionRows, homeSectionRows, reviewStats, heroSlideRows] = await Promise.all([
     db.category.findMany({ orderBy: { sortOrder: 'asc' } }),
     db.product.findMany({
@@ -63,11 +65,17 @@ export default async function Home() {
 
   // U22 — newsletter copy from Studio → النصوص والفوتر (نص النشرة البريدية)
   let newsletterCopy: { ar?: string; en?: string } = {};
+  // U61-JSONLD — real social profiles for the Organization sameAs block
+  const socialUrls: string[] = [];
   try {
     const textRows = await db.storeSettings.findMany({ where: { key: 'texts' } });
     const t = JSON.parse(textRows[0]?.value ?? '{}') as Record<string, unknown>;
     if (typeof t.newsletterAr === 'string' && t.newsletterAr.trim()) newsletterCopy.ar = t.newsletterAr.trim();
     if (typeof t.newsletterEn === 'string' && t.newsletterEn.trim()) newsletterCopy.en = t.newsletterEn.trim();
+    for (const key of ['instagramUrl', 'facebookUrl', 'tiktokUrl', 'whatsappChannelUrl']) {
+      const v = t[key];
+      if (typeof v === 'string' && v.trim()) socialUrls.push(v.trim());
+    }
   } catch {
     // defaults stay in the component
   }
@@ -132,6 +140,40 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col">
+      {/* U61-JSONLD — Organization (brand entity + social profiles) and WebSite
+          (sitelinks SearchAction → /search?q=) structured data for the homepage. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@graph': [
+              {
+                '@type': 'Organization',
+                '@id': `${base}/#org`,
+                name: 'LUBNÉL',
+                alternateName: 'لوبنيل',
+                url: base,
+                logo: `${base}/brand/logo-dark.png`,
+                ...(socialUrls.length ? { sameAs: socialUrls } : {}),
+              },
+              {
+                '@type': 'WebSite',
+                '@id': `${base}/#site`,
+                url: base,
+                name: 'LUBNÉL — لوبنيل',
+                inLanguage: 'ar',
+                publisher: { '@id': `${base}/#org` },
+                potentialAction: {
+                  '@type': 'SearchAction',
+                  target: { '@type': 'EntryPoint', urlTemplate: `${base}/search?q={search_term_string}` },
+                  'query-input': 'required name=search_term_string',
+                },
+              },
+            ],
+          }).replace(/</g, '\\u003c'),
+        }}
+      />
       {homeCfg.hero.visible && (
         <HeroSlider template={homeCfg.hero.template} layout={homeCfg.hero} initialSlides={heroSlides} />
       )}

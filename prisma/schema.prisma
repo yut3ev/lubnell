@@ -202,6 +202,27 @@ model Subscriber {
   createdAt DateTime @default(now())
 }
 
+// U61-BLOG — the store journal: SEO articles (مقالات) written by the owner
+// from Studio → «المدونة», served at /blog + /blog/[slug] with BlogPosting
+// JSON-LD and sitemap entries. productSlugs holds a JSON string array of
+// featured product slugs rendered as shoppable cards under the article.
+model Post {
+  id           String    @id @default(cuid())
+  slug         String    @unique
+  titleAr      String
+  titleEn      String    @default("")
+  excerptAr    String    @default("")
+  excerptEn    String    @default("")
+  contentAr    String
+  contentEn    String    @default("")
+  coverImage   String?
+  productSlugs String    @default("[]") // JSON string array (max 4)
+  published    Boolean   @default(false)
+  publishedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
 // VISITS-1 — storefront visitor log («سجل الزيارات» in Studio).
 // One Visit row per browser session (client UUID); every tracked action
 // appends a VisitEvent. Powers the admin visits section: IP, device,

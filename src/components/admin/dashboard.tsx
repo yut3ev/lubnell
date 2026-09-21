@@ -19,6 +19,7 @@ import {
   Languages,
   Menu,
   Minus,
+  Newspaper,
   Package,
   Palette,
   Receipt,
@@ -47,6 +48,7 @@ import CustomersSection from './sections/customers';
 import MediaSection from './sections/media';
 import HomepageSection from './sections/homepage';
 import PagesSection from './sections/pages';
+import BlogSection from './sections/blog';
 import AssistantSection from './sections/assistant';
 import AnalyticsSection from './sections/analytics';
 import SettingsSection from './sections/settings';
@@ -92,6 +94,7 @@ const NAV: { id: string; label: string; icon: React.ComponentType<{ className?: 
   { id: 'homepage', label: 'الصفحة الرئيسية', icon: Home, perm: 'homepage.read' },
   { id: 'coupons', label: 'العروض والكوبونات', icon: Ticket, perm: 'coupons.read' },
   { id: 'pages', label: 'الصفحات', icon: FileText, perm: 'pages.read' },
+  { id: 'blog', label: 'المدونة', icon: Newspaper, perm: 'pages.read' }, // U61-BLOG — same perms as pages (owner implicit)
   // U14 — the owner asked for team members («الأمن») to be able to edit any
   // texts/designs/images across the site. These three are now PERMISSION-gated
   // (settings.read / sections.read) instead of hard owner-only, so staff
@@ -217,6 +220,7 @@ export default function AdminDashboard({ admin, onLogout }: { admin: AdminInfo; 
           {section === 'homepage' && <HomepageSection />}
           {section === 'coupons' && <CouponsSection />}
           {section === 'pages' && <PagesSection />}
+          {section === 'blog' && <BlogSection />}
           {section === 'sectionstexts' && <SectionsEditor />}
           {section === 'alltexts' && <TextEverything />}
           {section === 'content' && <ContentSection />}

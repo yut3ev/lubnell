@@ -119,6 +119,12 @@ export function StoreFooter({
                   {ar ? 'عن لوبنيل' : 'About us'}
                 </Link>
               </li>
+              {/* U61-BLOG — internal link to the journal (SEO) */}
+              <li>
+                <Link className="transition-colors hover:text-primary" href="/blog">
+                  {t.navBlog}
+                </Link>
+              </li>
               <li>
                 <Link className="transition-colors hover:text-primary" href="/info/contact">
                   {ar ? 'تواصلي معنا' : 'Contact us'}

@@ -24,6 +24,7 @@ export const TEXT_GROUPS = [
   { id: 'club', title: 'نادي لوبنيل' },
   { id: 'contact', title: 'صفحة تواصلي معنا' },
   { id: 'misc', title: 'صفحات ومكونات عامة' },
+  { id: 'blog', title: 'المدونة' }, // U61-BLOG
   { id: 'footer', title: 'الفوتر والمساعد' },
 ] as const;
 
@@ -229,6 +230,14 @@ export const TEXT_META: Record<string, { label: string; group: TextGroupId }> = 
   fbtToast: { label: 'تنبيه إضافة المجموعة — العنوان', group: 'misc' },
   fbtToastSub: { label: 'تنبيه إضافة المجموعة — الوصف ({n} = العدد)', group: 'misc' },
   viewAll: { label: 'زر عرض الكل', group: 'misc' },
+  // U61-BLOG — المدونة
+  navBlog: { label: 'قائمة المعلومات — المدونة', group: 'menus' },
+  blogReadMore: { label: 'بطاقة المقال — زر اقرئي المقال', group: 'blog' },
+  blogEmpty: { label: 'المدونة من غير مقالات — النص', group: 'blog' },
+  blogProductsTitle: { label: 'منتجات من المقال — العنوان', group: 'blog' },
+  blogMoreTitle: { label: 'مقالات أخرى — العنوان', group: 'blog' },
+  blogBack: { label: 'زر كل المقالات', group: 'blog' },
+  blogAllSub: { label: 'صفحة المدونة — الوصف', group: 'blog' },
 };
 
 export const TEXT_KEYS = Object.keys(TEXT_META);

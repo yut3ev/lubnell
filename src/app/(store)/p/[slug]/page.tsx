@@ -219,6 +219,28 @@ export default async function ProductPage({
         }}
       />
 
+      {/* U61-JSONLD — BreadcrumbList: الرئيسية ← القسم ← المنتج (Google
+          breadcrumbs rich result alongside the existing Product schema). */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'الرئيسية', item: base },
+              {
+                '@type': 'ListItem',
+                position: 2,
+                name: product.category.nameAr,
+                item: `${base}/c/${product.category.slug}`,
+              },
+              { '@type': 'ListItem', position: 3, name: product.nameAr, item: `${base}/p/${product.slug}` },
+            ],
+          }).replace(/</g, '\\u003c'),
+        }}
+      />
+
       <ProductDetail product={pdpProduct} whatsapp={storeWhatsapp} deliveryTime={deliveryTime} />
 
       {/* U14 — Frequently Bought Together (same-category companions) */}

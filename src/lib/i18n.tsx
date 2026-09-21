@@ -141,6 +141,7 @@ export const DICT = {
     navReturns: 'الاستبدال والإرجاع',
     navFaq: 'الأسئلة الشائعة',
     navContact: 'تواصلي معنا',
+    navBlog: 'المدونة',
     navAdmin: 'لوحة الإدارة',
     navOffers: '🔥 عروض اليوم',
     navMainAria: 'التنقل الرئيسي',
@@ -226,6 +227,13 @@ export const DICT = {
     fbtToast: 'تمت إضافة المجموعة للسلة ✓',
     fbtToastSub: '{n} قطع — كمّلي طلبكِ من السلة',
     viewAll: 'عرض الكل',
+    // U61-BLOG — المدونة
+    blogReadMore: 'اقرئي المقال',
+    blogEmpty: 'لا مقالات منشورة بعد — قريبًا تلاقين هنا نصايح جميلة!',
+    blogProductsTitle: 'منتجات من المقال',
+    blogMoreTitle: 'مقالات أخرى',
+    blogBack: 'كل المقالات',
+    blogAllSub: 'نصايح ومقالات من لوبنيل في العناية والجمال والعطور',
   },
   en: {
     announcement: 'Complimentary delivery over 900 EGP · Nationwide shipping',
@@ -334,6 +342,7 @@ export const DICT = {
     navReturns: 'Returns & exchange',
     navFaq: 'FAQ',
     navContact: 'Contact us',
+    navBlog: 'Journal',
     navAdmin: 'Admin dashboard',
     navOffers: '🔥 Today’s offers',
     navMainAria: 'Main navigation',
@@ -419,6 +428,13 @@ export const DICT = {
     fbtToast: 'Bundle added to bag ✓',
     fbtToastSub: '{n} items added',
     viewAll: 'View all',
+    // U61-BLOG — journal
+    blogReadMore: 'Read the article',
+    blogEmpty: 'No published articles yet — beauty tips are coming soon!',
+    blogProductsTitle: 'Featured in this article',
+    blogMoreTitle: 'More articles',
+    blogBack: 'All articles',
+    blogAllSub: 'Tips and stories from LUBNÉL on skincare, beauty and fragrance',
   },
 } as const;
 

@@ -14,6 +14,7 @@ import {
   RefreshCcw,
   HelpCircle,
   MessageCircle,
+  BookOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -47,8 +48,9 @@ const NAV: { href: string; k: 'home' | 'allProducts' | 'navSets' | 'navMakeup' |
 
 // U21-MENU — the mobile sheet gets a proper information section instead of
 // dead empty space under the category links.
-const INFO: { href: string; k: 'navAbout' | 'navShipping' | 'navReturns' | 'navFaq' | 'navContact'; icon: typeof Info }[] = [
+const INFO: { href: string; k: 'navAbout' | 'navShipping' | 'navReturns' | 'navFaq' | 'navContact' | 'navBlog'; icon: typeof Info }[] = [
   { href: '/info/about', k: 'navAbout', icon: Info },
+  { href: '/blog', k: 'navBlog', icon: BookOpen }, // U61-BLOG
   { href: '/info/shipping', k: 'navShipping', icon: Truck },
   { href: '/info/returns', k: 'navReturns', icon: RefreshCcw },
   { href: '/info/faq', k: 'navFaq', icon: HelpCircle },

@@ -15,15 +15,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/c/all`, changeFrequency: 'daily', priority: 0.9 },
     { url: `${base}/search`, changeFrequency: 'weekly', priority: 0.4 },
     { url: `${base}/info/about`, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${base}/blog`, changeFrequency: 'weekly', priority: 0.6 }, // U61-BLOG
     { url: `${base}/info/shipping`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${base}/info/returns`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${base}/info/faq`, changeFrequency: 'monthly', priority: 0.5 },
   ];
 
   try {
-    const [products, categories] = await Promise.all([
+    const [products, categories, posts] = await Promise.all([
       db.product.findMany({ where: { published: true }, select: { slug: true, createdAt: true } }),
       db.category.findMany({ select: { slug: true } }),
+      // U61-BLOG — published journal articles
+      db.post.findMany({ where: { published: true }, select: { slug: true, updatedAt: true } }),
     ]);
 
     const productRoutes: MetadataRoute.Sitemap = products.map((p) => ({
@@ -39,7 +42,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-    return [...staticRoutes, ...productRoutes, ...categoryRoutes];
+    const postRoutes: MetadataRoute.Sitemap = posts.map((p) => ({
+      url: `${base}/blog/${p.slug}`,
+      lastModified: p.updatedAt,
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    }));
+
+    return [...staticRoutes, ...productRoutes, ...categoryRoutes, ...postRoutes];
   } catch {
     // DB unavailable — ship the static skeleton rather than a 500
     return staticRoutes;
