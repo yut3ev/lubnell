@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MessageCircle, Truck, RotateCcw, ShieldCheck, Sparkles } from 'lucide-react';
@@ -166,6 +167,21 @@ export default async function InfoPage({
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
       <InfoHeader titleAr={titleAr} titleEn={titleEn} />
+
+      {/* U59-SEO-ABOUT — brand hero with keyword-rich alt (لوبنيل/LUBNÉL):
+          the page previously had zero images, so crawlers got no image signal. */}
+      {slug === 'about' && (
+        <figure className="mt-8 overflow-hidden rounded-3xl border border-border/60 shadow-sm">
+          <Image
+            src="/og-image.jpg"
+            alt="لوبنيل LUBNÉL — متجر إلكتروني مصري لبيع مستحضرات التجميل والعناية والعطور الأصلية أونلاين"
+            width={1200}
+            height={630}
+            sizes="(max-width: 640px) 100vw, 768px"
+            className="h-auto w-full object-cover"
+          />
+        </figure>
+      )}
 
       {slug === 'contact' && (
         <ContactPanel

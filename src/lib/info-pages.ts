@@ -65,6 +65,8 @@ export type InfoPageSeed = {
   titleEn: string;
   /** short meta description (Arabic) used by generateMetadata */
   descAr: string;
+  /** optional English mirror of descAr (documented for the EN toggle) */
+  descEn?: string;
   /** paragraphs separated by a blank line; lines starting with «•» render as bullet lists */
   contentAr: string;
   contentEn: string;
@@ -194,8 +196,10 @@ export const DEFAULT_INFO_PAGES: Record<InfoSlug, InfoPageSeed> = {
     titleAr: 'عن لوبنيل',
     titleEn: 'About LUBNÉL',
     descAr:
-      'لوبنيل علامة جمال مصرية تقدّم منتجات أصلية 100% — مكياج وعناية وعطور وصناديق هدايا فاخرة، مع تسوّق سهل عبر واتساب وتوصيل لكل محافظات مصر.',
-    contentAr: `وُلدت لوبنيل LUBNÉL في القاهرة من فكرة بسيطة: الجمال هدية تستحق أن تُقدَّم بإتقان. بدأنا كعلامة مصرية شغوفة بالتفاصيل — من اختيار المنتج قطعةً قطعة، إلى التغليف الذي يليق بمن تحبين — وحولنا طقوس الجمال اليومية إلى لحظات فاخرة تصلك أينما كنتِ في مصر.
+      'تعرّفي على لوبنيل (Lubnel) — متجر إلكتروني مصري لبيع مستحضرات التجميل والعناية والعطور الأصلية أونلاين، مع صناديق هدايا فاخرة وتوصيل لكل محافظات مصر.',
+    contentAr: `لوبنيل (Lubnel) هو متجر إلكتروني مصري لبيع مستحضرات التجميل والعناية والعطور الأصلية أونلاين.
+
+وُلدت لوبنيل LUBNÉL في القاهرة من فكرة بسيطة: الجمال هدية تستحق أن تُقدَّم بإتقان. بدأنا كعلامة مصرية شغوفة بالتفاصيل — من اختيار المنتج قطعةً قطعة، إلى التغليف الذي يليق بمن تحبين — وحولنا طقوس الجمال اليومية إلى لحظات فاخرة تصلك أينما كنتِ في مصر.
 
 نختار كل منتج بعناية من موزعين معتمدين فقط: مكياج أصلي، عناية بالبشرة والجسم، وعطور مختارة، وصناديق هدايا تُجمَّع يدويًا حسب المناسبة. لا نبيع أي شيء لا نستخدمه ونحبه بأنفسنا.
 
@@ -206,7 +210,11 @@ export const DEFAULT_INFO_PAGES: Record<InfoSlug, InfoPageSeed> = {
 • شحن سريع لكل محافظات مصر خلال 2–5 أيام عمل، ومجاني للطلبات فوق 900 ج.م.
 
 فريقنا متاح يوميًا من 10 صباحًا حتى 10 مساءً لمساعدتك في اختيار الهدية المثالية أو الإجابة عن أي استفسار. رسالتنا بسيطة ومكتوبة على شعارنا: جمالٌ يُهدى بكل حب.`,
-    contentEn: `LUBNÉL was born in Cairo from a simple idea: beauty is a gift that deserves to be given perfectly. We started as an Egyptian brand obsessed with detail — from choosing every product piece by piece, to packaging worthy of the person you love — turning daily beauty rituals into luxurious moments delivered anywhere in Egypt.
+    descEn:
+      'Discover Lubnel (لوبنيل) — an Egyptian online store for original makeup, skincare, and fragrances online, with luxury gift boxes delivered across Egypt.',
+    contentEn: `Lubnel (لوبنيل) is an Egyptian online store selling original makeup, skincare, and fragrances online — beauty gifted with love, delivered across Egypt.
+
+LUBNÉL was born in Cairo from a simple idea: beauty is a gift that deserves to be given perfectly. We started as an Egyptian brand obsessed with detail — from choosing every product piece by piece, to packaging worthy of the person you love — turning daily beauty rituals into luxurious moments delivered anywhere in Egypt.
 
 Every item is handpicked from authorized distributors only: original makeup, skin & body care, curated fragrances, and gift boxes assembled by hand for each occasion. We never sell anything we would not use and love ourselves.
 
