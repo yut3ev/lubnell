@@ -142,19 +142,27 @@ export function HeroSlider({
   template = 'slider',
   height = 'default',
   layout,
+  initialSlides,
 }: {
   template?: 'slider' | 'banner';
   height?: 'short' | 'default' | 'tall' | 'fill';
   /** U22 — full الأبعاد والمُظهر config; overrides `height` when present */
   layout?: HeroLayout;
+  /** U60-CACHE-FLASH — DB slides passed from the server renderer: the first
+   * paint IS the owner's current slides, so visitors never see the hardcoded
+   * fallback flash for a second before the client fetch swaps it (and the
+   * client fetch is skipped entirely — no extra request, no setIdx(0) jump). */
+  initialSlides?: Slide[];
 } = {}) {
   const { ar } = useT();
-  const [slides, setSlides] = useState<Slide[]>(SLIDES);
+  const [slides, setSlides] = useState<Slide[]>(initialSlides?.length ? initialSlides : SLIDES);
   const [idx, setIdx] = useState(0);
   const touch = useRef<{ x: number; y: number } | null>(null);
 
-  // DB slides win when present — edited live from the admin homepage section
+  // DB slides win when present — edited live from the admin homepage section.
+  // Skipped entirely when the server already provided them (U60-CACHE-FLASH).
   useEffect(() => {
+    if (initialSlides?.length) return;
     let alive = true;
     fetch('/api/store/slides', { cache: 'no-store' })
       .then((r) => r.json())

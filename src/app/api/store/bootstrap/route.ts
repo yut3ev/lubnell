@@ -110,27 +110,33 @@ export async function GET() {
     const minOrderTotal = num(bag.minOrderTotal, 0);
     const storeName = str(bag.storeName, DEFAULTS.storeName);
 
-    return NextResponse.json({
-      ok: true,
-      site: {
-        name: storeName,
-        nameAr: 'لوبنيل',
-        tagline: 'جمالٌ يُهدى بكل حب',
+    return NextResponse.json(
+      {
+        ok: true,
+        site: {
+          name: storeName,
+          nameAr: 'لوبنيل',
+          tagline: 'جمالٌ يُهدى بكل حب',
+        },
+        stats: { products: counts[0], categories: counts[1] },
+        categories,
+        featured,
+        // order settings (top-level, as the cart/checkout expect)
+        storeName,
+        shippingFee,
+        freeShippingThreshold,
+        whatsappNumber,
+        whatsappMessage: str(bag.whatsappMessage, DEFAULTS.whatsappMessage),
+        codEnabled,
+        currency,
+        deliveryTime,
+        minOrderTotal,
       },
-      stats: { products: counts[0], categories: counts[1] },
-      categories,
-      featured,
-      // order settings (top-level, as the cart/checkout expect)
-      storeName,
-      shippingFee,
-      freeShippingThreshold,
-      whatsappNumber,
-      whatsappMessage: str(bag.whatsappMessage, DEFAULTS.whatsappMessage),
-      codEnabled,
-      currency,
-      deliveryTime,
-      minOrderTotal,
-    });
+      // U60-CACHE-FLASH — never let any HTTP cache (browser/proxy) serve a
+      // stale bootstrap payload; consumers already fetch with no-store, this
+      // closes the response side too.
+      { headers: { 'Cache-Control': 'no-store' } }
+    );
   } catch (err) {
     console.error('[bootstrap]', err);
     return NextResponse.json(

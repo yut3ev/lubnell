@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const [categories, products, reviews, sectionRows, homeSectionRows, reviewStats] = await Promise.all([
+  const [categories, products, reviews, sectionRows, homeSectionRows, reviewStats, heroSlideRows] = await Promise.all([
     db.category.findMany({ orderBy: { sortOrder: 'asc' } }),
     db.product.findMany({
       where: { published: true },
@@ -44,6 +44,12 @@ export default async function Home() {
         _avg: { rating: true },
         _count: { _all: true },
       })
+      .catch(() => []),
+    // U60-CACHE-FLASH — hero slides render SERVER-SIDE now: the first paint is
+    // the owner's CURRENT slides, so visitors never see the hardcoded fallback
+    // hero flash for a second before the old client fetch swapped it in.
+    db.heroSlide
+      .findMany({ where: { active: true }, orderBy: { sortOrder: 'asc' } })
       .catch(() => []),
   ]);
 
@@ -106,10 +112,28 @@ export default async function Home() {
     };
   };
 
+  // U60-CACHE-FLASH — same mapping the old client fetch used; empty DB → the
+  // component keeps its shipped fallback slides.
+  const heroSlides = heroSlideRows.map((s) => ({
+    id: String(s.id),
+    image: String(s.image),
+    imageMobile: s.imageMobile || undefined,
+    video: s.video || undefined,
+    eyebrowAr: s.eyebrow || 'LUBNÉL',
+    eyebrowEn: s.eyebrow || 'LUBNÉL',
+    titleAr: s.titleAr || '',
+    titleEn: s.titleEn || '',
+    bodyAr: s.bodyAr || '',
+    bodyEn: s.bodyEn || '',
+    ctaAr: s.ctaAr || 'تسوقي الآن',
+    ctaEn: s.ctaEn || 'Shop now',
+    href: s.href || '/',
+  }));
+
   return (
     <div className="flex flex-col">
       {homeCfg.hero.visible && (
-        <HeroSlider template={homeCfg.hero.template} layout={homeCfg.hero} />
+        <HeroSlider template={homeCfg.hero.template} layout={homeCfg.hero} initialSlides={heroSlides} />
       )}
       {/* U10-MIDNIGHT — her approved homepage (screenshot: brave_nA0QaJ79Nn.jpg)
           shows «عروض اليوم» DIRECTLY under the hero — the offers section leads
