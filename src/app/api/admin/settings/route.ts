@@ -4,6 +4,7 @@
 // independent StoreSettings row stored as JSON, merged on save.
 import { invalidateSettings } from "@/lib/settings-cache"; // U54-PERF-ROBUST
 import { jsonOk, jsonError, parseBody, requireAdmin, audit } from "@/lib/api-helpers";
+import { db } from "@/lib/db"; // U56-HOTFIX — bare `db` ReferenceError'd at runtime (500 on every settings save)
 
 export const dynamic = "force-dynamic";
 

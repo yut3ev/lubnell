@@ -4,6 +4,7 @@
 import { invalidateSettings } from "@/lib/settings-cache"; // U54-PERF-ROBUST
 import { jsonOk, jsonError, parseBody, requireAdmin, audit } from "@/lib/api-helpers";
 import { sanitizeTextBag } from "@/lib/text-keys";
+import { db } from "@/lib/db"; // U56-HOTFIX — bare `db` ReferenceError'd at runtime
 
 export const dynamic = "force-dynamic";
 

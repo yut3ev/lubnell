@@ -1098,3 +1098,23 @@ Stage Summary:
 - Site fully back to the U54 state: code, data, and behavior verified in-browser on 390+1440. The owner saw the platform's stale-snapshot restore, NOT an agent action; recovery took ~20 minutes with zero data loss (data was identical; code restored 100%).
 - Open question for the owner: anything edited between 02:48 and 11:59 today (if she touched admin this morning) may need re-entering — DB evidence shows no differences, so likely nothing.
 - Production lubnel.space-z.ai still owes its single re-publish (U36→U54).
+
+---
+Task ID: U56-HOTFIX
+Agent: Z.ai Code (main)
+Task: Owner: «حل مشكهل عدم التعديل او رفه الصور بيظهرلي خطا» — every admin save (settings/texts/theme/sections) and every save-after-image-upload threw «تعذر حفظ الإعدادات» (screenshot: StoreTab «الفوتر والروابط» card with her real social links + destructive toast).
+
+Work Log:
+- Forensics: dev.log had ZERO admin requests; her typed links (wa.me/201228405377 · fb share/1EiuTw4CuZ · IG lubnel_cosmetics) were NOT in the DB → save truly failing. Reproduced via temp DB session + curl: POST /api/admin/settings → 500 «تعذر حفظ الإعدادات»; GET texts/theme/sections → 500. dev.log exposed the root cause: `⨯ ReferenceError: db is not defined at settings/route.ts:32`.
+- Root cause: 4 admin route files (settings, texts, theme, sections) used bare `db` with NO import — the U54 invalidate-wiring edit (file mtimes 02:38, right before the 02:48 backup mirror) rewrote the import heads to add `invalidateSettings` and simultaneously dropped `import { db } from "@/lib/db"`. Hidden from every gate because next.config has `typescript.ignoreBuildErrors: true` (tsc would have flagged «Cannot find name 'db'»); audits show the routes last SUCCEEDED 02:03, i.e. the breakage shipped inside U54 commit c4c8909 and survived the U54B restore (mirror carried the same broken files). Perception note: her «رفع الصور» failures were the SAME bug — the upload itself (media route, healthy import) succeeded but the subsequent form save (brand/settings/sections) 500'd.
+- Fix: re-added `import { db } from "@/lib/db"; // U56-HOTFIX` to all 4 routes. Scan-gate now clean: the only file matching `\bdb\.` without the import is src/lib/db.ts itself (false positive).
+- Data completed for her (she shouldn't have to retype): her exact 3 social links saved via the fixed API + store.whatsappNumber updated 201000000000→201228405377 (her real number — dummy placeholder was live on every WhatsApp CTA). Contact page + footer now show wa.me/201228405377, fb share link, IG lubnel_cosmetics; footer «BY YUTAEV» credit icons (m0ashr3f/moashr3f) are the U45 hardcoded-by-request pair, untouched.
+- E2E (agent-browser, temp session cookie): settings form LOADS her saved links ✓; UI save «حفظ بيانات المتجر» → toast «تم الحفظ — ظهر في المتجر فورًا ✓» + DB row updated ✓. Image upload via the REAL production path (DataTransfer file on input → React onChange → uploadImageFile) → POST /api/admin/media 200 in 28ms, preview rendered, «حفظ الهوية البصرية» → success toast + brand row persisted ✓; media DELETE 200 ×9 (test asset cleanup) ✓.
+- Tooling trap documented: agent-browser `upload` (setInputFiles) hung transport-side twice (status:None, never reached route) while page-level fetch/FormData (59ms, 100KB) and the React path both succeeded — not an app bug; noted in the cron payload for future rounds.
+- Test residue purged: 9 test media assets deleted via the real DELETE route (files + rows), favicon restored to pre-test (empty — first brand-tab ImageField is the favicon, hence the test image landed there), temp session row deleted (userAgent u56-diagnostic), .tmp-scripts removed.
+- OPS: lint 65+2 baseline (no new), NEXT_BUILD_DIST_DIR=.next-verify build Compiled successfully EXIT 0 (cleaned), dev restarted + warmed (home/contact 200, health ok), post-reboot probe: all 4 fixed routes answer 401 (auth-guard) not 500 ✓. Cron 402182 was exec-limit-disabled again → recreated as 403336 with U56 context.
+
+Stage Summary:
+- «عدم التعديل او رفه الصور» is dead: every admin save path (الإعدادات/النصوص والفوتر/الثيم/أقسام الموقع/الهوية البصرية) and the upload→save flow are verified end-to-end; her real links are already live on the storefront — she only needs to re-open the panel and keep editing.
+- Systemic lesson recorded: `ignoreBuildErrors:true` turns dropped imports into silent runtime 500s; future sessions should run the one-line bare-`db` scan (or tsc --noEmit grep «Cannot find name») before committing admin-route edits.
+- Production lubnel.space-z.ai STILL owes its single re-publish (U36→U56) — all of today's fixes are sandbox-side until she presses it.

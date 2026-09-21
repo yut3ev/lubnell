@@ -3,6 +3,7 @@
 import { invalidateSettings } from "@/lib/settings-cache"; // U54-PERF-ROBUST
 import { jsonOk, jsonError, parseBody, requireAdmin, audit } from "@/lib/api-helpers";
 import { resolveSectionTexts } from "@/lib/section-texts";
+import { db } from "@/lib/db"; // U56-HOTFIX — bare `db` ReferenceError'd at runtime
 
 export const dynamic = "force-dynamic";
 
