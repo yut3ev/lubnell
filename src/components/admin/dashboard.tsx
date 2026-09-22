@@ -17,6 +17,7 @@ import {
   LogOut,
   Loader2,
   Languages,
+  MailPlus,
   Menu,
   Minus,
   Newspaper,
@@ -58,6 +59,7 @@ import VisitsSection from './sections/visits';
 import ReviewsSection from './sections/reviews';
 import { SectionsEditor } from './sections/sections-editor';
 import { TextEverything } from './sections/text-everything';
+import { NewsletterAdminSection } from './sections/newsletter'; // U71-NEWSLETTER-ADMIN
 import { Button } from '@/components/ui/button';
 
 type Stats = {
@@ -89,6 +91,7 @@ const NAV: { id: string; label: string; icon: React.ComponentType<{ className?: 
   { id: 'categories', label: 'الأقسام', icon: ListFilter, perm: 'categories.read' },
   { id: 'reviews', label: 'التقييمات', icon: Star, perm: 'reviews.read' },
   { id: 'customers', label: 'العملاء', icon: Users, perm: 'customers.read' },
+  { id: 'newsletter', label: 'النشرة البريدية', icon: MailPlus, perm: 'customers.read' }, // U71-NEWSLETTER-ADMIN
   { id: 'visits', label: 'سجل الزيارات', icon: Activity, perm: 'visits.read' },
   { id: 'media', label: 'الوسائط', icon: ImageIcon, perm: 'media.read' },
   { id: 'homepage', label: 'الصفحة الرئيسية', icon: Home, perm: 'homepage.read' },
@@ -215,6 +218,7 @@ export default function AdminDashboard({ admin, onLogout }: { admin: AdminInfo; 
           {section === 'categories' && <CategoriesSection />}
           {section === 'reviews' && <ReviewsSection />}
           {section === 'customers' && <CustomersSection />}
+          {section === 'newsletter' && <NewsletterAdminSection />}
           {section === 'visits' && <VisitsSection />}
           {section === 'media' && <MediaSection />}
           {section === 'homepage' && <HomepageSection />}

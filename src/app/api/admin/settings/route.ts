@@ -1,14 +1,15 @@
 // Admin store settings: GET, POST save.
 // SUP-8 — multi-key support: `store` (identity/shipping/announcement),
-// `texts` (all site copy + footer), `theme` (color palette). Each key is an
-// independent StoreSettings row stored as JSON, merged on save.
+// `texts` (all site copy + footer), `theme` (color palette).
+// U71-NEWSLETTER-ADMIN — `smtp` (outgoing mail server for newsletter sends).
+// Each key is an independent StoreSettings row stored as JSON, merged on save.
 import { invalidateSettings } from "@/lib/settings-cache"; // U54-PERF-ROBUST
 import { jsonOk, jsonError, parseBody, requireAdmin, audit } from "@/lib/api-helpers";
 import { db } from "@/lib/db"; // U56-HOTFIX — bare `db` ReferenceError'd at runtime (500 on every settings save)
 
 export const dynamic = "force-dynamic";
 
-const KEYS = ["store", "texts", "theme", "brand", "seo"] as const;
+const KEYS = ["store", "texts", "theme", "brand", "seo", "smtp"] as const;
 type SettingsKey = (typeof KEYS)[number];
 
 function resolveKey(raw: unknown): SettingsKey {

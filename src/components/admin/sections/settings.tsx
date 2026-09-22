@@ -310,7 +310,79 @@ function StoreTab() {
         </p>
       </div>
 
+      <SmtpCard />
+
       <SaveBar saving={store.saving || texts.saving} onClick={saveAll} label="حفظ بيانات المتجر" />
+    </div>
+  );
+}
+
+/* ---------- 1.ب إعدادات البريد الصادر (SMTP) — U71-NEWSLETTER-ADMIN ----------
+ * Credentials the newsletter sender uses to deliver mail (nodemailer SMTP).
+ * Owner-only (settings tab). Free providers work — e.g. Brevo/Gmail app
+ * password: host smtp-relay.brevo.com / smtp.gmail.com, port 587 or 465.
+ * Stored under its own settings key so the password never mixes with site copy. */
+
+type SmtpSettings = {
+  host?: string;
+  port?: number;
+  user?: string;
+  pass?: string;
+  fromName?: string;
+};
+
+function SmtpCard() {
+  const smtp = useSettingsBag<SmtpSettings>('smtp');
+  const { toast } = useToast();
+  if (!smtp.form) return null;
+  const f = smtp.form;
+  const set = (patch: Partial<SmtpSettings>) => smtp.setForm({ ...f, ...patch });
+
+  async function save() {
+    if (await smtp.persist()) toast({ title: 'تم حفظ إعدادات البريد ✓' });
+  }
+
+  const ready = Boolean(f.host?.trim() && f.user?.trim() && f.pass?.trim());
+
+  return (
+    <div className={card}>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-sm font-black">إعدادات البريد الصادر (SMTP)</h3>
+        <span
+          className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${ready ? 'bg-emerald-600/10 text-emerald-700' : 'bg-amber-500/10 text-amber-700'}`}
+        >
+          {ready ? 'جاهز للإرسال ✓' : 'غير مكتمل'}
+        </span>
+      </div>
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        دي بيانات سيرفر الإيميل اللي بيبعت منها رسائل «النشرة البريدية» للمشتركين.
+        هاتيها من مزوّد البريد (مثال مجاني: Brevo — host: smtp-relay.brevo.com، port: 587، user: بريد التسجيل، pass: مفتاح SMTP).
+      </p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className={field}>
+          <Label>Host</Label>
+          <Input dir="ltr" className="text-left" value={f.host || ''} onChange={(e) => set({ host: e.target.value })} placeholder="smtp-relay.brevo.com" />
+        </div>
+        <div className={field}>
+          <Label>Port (587 أو 465)</Label>
+          <Input dir="ltr" className="text-left" type="number" value={f.port ?? 587} onChange={(e) => set({ port: Number(e.target.value) || 587 })} />
+        </div>
+        <div className={field}>
+          <Label>User (بريد المرسل)</Label>
+          <Input dir="ltr" className="text-left" value={f.user || ''} onChange={(e) => set({ user: e.target.value })} placeholder="newsletter@lubnel.com" />
+        </div>
+        <div className={field}>
+          <Label>Password / API Key</Label>
+          <Input dir="ltr" className="text-left" type="password" value={f.pass || ''} onChange={(e) => set({ pass: e.target.value })} placeholder="••••••••" />
+        </div>
+        <div className={field}>
+          <Label>اسم المرسل الظاهر</Label>
+          <Input value={f.fromName || ''} onChange={(e) => set({ fromName: e.target.value })} placeholder="LUBNÉL 🌸" />
+        </div>
+      </div>
+      <Button onClick={save} disabled={smtp.saving} className="h-11 w-full rounded-full bg-primary text-sm font-bold text-primary-foreground">
+        {smtp.saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <><Save className="ml-1 h-4 w-4" aria-hidden /> حفظ إعدادات البريد</>}
+      </Button>
     </div>
   );
 }

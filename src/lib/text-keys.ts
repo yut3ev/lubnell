@@ -107,6 +107,7 @@ export const TEXT_META: Record<string, { label: string; group: TextGroupId }> = 
   newsletterTitle: { label: 'النشرة — العنوان', group: 'club' },
   newsletterSub: { label: 'النشرة — الوصف الافتراضي', group: 'club' },
   newsletterPh: { label: 'النشرة — Placeholder البريد', group: 'club' },
+  newsletterNamePh: { label: 'النشرة — Placeholder الاسم', group: 'club' },
   newsletterBtn: { label: 'النشرة — زر الاشتراك', group: 'club' },
   newsletterOk: { label: 'النشرة — رسالة النجاح', group: 'club' },
   newsletterErr: { label: 'النشرة — رسالة الخطأ', group: 'club' },

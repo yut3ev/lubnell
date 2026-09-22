@@ -199,7 +199,26 @@ model RolePermission {
 model Subscriber {
   id        String   @id @default(cuid())
   email     String   @unique
+  name      String?
+  lang      String   @default("ar") // U71-NEWSLETTER-ADMIN — ar | en (UI lang at subscribe time)
+  ip        String? // U71-NEWSLETTER-ADMIN — captured at subscribe for the admin table
   createdAt DateTime @default(now())
+}
+
+// U71-NEWSLETTER-ADMIN — every bulk newsletter send from the dashboard is
+// logged here (subject, target segment, delivered/failed counts) so the
+// owner has a send history inside «النشرة البريدية».
+model NewsletterLog {
+  id         String   @id @default(cuid())
+  subject    String
+  target     String // all | ar | en | test
+  recipients Int
+  sent       Int
+  failed     Int
+  status     String // sent | partial | failed
+  error      String?
+  actor      String?
+  createdAt  DateTime @default(now())
 }
 
 // U61-BLOG — the store journal: SEO articles (مقالات) written by the owner

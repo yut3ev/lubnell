@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { BadgePercent, BellRing, CheckCircle2, Gift, Loader2, Mail, Send, ShieldCheck } from 'lucide-react';
+import { BadgePercent, BellRing, CheckCircle2, Gift, Loader2, Mail, Send, ShieldCheck, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Reveal } from '@/components/store/reveal';
@@ -27,6 +27,7 @@ type NewsletterCopy = { ar?: string; en?: string };
 export function NewsletterSection({ copy }: { copy?: NewsletterCopy }) {
   const { ar, t } = useT();
   const [email, setEmail] = useState('');
+  const [name, setName] = useState(''); // U71-NEWSLETTER-ADMIN — optional الاسم for the dashboard table
   const [status, setStatus] = useState<Status>('idle');
   // U57-TEXTS-COMPLETE — both languages fall back to the editable club copy
   const sub = ar ? copy?.ar || t.newsletterSub : copy?.en || t.newsletterSub;
@@ -46,11 +47,12 @@ export function NewsletterSection({ copy }: { copy?: NewsletterCopy }) {
       const res = await fetch('/api/store/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, name, lang: ar ? 'ar' : 'en' }),
       });
       if (!res.ok) throw new Error(String(res.status));
       setStatus('success');
       setEmail('');
+      setName('');
     } catch {
       setStatus('error');
     }
@@ -95,6 +97,7 @@ export function NewsletterSection({ copy }: { copy?: NewsletterCopy }) {
               {t.newsletterOk}
             </p>
           ) : (
+            <>
             <form
               onSubmit={submit}
               className="mx-auto mt-6 flex max-w-xl items-center gap-1.5 rounded-full bg-white p-1.5 shadow-lg shadow-black/15 ring-1 ring-black/5 transition-all duration-300 focus-within:shadow-xl focus-within:ring-2 focus-within:ring-primary/40 sm:gap-2"
@@ -125,6 +128,22 @@ export function NewsletterSection({ copy }: { copy?: NewsletterCopy }) {
                 <span>{t.newsletterBtn}</span>
               </Button>
             </form>
+            {/* U71-NEWSLETTER-ADMIN — optional name so the dashboard's
+                subscribers table (الاسم column) has real data; same white
+                pill language, non-required so zero friction. */}
+            <div className="mx-auto mt-2 flex max-w-xl items-center gap-1.5 rounded-full bg-white/95 p-1.5 shadow-md shadow-black/10 ring-1 ring-black/5 sm:gap-2">
+              <User className="ms-3.5 h-4 w-4 shrink-0 text-muted-foreground/70" aria-hidden />
+              <Input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t.newsletterNamePh}
+                aria-label={t.newsletterNamePh}
+                maxLength={80}
+                className="h-10 min-w-0 flex-1 rounded-full border-0 bg-transparent px-2.5 text-sm text-foreground shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+            </div>
+            </>
           )}
 
           {status === 'error' && (
