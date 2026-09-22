@@ -1300,3 +1300,17 @@ Work Log:
 
 Stage Summary:
 - The three trust icons are now quietly alive — spinning wheels + judder + speed lines, hopping gift + swaying bow, pulsing badge + self-drawing check — all sharing one calm 2.4s beat, geometry untouched, motion fully disabled for reduced-motion users. Single re-publish on lubnel.space-z.ai still pending (U36→U64).
+
+---
+Task ID: U64B-TRUST-MOTION-FASTER
+Agent: Z.ai Code (main)
+Task: Owner: «ايزة الحركة أسرع» — speed up the U64 trust-strip icon animations without changing the choreography or the simplicity.
+
+Work Log:
+- globals.css .u64-* block: every duration halved — wheel spin 1.2s→0.6s, judder 0.6s→0.3s, speed dashes 1.2s→0.6s, badge pulse 2.4s→1.2s, check draw 2.4s→1.2s, gift hop 2.4s→1.2s, bow sway 1.2s→0.6s alternate. Section header comment updated (2.4s→1.2s beat, U64B note).
+- trust-icons.tsx: stagger delays scaled by the same factor (dash delays 0/200/400ms → 0/100/200ms; second wheel offset -0.6s→-0.3s) so the choreography/proportions are IDENTICAL, just faster. Header comment updated.
+- Verify: agent-browser computed styles = 0.6s/0.3s/0.6s/1.2s/1.2s/1.2s/0.6s (all 7 live); 390+1440 screenshots — layout intact, icons still visually identical to static lucide; console errors = 0; dev.log clean.
+- OPS: lint 65+2 exact baseline; build gate pkill → NEXT_BUILD_DIST_DIR Compiled successfully EXIT 0 → rm .next-verify → setsid restart + curl warm (/, /blog, /info/contact all 200).
+
+Stage Summary:
+- Trust icons now run at double tempo — wheels spin 0.6s/rev, engine judder twice as lively, speed lines flick quicker, badge pulse + check redraw complete in 1.2s, gift hops and bow sways at double pace — same soft amplitudes, same one-rhythm choreography, reduced-motion still fully disables everything. Single re-publish on lubnel.space-z.ai still pending (U36→U64B).
