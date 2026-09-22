@@ -96,29 +96,33 @@ export function HomeSections({
           side, nothing to swipe, and the swipe-hint line is gone with it.
           sm+ keeps the approved 3-column row layout untouched.
           U65-TRUST-VIDEO — the icons are now the owner's animated webm
-          clips; each sits in a fixed-size slot (h-10 w-14 mobile /
-h-12 w-16 sm+) so the three cards stay aligned and the motion
-          never crowds the copy beside it. */}
+          clips; each sits in a fixed-size slot so the three columns
+          stay aligned and the motion never crowds the copy beside it.
+          U66-TRUST-AIR — owner: «الايقون صغير مش ظاهره والخلفيه البيضه
+          واخده حايز كبير» — the white card chrome is gone on phones
+          (icons float straight on the soft strip background) and the
+          clips grew ~1.5× (48-56px tall on phones, 56-64px sm+),
+          with slightly larger copy to match. */}
       <section className="overflow-x-clip border-b border-border/60 bg-secondary/40">
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-7">
           <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-3 sm:gap-4">
             {[
-              { vid: '/icons/truck.webm', vh: 'h-8 sm:h-10', t: s ? (ar ? s.trust1TitleAr : s.trust1TitleEn) : ar ? 'شحن مجاني' : 'Free shipping', s: s ? (ar ? s.trust1SubAr : s.trust1SubEn) : ar ? 'للطلبات فوق 900 ج.م' : 'over 900 EGP' },
-              { vid: '/icons/badge-check.webm', vh: 'h-9 sm:h-11', t: s ? (ar ? s.trust2TitleAr : s.trust2TitleEn) : ar ? 'منتجات أصلية' : 'Authentic products', s: s ? (ar ? s.trust2SubAr : s.trust2SubEn) : ar ? 'مصادر موثوقة 100%' : '100% trusted sources' },
-              { vid: '/icons/gift-box.webm', vh: 'h-9 sm:h-11', t: s ? (ar ? s.trust3TitleAr : s.trust3TitleEn) : ar ? 'بوكسات جاهزة للإهداء' : 'Gift-ready boxes', s: s ? (ar ? s.trust3SubAr : s.trust3SubEn) : ar ? 'تغليف أنيق لكل طلب' : 'elegant packaging' },
+              { vid: '/icons/truck.webm', vh: 'h-12 sm:h-14', t: s ? (ar ? s.trust1TitleAr : s.trust1TitleEn) : ar ? 'شحن مجاني' : 'Free shipping', s: s ? (ar ? s.trust1SubAr : s.trust1SubEn) : ar ? 'للطلبات فوق 900 ج.م' : 'over 900 EGP' },
+              { vid: '/icons/badge-check.webm', vh: 'h-14 sm:h-16', t: s ? (ar ? s.trust2TitleAr : s.trust2TitleEn) : ar ? 'منتجات أصلية' : 'Authentic products', s: s ? (ar ? s.trust2SubAr : s.trust2SubEn) : ar ? 'مصادر موثوقة 100%' : '100% trusted sources' },
+              { vid: '/icons/gift-box.webm', vh: 'h-14 sm:h-16', t: s ? (ar ? s.trust3TitleAr : s.trust3TitleEn) : ar ? 'بوكسات جاهزة للإهداء' : 'Gift-ready boxes', s: s ? (ar ? s.trust3SubAr : s.trust3SubEn) : ar ? 'تغليف أنيق لكل طلب' : 'elegant packaging' },
             ].map(({ vid, vh, t: title, s }, i) => (
               <Reveal key={title} delay={i * 90} className="h-full">
               <div
-                className="flex h-full flex-col items-center gap-2 rounded-xl border border-border/60 bg-card px-2 py-3.5 text-center shadow-sm sm:flex-row sm:gap-3.5 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:text-right sm:shadow-none"
+                className="flex h-full flex-col items-center gap-2 text-center sm:flex-row sm:gap-3.5 sm:text-right"
               >
-                <span className="flex h-10 w-14 shrink-0 items-center justify-center sm:h-12 sm:w-16">
+                <span className="flex h-14 w-full shrink-0 items-center justify-center sm:h-16 sm:w-24">
                   <TrustVideo src={vid} className={`${vh} w-auto`} />
                 </span>
-                {/* line-clamps guard the compact card against long
+                {/* line-clamps guard the compact column against long
                     Studio-authored copy (trust*Title/Sub are owner-editable) */}
                 <div className="min-w-0">
-                  <p className="line-clamp-2 text-[11px] font-bold leading-tight sm:text-[13px]">{title}</p>
-                  <p className="mt-0.5 line-clamp-2 text-[10px] leading-snug text-muted-foreground sm:text-[11px]">{s}</p>
+                  <p className="line-clamp-2 text-xs font-bold leading-tight sm:text-[13px]">{title}</p>
+                  <p className="mt-0.5 line-clamp-2 text-[10.5px] leading-snug text-muted-foreground sm:text-[11px]">{s}</p>
                 </div>
               </div>
               </Reveal>
