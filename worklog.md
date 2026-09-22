@@ -1270,3 +1270,18 @@ Work Log:
 
 Stage Summary:
 - Contact page now lands the whole «تواصلي معنا» block (CTA + channels + socials) in the first mobile viewport; all info pages share the tightened header/prose rhythm. Owner still owes the single re-publish on lubnel.space-z.ai (U36→U62).
+
+---
+Task ID: U63-FOOTER-TRIM
+Agent: Z.ai Code (main)
+Task: Owner (2 footer screenshots): «شيل الجزء دا من الفوتر ملوش لازمه واخد مكان» — remove the «تواصلي معنا» details column (phone/email/hours/location) AND «شيلهم من الفوتر بس» — the «تسوّقي» links column. Footer only; pages and header nav stay.
+
+Work Log:
+- footer.tsx: deleted both columns (تسوّقي nav + تواصلي معنا details block); grid lg: 5-col [1.35/0.85/1/0.85/1.15] → 3-col [1.4/1/1]; removed now-unused lucide imports (Mail/Clock/MapPin/MessageCircle); comments updated (U63-FOOTER-TRIM doctrine: footer-only removal — عن لوبنيل column still links تواصلي معنا, header still carries all category links, socials/credit untouched).
+- Kept ALL i18n keys (footerShop/footerContact/footerLinks) intact — owner-editable texts registry untouched (U57 contract).
+- SSR grep: +201228405377 → 0 hits; remaining «تسوّقي» hits are the home section «تسوّقي حسب الفئة» + card CTAs «تسوّقي الآن» (legit, not footer).
+- Verify: agent-browser 1440 footer = brand + عن لوبنيل + خدمة العملاء clean 3-col; 390 = brand+socials then the two link columns side-by-side + credit bar; console 0 errors; /, /info/contact, /blog 200.
+- OPS: lint 65+2 exact; build gate pkill → NEXT_BUILD_DIST_DIR build Compiled successfully EXIT 0 → rm .next-verify → setsid restart + curl warm.
+
+Stage Summary:
+- Footer trimmed to brand + about + customer-care columns at the owner's request; every removed entry remains reachable (header nav, footer contact link, info pages). Single re-publish on lubnel.space-z.ai still pending (U36→U63).

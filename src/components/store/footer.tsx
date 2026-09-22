@@ -1,11 +1,15 @@
 'use client';
 
 // SUP-8 — settings-driven footer. U12-FOOTER: rebuilt to the owner's approved
-// target — five columns (brand / عن لوبنيل / خدمة العملاء / تسوّقي / تواصلي
-// معنا) and the REAL brand-colored social glyphs (U8 brand-icons).
+// target — brand / عن لوبنيل / خدمة العملاء columns and the REAL
+// brand-colored social glyphs (U8 brand-icons).
+// U63-FOOTER-TRIM — owner: «شيل الجزء دا من الفوتر ملوش لازمه واخد مكان»
+// — the «تسوّقي» links column AND the «تواصلي معنا» details column are
+// removed FROM THE FOOTER ONLY («شيلهم من الفوتر بس»): the pages themselves,
+// the header category nav, the عن لوبنيل column's contact link and the
+// social icons all stay. Footer is now a tight 3-column lockup.
 
 import Link from 'next/link';
-import { Mail, Clock, MapPin, MessageCircle } from 'lucide-react';
 import { WHATSAPP_NUMBER } from '@/lib/cart-store';
 import { useT } from '@/lib/i18n';
 import { resolveSiteTexts, type SiteTexts } from '@/lib/site-texts';
@@ -74,11 +78,12 @@ export function StoreFooter({
       {/* thin brand accent line — ties the footer to the header */}
       <div className="h-0.5 w-full bg-gradient-to-l from-primary/60 via-primary/25 to-transparent" aria-hidden />
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-12">
-        {/* U23-MOBILE-FOOTER — mobile is now a COMPACT 2-col grid (owner:
+        {/* U23-MOBILE-FOOTER — mobile is a COMPACT 2-col grid (owner:
         «ميبقاش بشكل طولي… المستخدم مش هيقعد يسكرول كل ده»): brand full-width,
-        then عن لوبنيل | خدمة العملاء and تسوّقي | تواصلي معنا side by side,
-        tighter type/spacing. sm+ keeps the approved layout untouched. */}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-7 sm:gap-10 lg:grid-cols-[1.35fr_0.85fr_1fr_0.85fr_1.15fr]">
+        then عن لوبنيل | خدمة العملاء side by side, tighter type/spacing.
+        U63-FOOTER-TRIM: تسوّقي + تواصلي معنا columns removed at her request;
+        sm+ shows the three remaining columns. */}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-7 sm:gap-10 lg:grid-cols-[1.4fr_1fr_1fr]">
           {/* brand */}
           <div className="col-span-2 lg:col-span-1">
             <Link href="/" className="inline-flex items-center" aria-label="LUBNÉL — الرئيسية">
@@ -164,52 +169,6 @@ export function StoreFooter({
               </li>
             </ul>
           </nav>
-
-          {/* shop — تسوّقي */}
-          <nav aria-label={t.footerShop}>
-            <h3 className="w-fit border-b border-primary/25 pb-1 text-[13px] font-bold uppercase tracking-wide sm:pb-2 sm:text-sm">{t.footerShop}</h3>
-            <ul className="mt-3 space-y-2 text-[13px] text-muted-foreground sm:mt-4 sm:space-y-2.5 sm:text-sm">
-              {copy.footerLinks.map((l) => (
-                <li key={l.href + l.labelEn}>
-                  <Link className="transition-colors hover:text-primary" href={l.href}>
-                    {ar ? l.labelAr || l.labelEn : l.labelEn || l.labelAr}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          {/* contact — تواصلي معنا */}
-          <div>
-            <h3 className="w-fit border-b border-primary/25 pb-1 text-[13px] font-bold uppercase tracking-wide sm:pb-2 sm:text-sm">{t.footerContact}</h3>
-            <ul className="mt-3 space-y-2.5 text-[13px] text-muted-foreground sm:mt-4 sm:space-y-3 sm:text-sm">
-              <li>
-                <a
-                  href={`https://wa.me/${waDigits}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-2 transition-colors hover:text-primary sm:gap-2.5"
-                >
-                  <MessageCircle className="h-4 w-4 shrink-0 text-primary sm:h-4.5 sm:w-4.5" aria-hidden />
-                  <span dir="ltr">+{waDigits}</span>
-                </a>
-              </li>
-              <li className="flex items-center gap-2 sm:gap-2.5">
-                <Mail className="h-4 w-4 shrink-0 text-primary sm:h-4.5 sm:w-4.5" aria-hidden />
-                <a href={`mailto:${copy.contactEmail}`} dir="ltr" className="transition-colors hover:text-primary">
-                  {copy.contactEmail}
-                </a>
-              </li>
-              <li className="flex items-center gap-2 sm:gap-2.5">
-                <Clock className="h-4 w-4 shrink-0 text-primary sm:h-4.5 sm:w-4.5" aria-hidden />
-                <span>{ar ? copy.hoursAr : copy.hoursEn}</span>
-              </li>
-              <li className="flex items-center gap-2 sm:gap-2.5">
-                <MapPin className="h-4 w-4 shrink-0 text-primary sm:h-4.5 sm:w-4.5" aria-hidden />
-                <span>{ar ? copy.locationAr : copy.locationEn}</span>
-              </li>
-            </ul>
-          </div>
         </div>
 
         {/* bottom bar — U45-FOOTER-CREDIT: the owner replaced «صُنع بحب في
