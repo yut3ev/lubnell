@@ -3,8 +3,10 @@
 //  • TrustTruck — wheels spin continuously, the body does a tiny "jeans"
 //    judder, and small speed lines fade in behind the rear.
 //  • TrustBadge — the badge pulses gently and the check redraws itself
-//    every cycle, same calm 2.4s rhythm as the other two.
+//    every cycle, same calm rhythm as the other two.
 //  • TrustGift — the box takes a soft little hop while the bow sways.
+// U64B: owner «ايزة الحركة أسرع» — all tempos doubled (durations halved),
+// stagger delays scaled by the same factor so the choreography is identical.
 // Geometry is copied VERBATIM from lucide-react (same paths, same 24×24
 // viewBox, same stroke style) — the icons look identical, only motion was
 // added. All keyframes live in globals.css under .u64-* and are fully
@@ -27,8 +29,8 @@ export function TrustTruck(props: SVGProps<SVGSVGElement>) {
     <svg {...stroke} {...props}>
       {/* speed lines behind the rear (truck faces right → rear = left edge) */}
       <path className="u64-dash" style={{ animationDelay: '0ms' }} d="M1.4 9.5h1.4" />
-      <path className="u64-dash" style={{ animationDelay: '200ms' }} d="M0.8 12.5h2" />
-      <path className="u64-dash" style={{ animationDelay: '400ms' }} d="M1.4 15.5h1.4" />
+      <path className="u64-dash" style={{ animationDelay: '100ms' }} d="M0.8 12.5h2" />
+      <path className="u64-dash" style={{ animationDelay: '200ms' }} d="M1.4 15.5h1.4" />
       {/* body — lucide truck paths, verbatim, juddering gently */}
       <g className="u64-judder">
         <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
@@ -40,7 +42,7 @@ export function TrustTruck(props: SVGProps<SVGSVGElement>) {
         <circle cx="7" cy="18" r="2" />
         <path strokeWidth={1.25} d="M7 17v2M6 18h2" />
       </g>
-      <g className="u64-wheel" style={{ animationDelay: '-0.6s' }}>
+      <g className="u64-wheel" style={{ animationDelay: '-0.3s' }}>
         <circle cx="17" cy="18" r="2" />
         <path strokeWidth={1.25} d="M17 17v2M16 18h2" />
       </g>
