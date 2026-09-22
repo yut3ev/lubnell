@@ -1314,3 +1314,19 @@ Work Log:
 
 Stage Summary:
 - Trust icons now run at double tempo — wheels spin 0.6s/rev, engine judder twice as lively, speed lines flick quicker, badge pulse + check redraw complete in 1.2s, gift hops and bow sways at double pace — same soft amplitudes, same one-rhythm choreography, reduced-motion still fully disables everything. Single re-publish on lubnel.space-z.ai still pending (U36→U64B).
+
+---
+Task ID: U65-TRUST-VIDEO
+Agent: Z.ai Code (main)
+Task: Owner (trust-strip screenshot + 3 media uploads): «بدل الاليقون بتاعت العربي دي وايقون بوكس الهديه وايقونة التحقق حط مكانهم الايقون بالملفات الجديده وخليه مناسب مع حجم الموبايل والايباد وغيره ومتقربش جنب حاجه تاني» — replace the three U64 SVG icons with the owner's uploaded animated clips.
+
+Work Log:
+- Identified uploads: lG6jhQ1kfY.webm = delivery moped + map phone (150×100, 6s, 277KB), Gift box.webm = pink gift + confetti (150×119, 2.2s, 103KB), BTYXhtLj9h.webm = pink check seal burst (150×150, 1.5s, 22KB); brave_HmuYwkPVya.png = the owner's reference screenshot (not an asset). ffprobe: container tag alpha_mode=1 → VP8+alpha, transparent backgrounds confirmed → clean on white cards.
+- Copied to public/icons/ as truck.webm / gift-box.webm / badge-check.webm; served 200.
+- home-sections.tsx: new client component TrustVideo (autoPlay+loop+muted+playsInline+preload=auto, disablePictureInPicture, aria-hidden, tabIndex -1, pointer-events-none; useEffect forces v.muted=true for iOS autoplay and pauses under prefers-reduced-motion). Trust array now carries vid+vh per icon: truck h-8 sm:h-10, badge/gift h-9 sm:h-11 — per-aspect-ratio heights so visual weight matches inside a fixed slot (h-10 w-14 mobile / h-12 w-16 sm+). Pink circle wrapper removed (clips carry their own brand-pink art).
+- Spacing per «متقربش جنب حاجه تاني»: card px-1.5→px-2, py-3→py-3.5, icon→text gap sm:3→3.5, grid gap-2→2.5, strip py-5→py-6 (sm:py-7). trust-icons.tsx + globals.css u64-* kept for rollback (no longer imported).
+- Verify: videos readyState=4, correct boxes (mobile 48×32 / 36×36 / 45×36; desktop 60×40 / 44×44 / 55×44); headless autoplay policy holds them paused but play() works and currentTime advances (real devices autoplay muted+inline); 390 + 1440 screenshots — clips render transparent on cards, aligned, uncrowded; console errors = 0.
+- OPS: lint 65+2 exact; build gate pkill → NEXT_BUILD_DIST_DIR Compiled successfully EXIT 0 → rm .next-verify → setsid restart + curl warm (/, /blog, /info/contact + 3 webm all 200). Cron rebuilt: 404444 was disabled (exec limits) → deleted → new job 405195 (same 15-min webDevReview, Africa/Cairo).
+
+Stage Summary:
+- The three trust icons are now the owner's own animated clips — delivery moped, check seal, gift box with confetti — looping quietly on transparent backgrounds, sized for phone/iPad/desktop inside fixed slots with real breathing room. U64 SVG twins remain one import away if the owner wants them back. Single re-publish on lubnel.space-z.ai still pending (U36→U65).
