@@ -1362,3 +1362,19 @@ Work Log:
 
 Stage Summary:
 - تابعينا على is now five live destinations — WA channel, Facebook, Instagram, TikTok, and the animated YouTube card that opens @lubnel9606 in a new tab; the footer's social row gained the matching red YouTube chip; the URL is Studio-editable (كل النصوص + الإعدادات). Single re-publish on lubnel.space-z.ai still pending (U36→U67).
+
+---
+Task ID: U68-CONTACT-NO-WA-CTA
+Agent: Z.ai Code (main)
+Task: Owner: «شيل الجزء الي ف الصوره دا من عند تواصلي معنا» (screenshot = the green «راسلينا على واتساب — رد سريع» WhatsApp CTA button on the contact page) — remove it.
+
+Work Log:
+- info-panels.tsx: deleted the emerald-600 full-width CTA <a> (wa.me + cpWaPrefill prefill) above the channels grid; removed now-dead `waText` const + MessageCircle import; ContactPanel section comment updated (U68-CONTACT-NO-WA-CTA note). WhatsApp stays reachable: قناة الواتساب card in تابعينا (same wa.me number from Studio) + global floating widget.
+- Prose coherence: contact contentAr/contentEn bullets referenced «زر راسلي واتساب بالأعلى» — updated BOTH the shipped defaults (info-pages.ts) AND the Studio pages DB override (StoreSettings key=pages, contact entry) which was what actually rendered. New copy points to the «قناة الواتساب» card from «تابعينا على» بالأعلى. Verified old strings gone from DB.
+- Dead Studio fields: cpWaCta («زر واتساب الرئيسي») + cpWaPrefill («رسالة واتساب الجاهزة») removed from i18n.tsx (AR+EN) and text-keys.ts (U57 mirror contract kept); texts row had no saved overrides for them (nothing orphaned).
+- Dev-server cache note: first SSR grep after restart still showed old prose (stale Turbopack artifact + DB override) — root-caused to the DB override, fixed there; post-restart SSR grep: old CTA 0, old bullet 0, new bullet 2, wa-channel card 2, youtube.webm 1.
+- Verify: agent-browser 390 + 1440 on /info/contact — button gone, grid (email/hours/location) now leads the panel, تابعينا 5-card row + YouTube animated card intact, prose shows new bullet, 2 wa.me links remain (channel card + floating widget); console errors 0.
+- OPS: lint 65+2 exact baseline; build gate pkill → NEXT_BUILD_DIST_DIR Compiled successfully EXIT 0 → rm .next-verify → setsid restart + curl warm (/, /info/contact 200).
+
+Stage Summary:
+- تواصلي معنا no longer carries the big green WhatsApp button — the panel opens directly with the contact cards and the تابعينا socials; WhatsApp remains one tap away through the قناة الواتساب card and the floating widget; Studio texts and DB overrides are consistent with the removal. Single re-publish on lubnel.space-z.ai still pending (U36→U68).
