@@ -1378,3 +1378,18 @@ Work Log:
 
 Stage Summary:
 - تواصلي معنا no longer carries the big green WhatsApp button — the panel opens directly with the contact cards and the تابعينا socials; WhatsApp remains one tap away through the قناة الواتساب card and the floating widget; Studio texts and DB overrides are consistent with the removal. Single re-publish on lubnel.space-z.ai still pending (U36→U68).
+
+---
+Task ID: U69-WA-ANIMATED
+Agent: Z.ai Code (main)
+Task: Owner: «يقونات متحركة لقناة للوتساب ف تواصل معنا خليها زي الملف ايل بعته» (+ «Whatsapp icon animation.webm» 150×150 VP8+alpha 3s 64KB pop-in loop; brave_xTutZSoSYM.png = reference screenshot of the current تابعينا section) — make the WhatsApp channel card on the contact page animated like the sent file.
+
+Work Log:
+- Asset check: ffprobe alpha_mode=1 (transparent), 90 frames @30fps; frame extraction (n=5/20/40/85) shows the green circle popping in then the white WhatsApp glyph drawing in and holding — clean on the white card.
+- Copied upload → public/icons/whatsapp.webm (served 200).
+- info-panels.tsx: wa-channel social entry gains `video: '/icons/whatsapp.webm'` (Glyph/chip kept as render-guard fallback, same pattern as U67 YouTube); h-16 w-16 sizing retained — the WA clip's ~70% canvas fill makes h-16 optically match the h-11 brand circles; render comment generalized to cover both owner clips; section comment documents U69.
+- Verify: SSR references whatsapp.webm; agent-browser 390 + 1440 — video element present, PLAYING in headless (readyState 4, paused=false, currentTime advancing 1.51→2.75), rendered 64×64 inside the card, grid/labels/badges intact, both animated cards (WA + YT) aligned in the row, console errors 0. Desktop still caught the clip mid pop-in phase in the still (expected — 3s burst loop; U67 precedent).
+- OPS: lint 65+2 exact baseline; build gate pkill → NEXT_BUILD_DIST_DIR Compiled successfully EXIT 0 → rm .next-verify → setsid restart + curl warm (/, /info/contact, /icons/whatsapp.webm all 200).
+
+Stage Summary:
+- «تابعينا على» now carries TWO of the owner's own animations — the WhatsApp channel card (green pop-in glyph, U69) and the YouTube channel card (U67) — while FB/IG/TikTok keep their static brand circles; the card still opens the Studio-configurable WhatsApp link in a new tab. Single re-publish on lubnel.space-z.ai still pending (U36→U69).
