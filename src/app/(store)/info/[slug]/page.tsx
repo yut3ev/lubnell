@@ -165,7 +165,10 @@ export default async function InfoPage({
   const email = t.contactEmail?.trim() || 'hello@lubnel.com';
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
+    // U62-CONTACT-COMPACT — owner: «فيه فراغ كبير… صغر الكلام شويه علشان
+    // سكرول المستخدم ميطلاعش لتحت». Page frame tightened on mobile so the
+    // contact panel (WA CTA + channels) lands inside the first viewport.
+    <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-12">
       <InfoHeader titleAr={titleAr} titleEn={titleEn} />
 
       {/* U59-SEO-ABOUT — brand hero with keyword-rich alt (لوبنيل/LUBNÉL):
@@ -198,7 +201,7 @@ export default async function InfoPage({
         />
       )}
 
-      <div className="mt-9">
+      <div className="mt-7">
         {slug === 'faq' && faqArPairs.length >= 2 ? (
           <FaqAccordion itemsAr={faqArPairs} itemsEn={faqEnPairs} />
         ) : slug === 'shipping' ? (
@@ -221,7 +224,7 @@ export default async function InfoPage({
       {/* cross-links to sibling info pages */}
       <nav
         aria-label="صفحات ذات صلة / Related pages"
-        className="mt-12 grid gap-3 sm:grid-cols-3"
+        className="mt-9 grid gap-3 sm:grid-cols-3"
       >
         {RELATED.filter((r) => r.slug !== slug)
           .slice(0, 3)

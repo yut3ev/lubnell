@@ -1255,3 +1255,18 @@ Work Log:
 
 Stage Summary:
 - Preview restored and browser-verified; no code changes needed this round. U60/U61 remain the latest shipped work. Owner still owes the single re-publish on lubnel.space-z.ai (U36→U61).
+
+---
+Task ID: U62-CONTACT-COMPACT
+Agent: Z.ai Code (main)
+Task: Owner (mobile screenshot of /info/contact): «فيه فراغ كبير ف الجزء دا صغر الكلام شويه علشان اسكرول المستخدم ميطلش لتحت» — the contact page wastes the whole first viewport on hero/padding; essential channels must fit without scrolling.
+
+Work Log:
+- Diagnosis: page frame py-10 + breadcrumb mb-6 + hero py-9/title-2xl + panel mt-6/min-h-60 cards stacked ~1.5 viewports before the socials even started.
+- info-panels.tsx: InfoHeader breadcrumb mb-6→mb-3.5; hero py-9→py-5 + rounded-3xl→rounded-2xl on mobile (sm: keeps desktop) + h1 2xl→xl on mobile; InfoProse space-y-5→4, p/li 15px/leading-loose→text-sm/leading-relaxed (the «صغر الكلام» ask, applies to all info pages consistently); ContactPanel mt-6→mt-4 space-y-3→2.5, WA CTA 52px/base→48px/15px, channel cards min-h-60→56 py-3→2.5, socials min-h-128→112, chips h-12→h-11, gaps tightened.
+- page.tsx: frame py-10→py-6 mobile (sm:py-12 desktop), prose block mt-9→mt-7, related nav mt-12→mt-9.
+- Verify: agent-browser 390×844 — breadcrumb+hero+WA+email+hours+address AND socials grid all inside first viewport (her screenshot had only hero+3 cards); 1440 desktop elegant, nothing cramped, prose readable. /info/shipping|faq|about|/blog 200 (shared components intact). SSR grep 0 ReferenceError. Console 0 errors after dev restart.
+- OPS: lint 65+2 exact; build gate (pkill → NEXT_BUILD_DIST_DIR=.next-verify bunx next build EXIT 0 → rm → setsid restart → curl warm 200s).
+
+Stage Summary:
+- Contact page now lands the whole «تواصلي معنا» block (CTA + channels + socials) in the first mobile viewport; all info pages share the tightened header/prose rhythm. Owner still owes the single re-publish on lubnel.space-z.ai (U36→U62).

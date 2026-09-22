@@ -43,7 +43,7 @@ export function InfoHeader({ titleAr, titleEn }: { titleAr: string; titleEn?: st
 
   return (
     <div>
-      <nav aria-label="مسار التنقل / Breadcrumb" className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
+      <nav aria-label="مسار التنقل / Breadcrumb" className="mb-3.5 flex items-center gap-1.5 text-sm text-muted-foreground">
         <Link href="/" className="min-h-[44px] inline-flex items-center transition-colors hover:text-primary">
           {t.home}
         </Link>
@@ -53,11 +53,14 @@ export function InfoHeader({ titleAr, titleEn }: { titleAr: string; titleEn?: st
         </span>
       </nav>
 
-      <header className="rounded-3xl border border-border/60 bg-secondary/40 px-6 py-9 sm:px-10">
+      {/* U62-CONTACT-COMPACT — owner: «فيه فراغ كبير… صغر الكلام شويه علشان
+          سكرول المستخدم ميطلاعش لتحت». Hero shrunk: py-9→py-5 mobile,
+          title 2xl→xl mobile so the contact block starts high on screen. */}
+      <header className="rounded-2xl border border-border/60 bg-secondary/40 px-5 py-5 sm:rounded-3xl sm:px-10 sm:py-9">
         <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary">
           LUBNÉL
         </p>
-        <h1 className="mt-2 text-2xl font-extrabold text-primary sm:text-3xl">{title}</h1>
+        <h1 className="mt-1.5 text-xl font-extrabold text-primary sm:mt-2 sm:text-3xl">{title}</h1>
       </header>
     </div>
   );
@@ -98,21 +101,21 @@ export function InfoProse({ ar, en }: { ar: string; en?: string }) {
 
   return (
     <article dir={isAr ? 'rtl' : 'ltr'} className={isAr ? '' : 'text-left'}>
-      <div className="space-y-5">
+      <div className="space-y-4">
         {blocks.map((block, i) => {
           if (block.kind === 'p') {
             return (
-              <p key={i} className="whitespace-pre-line text-[15px] leading-loose text-foreground/90">
+              <p key={i} className="whitespace-pre-line text-sm leading-relaxed text-foreground/90">
                 {block.text}
               </p>
             );
           }
           if (block.kind === 'ul') {
             return (
-              <ul key={i} className="space-y-2.5">
+              <ul key={i} className="space-y-2">
                 {block.items.map((item, j) => (
-                  <li key={j} className="flex gap-2.5 text-[15px] leading-relaxed text-foreground/90">
-                    <span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
+                  <li key={j} className="flex gap-2.5 text-sm leading-relaxed text-foreground/90">
+                    <span className="mt-[8px] h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
                     <span className="whitespace-pre-line">{item}</span>
                   </li>
                 ))}
@@ -120,9 +123,9 @@ export function InfoProse({ ar, en }: { ar: string; en?: string }) {
             );
           }
           return (
-            <ol key={i} className="space-y-3">
+            <ol key={i} className="space-y-2.5">
               {block.items.map((item, j) => (
-                <li key={j} className="flex gap-3 text-[15px] leading-relaxed text-foreground/90">
+                <li key={j} className="flex gap-3 text-sm leading-relaxed text-foreground/90">
                   <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-bold text-primary" aria-hidden>
                     {j + 1}
                   </span>
@@ -267,18 +270,18 @@ export function ContactPanel({
   ];
 
   return (
-    <div className="mt-6 space-y-3">
+    <div className="mt-4 space-y-2.5">
       <a
         href={`https://wa.me/${waDigits}?text=${waText}`}
         target="_blank"
         rel="noreferrer"
-        className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-5 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-600/25 transition-all hover:-translate-y-0.5 hover:bg-emerald-700 active:translate-y-0 active:scale-[0.99]"
+        className="flex min-h-[48px] w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-5 py-3 text-[15px] font-bold text-white shadow-lg shadow-emerald-600/25 transition-all hover:-translate-y-0.5 hover:bg-emerald-700 active:translate-y-0 active:scale-[0.99]"
       >
         <MessageCircle className="h-5 w-5" aria-hidden />
         {t.cpWaCta}
       </a>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-2.5 sm:grid-cols-2">
         {channels.map(({ Icon, label, value, href, ltr }) => {
           const inner = (
             <>
@@ -292,7 +295,7 @@ export function ContactPanel({
             </>
           );
           const cls =
-            'flex min-h-[60px] items-center gap-3 rounded-2xl border border-border/60 bg-card px-4 py-3 text-sm font-bold transition-colors hover:border-primary/40';
+            'flex min-h-[56px] items-center gap-3 rounded-2xl border border-border/60 bg-card px-4 py-2.5 text-sm font-bold transition-colors hover:border-primary/40';
           return href ? (
             <a key={label} href={href} target={href.startsWith('http') ? '_blank' : undefined} rel="noreferrer" className={cls}>
               {inner}
@@ -309,16 +312,16 @@ export function ContactPanel({
           / Facebook / Instagram / TikTok) — ALL live links (owner: «خليهم
           متاحين برضو»); unset URLs fall back instead of showing قريبًا, and
           the admin URL always wins when she adds it. */}
-      <section aria-label={t.cpSocialAria} className="pt-3">
+      <section aria-label={t.cpSocialAria} className="pt-2.5">
         <h2 className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-primary">
           {t.cpSocialTitle}
           <span className="h-px flex-1 bg-border" aria-hidden />
         </h2>
-        <div className="mt-3.5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="mt-3 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
           {socials.map(({ key, Glyph, chip, labelAr, labelEn, href, badgeAr, badgeEn }) => {
             const label = ar ? labelAr : labelEn;
             const cls =
-              'group flex min-h-[128px] flex-col items-center justify-center gap-2 rounded-2xl border border-border/60 bg-card px-3 py-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md';
+              'group flex min-h-[112px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-border/60 bg-card px-3 py-3.5 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md';
             return (
               <a
                 key={key}
@@ -329,11 +332,11 @@ export function ContactPanel({
                 className={cls}
               >
                 <span
-                  className="grid h-12 w-12 place-items-center rounded-full text-white shadow-md transition-transform duration-200 group-hover:scale-105"
+                  className="grid h-11 w-11 place-items-center rounded-full text-white shadow-md transition-transform duration-200 group-hover:scale-105"
                   style={chip}
                   aria-hidden
                 >
-                  <Glyph className="h-6 w-6" />
+                  <Glyph className="h-5.5 w-5.5" />
                 </span>
                 <span className="text-[13px] font-bold leading-tight">{label}</span>
                 <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary">
