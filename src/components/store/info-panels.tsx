@@ -7,7 +7,6 @@
 
 import Link from 'next/link';
 import {
-  Mail,
   Clock,
   MapPin,
   Banknote,
@@ -182,9 +181,12 @@ export function FaqAccordion({ itemsAr, itemsEn }: { itemsAr: FaqPair[]; itemsEn
 /* and cpWaCta/cpWaPrefill were removed from i18n + Studio texts.
 /* ------------------------------------------------------------------ */
 
+/* U70-CONTACT-NO-EMAIL — owner: «شيل جزء البريد اللاكتروني مش عايزه من
+/* صفحة تواصلي معنا» — the email card is gone from the channels grid;
+/* the email bullet also left the page prose (defaults + Studio DB
+/* override) and cpEmailLabel/contactEmail left i18n/Studio. */
 export function ContactPanel({
   waDigits,
-  email,
   hoursAr,
   hoursEn,
   locationAr,
@@ -196,7 +198,6 @@ export function ContactPanel({
   youtubeUrl,
 }: {
   waDigits: string;
-  email: string;
   hoursAr: string;
   hoursEn: string;
   locationAr: string;
@@ -210,7 +211,6 @@ export function ContactPanel({
   const { ar, t } = useT();
 
   const channels = [
-    { Icon: Mail, label: t.cpEmailLabel, value: email, href: `mailto:${email}`, ltr: true },
     { Icon: Clock, label: t.cpHoursLabel, value: ar ? hoursAr : hoursEn },
     { Icon: MapPin, label: t.cpAddressLabel, value: ar ? locationAr : locationEn },
   ];

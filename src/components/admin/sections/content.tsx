@@ -153,13 +153,10 @@ export default function ContentSection() {
         </div>
       </div>
 
-      {/* contact & socials */}
+      {/* contact & socials — U70-CONTACT-NO-EMAIL: the email field is gone
+          (owner: «شيل جزء البريد اللاكتروني مش عايزه من صفحة تواصلي معنا»). */}
       <div className={card}>
         <h3 className="text-sm font-black">التواصل والسوشيال</h3>
-        <div className={field}>
-          <Label>البريد الإلكتروني</Label>
-          <Input dir="ltr" className="text-left" value={form.contactEmail || ''} onChange={(e) => set({ contactEmail: e.target.value })} placeholder="hello@lubnel.com" />
-        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className={field}>
             <Label>مواعيد العمل (عربي)</Label>

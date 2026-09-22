@@ -232,11 +232,10 @@ Our team is available daily from 10 AM to 10 PM to help you pick the perfect gif
     titleAr: 'تواصلي معنا',
     titleEn: 'Contact us',
     descAr:
-      'فريق لوبنيل في خدمتك يوميًا من 10 صباحًا حتى 10 مساءً — واتساب، بريد إلكتروني، إنستغرام وفيسبوك. رد سريع على كل الاستفسارات.',
+      'فريق لوبنيل في خدمتك يوميًا من 10 صباحًا حتى 10 مساءً — واتساب، إنستغرام وفيسبوك. رد سريع على كل الاستفسارات.',
     contentAr: `يسعدنا أن نسمع منك! فريق لوبنيل متاح يوميًا من 10 صباحًا حتى 10 مساءً للإجابة عن استفساراتك، مساعدتك في اختيار الهدية المناسبة، أو متابعة طلبك.
 
 • واتساب: أسرع طريقة للوصول إلينا — افتحي بطاقة «قناة الواتساب» من قسم «تابعينا على» بالأعلى وسيصلك رد سريع خلال ساعات الدعم.
-• البريد الإلكتروني: hello@lubnel.com — للطلبات الرسمية والتعاونات.
 • العنوان: القاهرة، مصر — ونوصل لكل المحافظات.
 • إنستغرام وفيسبوك: تابعينا ليوميات لوبنيل وأفكار الهدايا والعروض أولًا بأول.
 
@@ -244,7 +243,6 @@ Our team is available daily from 10 AM to 10 PM to help you pick the perfect gif
     contentEn: `We would love to hear from you! The LUBNÉL team is available daily from 10 AM to 10 PM to answer your questions, help you pick the right gift, or follow up on your order.
 
 • WhatsApp: the fastest way to reach us — open the “WhatsApp channel” card from the “Follow us” section above and get a quick reply during support hours.
-• Email: hello@lubnel.com — for official requests and collaborations.
 • Location: Cairo, Egypt — delivering to every governorate.
 • Instagram & Facebook: follow us for LUBNÉL diaries, gift ideas and early access to offers.
 

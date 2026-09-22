@@ -162,7 +162,6 @@ export default async function InfoPage({
   }
 
   const t = bag.texts;
-  const email = t.contactEmail?.trim() || 'hello@lubnel.com';
 
   return (
     // U62-CONTACT-COMPACT — owner: «فيه فراغ كبير… صغر الكلام شويه علشان
@@ -189,7 +188,6 @@ export default async function InfoPage({
       {slug === 'contact' && (
         <ContactPanel
           waDigits={bag.waDigits}
-          email={email}
           hoursAr={t.hoursAr?.trim() || 'يوميًا من 10 صباحًا حتى 10 مساءً'}
           hoursEn={t.hoursEn?.trim() || 'Daily 10 AM – 10 PM'}
           locationAr={t.locationAr?.trim() || 'القاهرة، مصر'}

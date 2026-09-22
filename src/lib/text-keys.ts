@@ -188,7 +188,6 @@ export const TEXT_META: Record<string, { label: string; group: TextGroupId }> = 
   rvErrMissing: { label: 'خطأ بيانات ناقصة — العنوان', group: 'reviews' },
   rvErrMissingDesc: { label: 'خطأ بيانات ناقصة — الوصف', group: 'reviews' },
   // contact — صفحة التواصل
-  cpEmailLabel: { label: 'بطاقة البريد الإلكتروني — العنوان', group: 'contact' },
   cpHoursLabel: { label: 'بطاقة ساعات الدعم — العنوان', group: 'contact' },
   cpAddressLabel: { label: 'بطاقة العنوان — العنوان', group: 'contact' },
   cpWaChannel: { label: 'بطاقة قناة الواتساب', group: 'contact' },

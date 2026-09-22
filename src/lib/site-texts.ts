@@ -11,7 +11,6 @@ export type SiteTexts = {
   footerBlurbAr?: string;
   footerBlurbEn?: string;
   footerLinks?: FooterLink[];
-  contactEmail?: string;
   hoursAr?: string;
   hoursEn?: string;
   locationAr?: string;
@@ -44,7 +43,6 @@ export const DEFAULT_SITE_TEXTS: Required<Pick<SiteTexts, 'footerLinks'>> & Site
     { href: '/c/skincare', labelAr: 'عناية بالبشرة', labelEn: 'Skincare' },
     { href: '/c/body-care', labelAr: 'عناية بالجسم', labelEn: 'Body care' },
   ],
-  contactEmail: 'hello@lubnel.com',
   hoursAr: 'يوميًا من 10 صباحًا حتى 10 مساءً',
   hoursEn: 'Daily 10 AM – 10 PM',
   locationAr: 'القاهرة، مصر',
