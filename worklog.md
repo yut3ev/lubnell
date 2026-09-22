@@ -1441,3 +1441,20 @@ Work Log:
 
 Stage Summary:
 - الموقع بقى بيبعت النشرة فعليًا: إعدادات Brevo متخزنة ومتحقق منها بمصادقة حقيقية، والمرسل الظاهر «🌸 LUBNÉL <lubnel.cosmetics@gmail.com>» (المرسل المتحقق منه في Brevo)، ومفتاح SMTP مش بيترجع للعميل أبدًا ومش بيتفضى بالغلط. الرسالة التجريبية وصلت بريد المالك بنفس التمبلت النهائي. Re-publish on lubnel.space-z.ai still pending (U36→U72).
+---
+Task ID: U73-WELCOME-UNSUBSCRIBE
+Agent: Z.ai Code (main)
+Task: Owner: «اشتركت ف البريد مفيش حاجه وصلت وكمان بعت رساله تجريبيه موصلتش» — diagnosed both, added the missing welcome email and real one-click unsubscribe, and surfaced the Gmail-deliverability guidance.
+
+Work Log:
+- Diagnosis: the two test sends at 23:35–23:42 show `sent:1 failed:0` in NewsletterLog → Brevo ACCEPTED and relayed them; nothing arrived in Gmail → classic freemail-sender filtering (Brevo's own banner: gmail.com From via shared IP has no DKIM/DMARC alignment → spam-folder/drop). Her subscription itself was fine (upsert 200; she is moashrafsy@gmail.com) — but NO email is sent on subscribe at all (feature gap).
+- src/lib/mailer.ts (NEW shared lib): loadSmtp/buildMailer (one source of truth for the Studio SMTP card → transport + From identity, auth≠sender per U72), unsubToken/unsubUrlFor (deterministic sha256 token per address) and listUnsubHeaders (List-Unsubscribe + List-Unsubscribe-Post=One-Click — the Gmail/Yahoo bulk-sender requirement).
+- Welcome email (NEW behavior in /api/store/subscribe): first-time subscribers now receive a branded per-lang welcome («أهلاً بيكي في نادي لوبنيل 🌸» / EN) via buildNewsletterHtml + the owner's SMTP; fire-and-forget (signup never fails on mail errors), re-subscribing stays silent, result logged to NewsletterLog target=welcome.
+- Real unsubscribe: /api/newsletter/unsubscribe (GET = branded Arabic confirmation page, POST = Gmail one-click; token-validated, idempotent deleteMany). Template footer now renders «إلغاء الاشتراك — أو راسلينا على واتساب» with the real per-recipient link (preview without unsubUrl keeps the WhatsApp-only fallback).
+- Send route refactor: transport/From/List-Unsubscribe now from mailer lib; every campaign mail carries the one-click headers; admin test-send toast now tells her to check Spam when a test "succeeds but doesn't show", and the SMTP card got the spam/domain-auth guidance line.
+- Live proof: re-created her subscription → welcome email ACCEPTED by Brevo (NewsletterLog welcome sent:1, subject «أهلاً بيكي في نادي لوبنيل 🌸» → landed in her inbox or spam); full unsubscribe flow tested (valid link 200 + page + row deleted; bad token 400). Fixed a self-introduced regression mid-round (parseBody(req) arg dropped → 500) before it reached production.
+- Verify: storefront CLUB form present (390), admin newsletter section intact on 1440 (banner/composer/table), console errors 0; cleanup: verify session + all test rows/logs deleted (her data = 1 subscriber + her own send history).
+- OPS: lint 65+2 exact baseline; build gate pkill → NEXT_BUILD_DIST_DIR EXIT 0 → rm .next-verify → setsid restart + curl warm (/, /api/health 200).
+
+Stage Summary:
+- الاشتراك بقى بييجي معاه إيميل ترحيبي مارك فورًا، وكل إيميلات الموقع فيها إلغاء اشتراك حقيقي بنقرة واحدة (متطلب جيميل) — والإرسال التجريبي بيقول لها تبعث في السبام لو مشت. الرسائل التجريبية السابقة Brevo قبلها فعلاً — وصولها للـ Inbox محتاج خطوة مالكة واحدة: تفعيل تسجيل الدومين عند Brevo (Domains) أو التأشير «مش سبام». Re-publish on lubnel.space-z.ai still pending (U36→U73).

@@ -113,7 +113,7 @@ export function NewsletterAdminSection() {
     if (ok && res?.ok) {
       toast({
         title: res.test
-          ? `تم إرسال الرسالة التجريبية على ${testEmail.trim()} ✓`
+          ? `تم إرسال الرسالة التجريبية على ${testEmail.trim()} ✓ — لو مش واصلة خلال دقايق بصّي في Spam وفعّلي «مش سبام»`
           : `تم الإرسال ✓ — ${res.sent} وصلت${res.failed ? ` · ${res.failed} فشلت` : ''}`,
       });
       await load();

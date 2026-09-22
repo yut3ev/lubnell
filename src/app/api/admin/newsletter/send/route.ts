@@ -15,11 +15,12 @@ import { NextResponse } from "next/server";
 import { jsonOk, jsonError, parseBody, requireAdmin, audit } from "@/lib/api-helpers";
 import { db } from "@/lib/db";
 import { buildNewsletterHtml, STORE_URL, type NewsletterLang } from "@/lib/newsletter-template";
+// U73-WELCOME-UNSUBSCRIBE — transport/From/List-Unsubscribe now come from the
+// shared mailer lib (same source as the storefront welcome email).
+import { buildMailer, listUnsubHeaders, unsubUrlFor } from "@/lib/mailer";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-type SmtpSettings = { host?: string; port?: number; user?: string; pass?: string; fromName?: string; fromEmail?: string };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -64,14 +65,8 @@ export async function POST(req: Request) {
       return jsonError(isTest ? "—" : "لا يوجد مشتركون في هذا التقسيم بعد", 400);
 
     // ---- SMTP transport ---------------------------------------------
-    const row = await db.storeSettings.findUnique({ where: { key: "smtp" } });
-    let smtp: SmtpSettings = {};
-    try {
-      smtp = JSON.parse(row?.value || "{}") as SmtpSettings;
-    } catch {
-      /* keep empty */
-    }
-    if (!smtp.host?.trim() || !smtp.user?.trim() || !smtp.pass?.trim()) {
+    const mailer = await buildMailer();
+    if (!mailer) {
       return NextResponse.json(
         {
           ok: false,
@@ -81,21 +76,7 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-
-    const nodemailer = (await import("nodemailer")).default;
-    const port = Number(smtp.port) || 587;
-    const transport = nodemailer.createTransport({
-      host: smtp.host.trim(),
-      port,
-      secure: port === 465,
-      auth: { user: smtp.user.trim(), pass: smtp.pass.trim() },
-      connectionTimeout: 15_000,
-      greetingTimeout: 12_000,
-      socketTimeout: 20_000,
-    });
-    const fromName = smtp.fromName?.trim() || "LUBNÉL";
-    const senderEmail = smtp.fromEmail?.trim() || smtp.user.trim(); // U72 — auth ≠ sender
-    const from = `"${fromName}" <${senderEmail}>`;
+    const { transport, from, senderEmail } = mailer;
 
     // ---- dispatch ----------------------------------------------------
     let sent = 0;
@@ -107,6 +88,7 @@ export async function POST(req: Request) {
         message: cleanMessage,
         lang: r.lang,
         firstName: r.name,
+        unsubUrl: unsubUrlFor(r.email), // U73 — real one-click link per recipient
       });
       try {
         await transport.sendMail({
@@ -116,6 +98,7 @@ export async function POST(req: Request) {
           html,
           text: cleanMessage,
           replyTo: senderEmail,
+          headers: listUnsubHeaders(r.email), // U73 — Gmail/Yahoo bulk-sender compliance
         });
         sent += 1;
       } catch (err) {

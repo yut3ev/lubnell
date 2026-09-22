@@ -49,7 +49,8 @@ const COPY = {
     cta: 'تسوقي الآن',
     preheader: 'نشرة لوبنيل',
     footerNote: 'وصلك الرسالة لأنك مشتركة في نشرة لوبنيل البريدية 💕',
-    unsubscribe: 'للإلغاء أو أي استفسار — راسلينا على واتساب',
+    unsubscribe: 'إلغاء الاشتراك',
+    orWa: 'أو راسلينا على واتساب',
     tagline: 'جمالٌ يُهدى بكل حب',
     heroWord: 'نشرة لوبنيل',
   },
@@ -60,7 +61,8 @@ const COPY = {
     cta: 'Shop now',
     preheader: 'LUBNÉL newsletter',
     footerNote: 'You are receiving this because you joined the LUBNÉL newsletter 💕',
-    unsubscribe: 'To unsubscribe or ask anything — message us on WhatsApp',
+    unsubscribe: 'Unsubscribe',
+    orWa: 'or message us on WhatsApp',
     tagline: 'Beauty, gifted with love',
     heroWord: 'LUBNÉL LETTER',
   },
@@ -72,6 +74,9 @@ export function buildNewsletterHtml(opts: {
   lang?: NewsletterLang;
   /** optional greeting name for per-recipient personalization */
   firstName?: string | null;
+  /** U73 — real one-click unsubscribe link for this recipient; when omitted
+   *  (composer preview) the footer falls back to the WhatsApp line only. */
+  unsubUrl?: string;
 }): string {
   const lang = opts.lang === 'en' ? 'en' : 'ar';
   const c = COPY[lang];
@@ -126,7 +131,11 @@ export function buildNewsletterHtml(opts: {
           <td dir="${c.dir}" align="center" style="padding:0 32px 30px;font-family:Tahoma,Arial,sans-serif;text-align:center;">
             <p style="margin:0 0 6px;font-size:12px;color:${C.muted};">${c.footerNote}</p>
             <p style="margin:0 0 6px;font-size:12px;color:${C.muted};">
-              <a href="${STORE_WA_URL}" style="color:${C.wine};font-weight:bold;text-decoration:none;">${c.unsubscribe}</a>
+              ${
+                opts.unsubUrl
+                  ? `<a href="${escapeHtml(opts.unsubUrl)}" style="color:${C.wine};font-weight:bold;text-decoration:none;">${c.unsubscribe}</a> — <a href="${STORE_WA_URL}" style="color:${C.muted};text-decoration:none;">${c.orWa}</a>`
+                  : `<a href="${STORE_WA_URL}" style="color:${C.wine};font-weight:bold;text-decoration:none;">${c.unsubscribe}</a>`
+              }
             </p>
             <p style="margin:0;font-size:11px;color:${C.muted};">
               ${c.tagline} — © LUBNÉL ${new Date().getFullYear()}

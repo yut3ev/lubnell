@@ -364,6 +364,8 @@ function SmtpCard() {
         دي بيانات سيرفر الإيميل اللي بيبعت منها رسائل «النشرة البريدية» للمشتركين.
         الـ <span className="font-semibold">User (SMTP Login)</span> بيتملى بيه توثيق الدخول للسيرفر،
         أما <span className="font-semibold">From Email</span> فهو العنوان اللي المشتركين هيشوفوه مرسلًا (لازم يكون مسجّل ومتأكد عند مزوّد البريد).
+        <br />
+        لو الإيميلات بتروح «Spam» — فعّلي «مش سبام» من جيميل، وللحل الجذري سطّعي الدومين بتاعك عند مزوّد البريد (Domains → أضيفي سجلات DKIM/DMARC).
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className={field}>
