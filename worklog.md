@@ -1393,3 +1393,18 @@ Work Log:
 
 Stage Summary:
 - «تابعينا على» now carries TWO of the owner's own animations — the WhatsApp channel card (green pop-in glyph, U69) and the YouTube channel card (U67) — while FB/IG/TikTok keep their static brand circles; the card still opens the Studio-configurable WhatsApp link in a new tab. Single re-publish on lubnel.space-z.ai still pending (U36→U69).
+
+---
+Task ID: U70-CONTACT-NO-EMAIL
+Agent: Z.ai Code (main)
+Task: Owner: «شيل جزء البريد اللاكتروني مش عايزه من صفحة تواصلي معنا» (+ screenshot of the البريد الإلكتروني / hello@lubnel.com channel card) — remove the email part from the contact page.
+
+Work Log:
+- info-panels.tsx: email card removed from the channels grid (now hours + location — a clean 2-up on sm+ instead of the old 2+1 orphan); email prop + Mail import dropped; U70 comment documents the removal.
+- Prose coherence: the «البريد الإلكتروني: hello@lubnel.com» bullet removed from BOTH the shipped defaults (info-pages.ts contentAr/contentEn) and the Studio pages DB override (which is what actually renders); descAr no longer lists بريد إلكتروني (metadata description inherits the first prose line — unchanged first line, still clean). Privacy/terms pages still mention the email deliberately (other pages, not in scope).
+- Dead config: cpEmailLabel removed from i18n.tsx (AR+EN) + text-keys.ts (U57 mirror); contactEmail removed from SiteTexts type + DEFAULT_SITE_TEXTS + the Studio «التواصل والسوشيال» form (content.tsx). DB texts row had no contactEmail override — nothing orphaned.
+- Verify: SSR grep hello@lubnel.com=0, mailto=0, hours card + whatsapp.webm present; agent-browser 390 + 1440 — «email fully gone» from body innerText, panel leads with ساعات الدعم/العنوان, تابعينا 5-card row with both animated cards intact; console errors 0.
+- OPS: lint 65+2 exact baseline; build gate pkill → NEXT_BUILD_DIST_DIR Compiled successfully EXIT 0 → rm .next-verify → setsid restart + curl warm (/, /info/contact 200).
+
+Stage Summary:
+- تواصلي معنا now shows only what the owner wants: support hours + location cards, the تابعينا socials (WhatsApp + YouTube animated), and email-free prose; the email field also left Studio so she can't edit a dead setting. Single re-publish on lubnel.space-z.ai still pending (U36→U70).
