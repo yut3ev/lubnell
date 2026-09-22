@@ -7,7 +7,6 @@
 
 import Link from 'next/link';
 import {
-  MessageCircle,
   Mail,
   Clock,
   MapPin,
@@ -175,7 +174,12 @@ export function FaqAccordion({ itemsAr, itemsEn }: { itemsAr: FaqPair[]; itemsEn
 }
 
 /* ------------------------------------------------------------------ */
-/* Contact — WhatsApp CTA + channels grid                              */
+/* Contact — channels grid + تابعينا socials                           */
+/* U68-CONTACT-NO-WA-CTA — owner: «شيل الجزء الي ف الصوره دا من عند
+/* تواصلي معنا» (screenshot = the green «راسلينا على واتساب — رد سريع»
+/* button). The big CTA is gone; WhatsApp stays reachable through the
+/* قناة الواتساب card in the socials grid below (same wa.me number),
+/* and cpWaCta/cpWaPrefill were removed from i18n + Studio texts.
 /* ------------------------------------------------------------------ */
 
 export function ContactPanel({
@@ -204,9 +208,6 @@ export function ContactPanel({
   youtubeUrl?: string;
 }) {
   const { ar, t } = useT();
-  // U57-TEXTS-COMPLETE — the WhatsApp prefill line is owner-editable
-  // (Studio → كل النصوص → صفحة تواصلي معنا).
-  const waText = encodeURIComponent(t.cpWaPrefill);
 
   const channels = [
     { Icon: Mail, label: t.cpEmailLabel, value: email, href: `mailto:${email}`, ltr: true },
@@ -293,16 +294,6 @@ export function ContactPanel({
 
   return (
     <div className="mt-4 space-y-2.5">
-      <a
-        href={`https://wa.me/${waDigits}?text=${waText}`}
-        target="_blank"
-        rel="noreferrer"
-        className="flex min-h-[48px] w-full items-center justify-center gap-3 rounded-2xl bg-emerald-600 px-5 py-3 text-[15px] font-bold text-white shadow-lg shadow-emerald-600/25 transition-all hover:-translate-y-0.5 hover:bg-emerald-700 active:translate-y-0 active:scale-[0.99]"
-      >
-        <MessageCircle className="h-5 w-5" aria-hidden />
-        {t.cpWaCta}
-      </a>
-
       <div className="grid gap-2.5 sm:grid-cols-2">
         {channels.map(({ Icon, label, value, href, ltr }) => {
           const inner = (

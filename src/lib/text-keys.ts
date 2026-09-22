@@ -191,8 +191,6 @@ export const TEXT_META: Record<string, { label: string; group: TextGroupId }> = 
   cpEmailLabel: { label: 'بطاقة البريد الإلكتروني — العنوان', group: 'contact' },
   cpHoursLabel: { label: 'بطاقة ساعات الدعم — العنوان', group: 'contact' },
   cpAddressLabel: { label: 'بطاقة العنوان — العنوان', group: 'contact' },
-  cpWaPrefill: { label: 'رسالة واتساب الجاهزة', group: 'contact' },
-  cpWaCta: { label: 'زر واتساب الرئيسي', group: 'contact' },
   cpWaChannel: { label: 'بطاقة قناة الواتساب', group: 'contact' },
   cpJoinChannel: { label: 'شارة انضمي للقناة', group: 'contact' },
   cpFollowBadge: { label: 'شارة تابعينا', group: 'contact' },
