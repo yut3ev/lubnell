@@ -60,6 +60,7 @@ type NewsletterData = {
   smtpReady: boolean;
   smtpUser: string;
   smtpFromName: string;
+  smtpFromEmail: string;
 };
 
 type Target = 'all' | 'ar' | 'en';
@@ -82,8 +83,8 @@ export function NewsletterAdminSection() {
 
   const load = useCallback(async () => {
     const { ok, data } = await apiJson<{ ok: boolean } & NewsletterData>('/api/admin/newsletter');
-    if (ok && data?.ok) setData({ subscribers: data.subscribers, logs: data.logs, smtpReady: data.smtpReady, smtpUser: data.smtpUser, smtpFromName: data.smtpFromName });
-    else setData({ subscribers: [], logs: [], smtpReady: false, smtpUser: '', smtpFromName: '' });
+    if (ok && data?.ok) setData({ subscribers: data.subscribers, logs: data.logs, smtpReady: data.smtpReady, smtpUser: data.smtpUser, smtpFromName: data.smtpFromName, smtpFromEmail: data.smtpFromEmail });
+    else setData({ subscribers: [], logs: [], smtpReady: false, smtpUser: '', smtpFromName: '', smtpFromEmail: '' });
   }, []);
 
   useEffect(() => {
@@ -148,7 +149,10 @@ export function NewsletterAdminSection() {
         <div className="flex items-center gap-3 rounded-2xl border border-emerald-600/25 bg-emerald-600/10 px-4 py-3" role="status">
           <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" aria-hidden />
           <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-500">
-            البريد جاهز للإرسال من <span dir="ltr" className="font-mono">{data.smtpUser}</span>
+            البريد جاهز للإرسال — المرسل الظاهر:{' '}
+            <span dir="ltr" className="font-mono">
+              {data.smtpFromEmail || data.smtpUser}
+            </span>
             {data.smtpFromName ? ` باسم «${data.smtpFromName}»` : ''}
           </p>
         </div>

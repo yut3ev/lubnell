@@ -3,6 +3,9 @@
 // - SMTP credentials come from the owner's «إعدادات البريد الصادر» card
 //   (StoreSettings key=smtp) — without them the route fails with a clear
 //   Arabic setup message instead of silently dropping the campaign.
+// U72-SMTP-BREVO — the SMTP login (user/pass) is for AUTHENTICATION only;
+// the visible sender is `fromEmail` (owner's verified address, e.g.
+// lubnel.cosmetics@gmail.com) with `fromName` as the display name.
 // - Every recipient gets the same subject/message rendered through
 //   buildNewsletterHtml in THEIR OWN language (per-subscriber lang, with
 //   first-name greeting when known).
@@ -16,7 +19,7 @@ import { buildNewsletterHtml, STORE_URL, type NewsletterLang } from "@/lib/newsl
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-type SmtpSettings = { host?: string; port?: number; user?: string; pass?: string; fromName?: string };
+type SmtpSettings = { host?: string; port?: number; user?: string; pass?: string; fromName?: string; fromEmail?: string };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -91,7 +94,8 @@ export async function POST(req: Request) {
       socketTimeout: 20_000,
     });
     const fromName = smtp.fromName?.trim() || "LUBNÉL";
-    const from = `"${fromName}" <${smtp.user.trim()}>`;
+    const senderEmail = smtp.fromEmail?.trim() || smtp.user.trim(); // U72 — auth ≠ sender
+    const from = `"${fromName}" <${senderEmail}>`;
 
     // ---- dispatch ----------------------------------------------------
     let sent = 0;
@@ -111,7 +115,7 @@ export async function POST(req: Request) {
           subject: cleanSubject,
           html,
           text: cleanMessage,
-          replyTo: smtp.user.trim(),
+          replyTo: senderEmail,
         });
         sent += 1;
       } catch (err) {

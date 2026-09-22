@@ -321,14 +321,20 @@ function StoreTab() {
  * Credentials the newsletter sender uses to deliver mail (nodemailer SMTP).
  * Owner-only (settings tab). Free providers work — e.g. Brevo/Gmail app
  * password: host smtp-relay.brevo.com / smtp.gmail.com, port 587 or 465.
- * Stored under its own settings key so the password never mixes with site copy. */
+ * Stored under its own settings key so the password never mixes with site copy.
+ * U72-SMTP-BREVO — User (SMTP Login) authenticates with the relay, while
+ * «From Email» is the visible sender address the subscribers see (must be a
+ * sender verified at the provider). The stored key is never echoed back —
+ * the API masks it behind `passSet`. */
 
 type SmtpSettings = {
   host?: string;
   port?: number;
   user?: string;
   pass?: string;
+  passSet?: boolean; // GET-only flag: a key is stored server-side (never sent back)
   fromName?: string;
+  fromEmail?: string;
 };
 
 function SmtpCard() {
@@ -342,7 +348,7 @@ function SmtpCard() {
     if (await smtp.persist()) toast({ title: 'تم حفظ إعدادات البريد ✓' });
   }
 
-  const ready = Boolean(f.host?.trim() && f.user?.trim() && f.pass?.trim());
+  const ready = Boolean(f.host?.trim() && f.user?.trim() && (f.pass?.trim() || f.passSet));
 
   return (
     <div className={card}>
@@ -356,28 +362,41 @@ function SmtpCard() {
       </div>
       <p className="text-xs leading-relaxed text-muted-foreground">
         دي بيانات سيرفر الإيميل اللي بيبعت منها رسائل «النشرة البريدية» للمشتركين.
-        هاتيها من مزوّد البريد (مثال مجاني: Brevo — host: smtp-relay.brevo.com، port: 587، user: بريد التسجيل، pass: مفتاح SMTP).
+        الـ <span className="font-semibold">User (SMTP Login)</span> بيتملى بيه توثيق الدخول للسيرفر،
+        أما <span className="font-semibold">From Email</span> فهو العنوان اللي المشتركين هيشوفوه مرسلًا (لازم يكون مسجّل ومتأكد عند مزوّد البريد).
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className={field}>
-          <Label>Host</Label>
+          <Label>SMTP Host</Label>
           <Input dir="ltr" className="text-left" value={f.host || ''} onChange={(e) => set({ host: e.target.value })} placeholder="smtp-relay.brevo.com" />
         </div>
         <div className={field}>
-          <Label>Port (587 أو 465)</Label>
+          <Label>SMTP Port (587 أو 465)</Label>
           <Input dir="ltr" className="text-left" type="number" value={f.port ?? 587} onChange={(e) => set({ port: Number(e.target.value) || 587 })} />
         </div>
         <div className={field}>
-          <Label>User (بريد المرسل)</Label>
-          <Input dir="ltr" className="text-left" value={f.user || ''} onChange={(e) => set({ user: e.target.value })} placeholder="newsletter@lubnel.com" />
+          <Label>SMTP Username (للمصادقة)</Label>
+          <Input dir="ltr" className="text-left" value={f.user || ''} onChange={(e) => set({ user: e.target.value })} placeholder="baabc9001@smtp-brevo.com" />
         </div>
         <div className={field}>
-          <Label>Password / API Key</Label>
-          <Input dir="ltr" className="text-left" type="password" value={f.pass || ''} onChange={(e) => set({ pass: e.target.value })} placeholder="••••••••" />
+          <Label>SMTP Password / SMTP Key</Label>
+          <Input
+            dir="ltr"
+            className="text-left"
+            type="password"
+            value={f.pass || ''}
+            onChange={(e) => set({ pass: e.target.value })}
+            placeholder={f.passSet ? 'متخزنة ✓ — اكتبي مفتاح جديد فقط لو عايزة تبدليها' : '••••••••'}
+            autoComplete="new-password"
+          />
         </div>
         <div className={field}>
-          <Label>اسم المرسل الظاهر</Label>
-          <Input value={f.fromName || ''} onChange={(e) => set({ fromName: e.target.value })} placeholder="LUBNÉL 🌸" />
+          <Label>From Email (بريد المرسل الظاهر)</Label>
+          <Input dir="ltr" className="text-left" type="email" value={f.fromEmail || ''} onChange={(e) => set({ fromEmail: e.target.value })} placeholder="lubnel.cosmetics@gmail.com" />
+        </div>
+        <div className={field}>
+          <Label>From Name (الاسم الظاهر)</Label>
+          <Input value={f.fromName || ''} onChange={(e) => set({ fromName: e.target.value })} placeholder="🌸 LUBNÉL" />
         </div>
       </div>
       <Button onClick={save} disabled={smtp.saving} className="h-11 w-full rounded-full bg-primary text-sm font-bold text-primary-foreground">

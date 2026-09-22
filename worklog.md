@@ -1425,3 +1425,19 @@ Work Log:
 
 Stage Summary:
 - لوحة التحكم now has «النشرة البريدية»: she sees every subscriber (email/name/lang/date/ip), composes from a ready professional site-branded template with live preview, targets all/عربي/EN, test-sends to herself, and delivers via her own SMTP credentials — with a full send history. One setup step remains OWNER-SIDE: paste SMTP creds (e.g. free Brevo) in الإعدادات → بيانات المتجر → إعدادات البريد الصادر. Re-publish on lubnel.space-z.ai still pending (U36→U71).
+---
+Task ID: U72-SMTP-BREVO
+Agent: Z.ai Code (main)
+Task: Owner: «خلي الإعدادات في الموقع بالشكل ده» — configure the site's outgoing mail with her Brevo SMTP relay (host smtp-relay.brevo.com / port 587 / user baabc9001@smtp-brevo.com / From Email lubnel.cosmetics@gmail.com / From Name 🌸 LUBNÉL), with the SMTP login used for AUTH and lubnel.cosmetics@gmail.com as the visible sender.
+
+Work Log:
+- Sender ≠ auth: the U71 send route built `from` from the SMTP username; added a dedicated `fromEmail` field across the chain — send route (`from` + `replyTo` now use fromEmail, falling back to user), GET /api/admin/newsletter (returns smtpFromEmail), and the dashboard green banner now reads «المرسل الظاهر: lubnel.cosmetics@gmail.com باسم «🌸 LUBNÉL»».
+- Secret hardening (settings API): GET key=smtp now masks the stored key (returns pass:'' + passSet:true — the key never echoes to any client); POST key=smtp only overwrites the password when a non-empty value is sent (saving the form without retyping can no longer wipe the stored key) and drops the passSet flag before persist.
+- SmtpCard (Studio → بيانات المتجر): new «From Email (بريد المرسل الظاهر)» field, User label clarified as «SMTP Username (للمصادقة)», password placeholder shows «متخزنة ✓ — اكتبي مفتاح جديد فقط لو عايزة تبدليها» when passSet, ready badge counts passSet as ready, helper text explains auth-vs-sender.
+- Seeded StoreSettings key=smtp with the owner's exact values (host/port 587/user/fromEmail/fromName) — merge-preserving the pass already stored (owner had saved a real Brevo key earlier: 90-char xsmtpsib- format).
+- Live proof: `transport.verify()` PASSED (auth + relay reachable); a real end-to-end test email built with the production LUBNÉL template was delivered through Brevo with from «"🌸 LUBNÉL" <lubnel.cosmetics@gmail.com>» to the owner's own inbox (never subscribers); outbound TCP 587 confirmed reachable from this environment. Test scripts deleted after.
+- Verify: agent-browser 390 — newsletter section shows the new green sender banner, exact requested table columns (البريد الإلكتروني/الاسم/Lang/Date/IP), composer + preview intact; desktop 1440 — SMTP card renders all six fields with the seeded values and «جاهز للإرسال ✓»; console errors 0. Deleted the leftover U71 test subscriber (lubnel.club.test@gmail.com) and the injected verify session afterwards.
+- OPS: lint 65+2 exact baseline; build gate pkill → NEXT_BUILD_DIST_DIR Compiled successfully EXIT 0 → rm .next-verify → setsid restart + curl warm (/, /admin 200).
+
+Stage Summary:
+- الموقع بقى بيبعت النشرة فعليًا: إعدادات Brevo متخزنة ومتحقق منها بمصادقة حقيقية، والمرسل الظاهر «🌸 LUBNÉL <lubnel.cosmetics@gmail.com>» (المرسل المتحقق منه في Brevo)، ومفتاح SMTP مش بيترجع للعميل أبدًا ومش بيتفضى بالغلط. الرسالة التجريبية وصلت بريد المالك بنفس التمبلت النهائي. Re-publish on lubnel.space-z.ai still pending (U36→U72).

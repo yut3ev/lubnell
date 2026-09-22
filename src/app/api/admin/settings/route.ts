@@ -6,6 +6,9 @@
 import { invalidateSettings } from "@/lib/settings-cache"; // U54-PERF-ROBUST
 import { jsonOk, jsonError, parseBody, requireAdmin, audit } from "@/lib/api-helpers";
 import { db } from "@/lib/db"; // U56-HOTFIX — bare `db` ReferenceError'd at runtime (500 on every settings save)
+// U72-SMTP-BREVO — the smtp key never round-trips its password: GET masks it
+// behind a `passSet` flag, and POST only overwrites it when a non-empty value
+// is sent (so saving the form without retyping the key can't wipe it).
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +35,12 @@ export async function GET(req: Request) {
     return jsonError("غير مصرح", 401);
   }
   const row = await db.storeSettings.findUnique({ where: { key } });
-  return jsonOk({ ok: true, key, settings: row ? JSON.parse(row.value) : null });
+  let settings: Record<string, unknown> | null = row ? JSON.parse(row.value) : null;
+  if (key === "smtp" && settings) {
+    const { pass, ...rest } = settings as Record<string, unknown>;
+    settings = { ...rest, pass: "", passSet: Boolean(pass) }; // U72 — never leak the SMTP key
+  }
+  return jsonOk({ ok: true, key, settings });
 }
 
 export async function POST(req: Request) {
@@ -50,6 +58,11 @@ export async function POST(req: Request) {
     }
     const values: Record<string, unknown> = { ...body };
     delete values.key;
+    if (key === "smtp") {
+      // U72 — empty password field = «keep the stored key»; also drop the GET-only flag
+      if (typeof values.pass !== "string" || !values.pass.trim()) delete values.pass;
+      delete values.passSet;
+    }
     const existing = await db.storeSettings.findUnique({ where: { key } });
     const merged = { ...(existing ? JSON.parse(existing.value) : {}), ...values };
     await db.storeSettings.upsert({ where: { key }, create: { key, value: JSON.stringify(merged) }, update: { value: JSON.stringify(merged) } });

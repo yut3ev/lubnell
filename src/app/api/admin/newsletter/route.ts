@@ -18,10 +18,15 @@ export async function GET(req: Request) {
       db.newsletterLog.findMany({ orderBy: { createdAt: "desc" }, take: 15 }),
       db.storeSettings.findUnique({ where: { key: "smtp" } }),
     ]);
-    let smtp = { host: "", user: "", fromName: "" };
+    let smtp = { host: "", user: "", fromName: "", fromEmail: "" };
     try {
       const parsed = JSON.parse(smtpRow?.value || "{}") as Partial<typeof smtp>;
-      smtp = { host: parsed.host || "", user: parsed.user || "", fromName: parsed.fromName || "" };
+      smtp = {
+        host: parsed.host || "",
+        user: parsed.user || "",
+        fromName: parsed.fromName || "",
+        fromEmail: parsed.fromEmail || "", // U72-SMTP-BREVO — visible sender
+      };
     } catch {
       /* keep defaults — never leak the password here */
     }
@@ -39,6 +44,7 @@ export async function GET(req: Request) {
       smtpReady: Boolean(smtp.host && smtp.user),
       smtpUser: smtp.user,
       smtpFromName: smtp.fromName,
+      smtpFromEmail: smtp.fromEmail,
     });
   } catch {
     return jsonError("تعذر تحميل بيانات النشرة", 500);
