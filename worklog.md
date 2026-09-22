@@ -1330,3 +1330,18 @@ Work Log:
 
 Stage Summary:
 - The three trust icons are now the owner's own animated clips — delivery moped, check seal, gift box with confetti — looping quietly on transparent backgrounds, sized for phone/iPad/desktop inside fixed slots with real breathing room. U64 SVG twins remain one import away if the owner wants them back. Single re-publish on lubnel.space-z.ai still pending (U36→U65).
+
+---
+Task ID: U66-TRUST-AIR
+Agent: Z.ai Code (main)
+Task: Owner: «حاسس الايقون صغير مش ظاهره وكمان الخلفيه البيضه واخده حايز كبير مش مبين شكلهم حلو» — trust icons too small + white mobile cards eat space and look bad.
+
+Work Log:
+- Removed ALL white card chrome on phones (rounded-xl border bg-card px-2 py-3.5 shadow-sm + the sm: resets are gone — sm+ was already chrome-less): clips now float directly on the strip's soft bg-secondary/40.
+- Enlarged every clip ~1.5×: truck h-8→h-12 (sm:h-10→h-14), badge + gift h-9→h-14 (sm:h-11→h-16). Slot grew to h-14 w-full (mobile) / h-16 w-24 (sm+). Measured boxes: mobile truck 72×48, badge 56×56, gift 71×56; desktop 84×56 / 64×64 / 81×64.
+- Copy bumped to match: title text-[11px]→text-xs, sub text-[10px]→text-[10.5px] (line-clamps kept).
+- Verify: 390 + 1440 screenshots — no cards, icons prominent and aligned, badge caught mid-burst in stills (fine in motion); console errors 0.
+- OPS: lint 65+2 exact; build gate pkill → NEXT_BUILD_DIST_DIR Compiled successfully EXIT 0 → rm .next-verify → setsid restart + warm (/ 200).
+
+Stage Summary:
+- Trust strip is now air: three big animated brand-pink clips on the soft strip background, no boxes anywhere, aligned columns, copy one step larger. Single re-publish on lubnel.space-z.ai still pending (U36→U66).
