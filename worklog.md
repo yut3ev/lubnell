@@ -1408,3 +1408,20 @@ Work Log:
 
 Stage Summary:
 - تواصلي معنا now shows only what the owner wants: support hours + location cards, the تابعينا socials (WhatsApp + YouTube animated), and email-free prose; the email field also left Studio so she can't edit a dead setting. Single re-publish on lubnel.space-z.ai still pending (U36→U70).
+
+---
+Task ID: U71-NEWSLETTER-ADMIN
+Agent: Z.ai Code (main)
+Task: Owner: «ضيف اوبشن ف لوحة التحكم النشرة البريدية … المشتركون البريد الإلكتروني الاسم Lang Date ip مع امكانية ارسال رسال احترافيه ليهم بتملت جاهز يخص الموقع علي بريدهم» — build the newsletter admin section: subscribers table with her exact columns + professional ready-template sending to their email.
+
+Work Log:
+- Schema (db:push): Subscriber gains name/lang/ip (back-compat defaults); new NewsletterLog (subject, target, recipients/sent/failed, status, error, actor). nodemailer + @types installed.
+- src/lib/newsletter-template.ts — ISOMORPHIC branded email template (email-client-safe tables + inline styles): LUBNÉL wine header, per-lang RTL/LTR copy, nl2br + auto-linkified URLs, optional first-name greeting, CTA «تسوقي الآن» → lubnel.space-z.ai, footer with tagline + WhatsApp unsubscribe line. Also exports the READY_TEMPLATE_AR/EN («تمبلت جاهز») with a CLUB10-style promo the owner edits before sending.
+- Storefront: subscribe API accepts name/lang + captures IP (clientIpFromHeaders); newsletter-section.tsx adds a matching white pill «الاسم (اختياري)» under the email bar (zero friction, both cleared on success); newsletterNamePh i18n key (AR/EN + text-keys mirror).
+- Admin APIs: GET /api/admin/newsletter (subscribers + last-15 logs + smtpReady, never leaks the password); POST /api/admin/newsletter/send (customers.read-gated, CSRF-guarded) — validates subject/message, segments all|ar|en or single testEmail, builds per-subscriber-lang HTML, sends sequentially via nodemailer SMTP (Studio credentials, port 465→secure), 350ms gap, logs result + audit, clear Arabic setup error when SMTP missing. Settings API gains the 'smtp' key.
+- Admin UI: new sections/newsletter.tsx wired into dashboard NAV (النشرة البريدية, MailPlus, customers.read): SMTP status banners (amber setup guide / green ready with sender address), 3 stat cards, composer (subject + body + تمبلت جاهز/EN template buttons + all/ar/en segmented control with live counts + sandboxed iframe preview rendering the EXACT send HTML via the same lib + test-email field + send button with totals), subscribers table (max-h scroll, sticky head) with البريد الإلكتروني/الاسم/Lang/Date/IP columns exactly as requested, and a send-history list. Studio settings → بيانات المتجر gains the «إعدادات البريد الصادر (SMTP)» card (host/port/user/password/fromName, ready badge, its own save).
+- Verify (owner1 session token injected for browser): mobile 390 — section renders, template button fills composer + toast, branded preview iframe renders, send-without-SMTP shows the setup toast (error path), table shows name captured from the new storefront pill; desktop 1440 — all five requested columns visible (AR lang badge, Arabic fmtDate, IP), SMTP card complete in settings; subscribe API smoke-tested (success + 400 guard); console errors 0.
+- Cleanup: test subscriber + injected session deleted; dev restarted. OPS: lint 65+2 exact (twice), build gate ×2 EXIT 0, curl warm (/, /admin 200).
+
+Stage Summary:
+- لوحة التحكم now has «النشرة البريدية»: she sees every subscriber (email/name/lang/date/ip), composes from a ready professional site-branded template with live preview, targets all/عربي/EN, test-sends to herself, and delivers via her own SMTP credentials — with a full send history. One setup step remains OWNER-SIDE: paste SMTP creds (e.g. free Brevo) in الإعدادات → بيانات المتجر → إعدادات البريد الصادر. Re-publish on lubnel.space-z.ai still pending (U36→U71).
