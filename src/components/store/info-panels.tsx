@@ -240,7 +240,8 @@ export function ContactPanel({
   }[] = [
     {
       key: 'wa-channel',
-      Glyph: WhatsAppGlyph,
+      Glyph: WhatsAppGlyph, // unused when `video` is set (render guard)
+      video: '/icons/whatsapp.webm',
       chip: { background: '#25D366' },
       labelAr: t.cpWaChannel,
       labelEn: 'WhatsApp channel',
@@ -326,7 +327,11 @@ export function ContactPanel({
           متاحين برضو»); unset URLs fall back instead of showing قريبًا, and
           the admin URL always wins when she adds it.
           U67 — the YouTube channel joins as a fifth slot rendered with the
-          owner's animated webm logo; grid opens to lg:grid-cols-5. */}
+          owner's animated webm logo; grid opens to lg:grid-cols-5.
+          U69-WA-ANIMATED — owner: «يقونات متحركة لقناة للوتساب ف تواصل معنا
+          خليها زي الملف ايل بعته» (+ «Whatsapp icon animation.webm", 150×150
+          VP8+alpha 3s pop-in loop) — the WhatsApp channel card now renders
+          the owner's clip instead of the static #25D366 circle. */}
       <section aria-label={t.cpSocialAria} className="pt-2.5">
         <h2 className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-primary">
           {t.cpSocialTitle}
@@ -348,8 +353,9 @@ export function ContactPanel({
                 className={cls}
               >
                 {video ? (
-                  // the YT clip's canvas carries baked-in padding (~40%) —
-                  // h-16 optically matches the h-11 brand circles beside it
+                  // both owner clips (youtube.webm U67, whatsapp.webm U69)
+                  // carry baked-in canvas padding (~40–70% fill) — h-16
+                  // optically matches the h-11 brand circles beside them
                   <TrustVideo src={video} className="h-16 w-16" />
                 ) : (
                   <span
