@@ -2,7 +2,8 @@
 
 import { useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, BadgeCheck, Gift, MessageCircleHeart, Truck } from 'lucide-react';
+import { ArrowLeft, MessageCircleHeart } from 'lucide-react';
+import { TrustTruck, TrustBadge, TrustGift } from '@/components/store/trust-icons'; // U64-TRUST-MOTION
 import { EditorialCard } from '@/components/store/editorial-card';
 import { Reveal } from '@/components/store/reveal';
 import { AiStylistBanner } from '@/components/store/ai-stylist-banner';
@@ -63,9 +64,9 @@ export function HomeSections({
         <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6">
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 sm:gap-4">
             {[
-              { icon: Truck, t: s ? (ar ? s.trust1TitleAr : s.trust1TitleEn) : ar ? 'شحن مجاني' : 'Free shipping', s: s ? (ar ? s.trust1SubAr : s.trust1SubEn) : ar ? 'للطلبات فوق 900 ج.م' : 'over 900 EGP' },
-              { icon: BadgeCheck, t: s ? (ar ? s.trust2TitleAr : s.trust2TitleEn) : ar ? 'منتجات أصلية' : 'Authentic products', s: s ? (ar ? s.trust2SubAr : s.trust2SubEn) : ar ? 'مصادر موثوقة 100%' : '100% trusted sources' },
-              { icon: Gift, t: s ? (ar ? s.trust3TitleAr : s.trust3TitleEn) : ar ? 'بوكسات جاهزة للإهداء' : 'Gift-ready boxes', s: s ? (ar ? s.trust3SubAr : s.trust3SubEn) : ar ? 'تغليف أنيق لكل طلب' : 'elegant packaging' },
+              { icon: TrustTruck, t: s ? (ar ? s.trust1TitleAr : s.trust1TitleEn) : ar ? 'شحن مجاني' : 'Free shipping', s: s ? (ar ? s.trust1SubAr : s.trust1SubEn) : ar ? 'للطلبات فوق 900 ج.م' : 'over 900 EGP' },
+              { icon: TrustBadge, t: s ? (ar ? s.trust2TitleAr : s.trust2TitleEn) : ar ? 'منتجات أصلية' : 'Authentic products', s: s ? (ar ? s.trust2SubAr : s.trust2SubEn) : ar ? 'مصادر موثوقة 100%' : '100% trusted sources' },
+              { icon: TrustGift, t: s ? (ar ? s.trust3TitleAr : s.trust3TitleEn) : ar ? 'بوكسات جاهزة للإهداء' : 'Gift-ready boxes', s: s ? (ar ? s.trust3SubAr : s.trust3SubEn) : ar ? 'تغليف أنيق لكل طلب' : 'elegant packaging' },
             ].map(({ icon: Icon, t: title, s }, i) => (
               <Reveal key={title} delay={i * 90} className="h-full">
               <div

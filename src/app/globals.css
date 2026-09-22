@@ -440,3 +440,91 @@ img {
     top: 50%;
   }
 }
+
+/* ================================================================
+   U64-TRUST-MOTION — animated trust-strip icons
+   Owner: «ضف حركة بسيطة على الأيقونات… من غير ما أخرب البساطة»
+   One calm shared rhythm (2.4s) across the three icons:
+   truck wheels spin + body judders + speed lines,
+   badge pulses + check redraws itself,
+   gift hops + bow sways. All off under prefers-reduced-motion.
+   ================================================================ */
+@keyframes u64-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes u64-judder {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(0.35px, -0.25px); }
+  50% { transform: translate(-0.3px, 0.3px); }
+  75% { transform: translate(0.3px, 0.2px); }
+}
+@keyframes u64-dash {
+  0% { opacity: 0; transform: translateX(0.8px); }
+  30% { opacity: 1; }
+  65% { opacity: 0; transform: translateX(-1.4px); }
+  100% { opacity: 0; transform: translateX(-1.4px); }
+}
+@keyframes u64-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+@keyframes u64-draw {
+  0% { stroke-dashoffset: 9; opacity: 0; }
+  10% { opacity: 1; }
+  55% { stroke-dashoffset: 0; opacity: 1; }
+  86% { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+@keyframes u64-hop {
+  0%, 58%, 100% { transform: translateY(0); }
+  66% { transform: translateY(-1.1px); }
+  78% { transform: translateY(0); }
+  86% { transform: translateY(-0.4px); }
+}
+@keyframes u64-sway {
+  from { transform: rotate(-7deg); }
+  to { transform: rotate(7deg); }
+}
+
+.u64-wheel {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: u64-spin 1.2s linear infinite;
+}
+.u64-judder {
+  animation: u64-judder 0.6s ease-in-out infinite;
+}
+.u64-dash {
+  animation: u64-dash 1.2s ease-out infinite;
+}
+.u64-badge-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: u64-pulse 2.4s ease-in-out infinite;
+}
+.u64-check-draw {
+  stroke-dasharray: 9;
+  animation: u64-draw 2.4s ease-in-out infinite;
+}
+.u64-gift-hop {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: u64-hop 2.4s ease-in-out infinite;
+}
+.u64-bow {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: u64-sway 1.2s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .u64-wheel,
+  .u64-judder,
+  .u64-dash,
+  .u64-badge-pulse,
+  .u64-check-draw,
+  .u64-gift-hop,
+  .u64-bow {
+    animation: none;
+  }
+}

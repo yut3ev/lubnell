@@ -1285,3 +1285,18 @@ Work Log:
 
 Stage Summary:
 - Footer trimmed to brand + about + customer-care columns at the owner's request; every removed entry remains reachable (header nav, footer contact link, info pages). Single re-publish on lubnel.space-z.ai still pending (U36→U63).
+
+---
+Task ID: U64-TRUST-MOTION
+Agent: Z.ai Code (main)
+Task: Owner (trust-strip screenshot): «ضف حركة بسيطة على الأيقونات اللي طلبتيهم، من غير ما أخرب البساطة» — truck: wheels spin + gentle jeans-like judder + speed lines behind; gift: soft hop + bow sways; badge: calm pulse + check redraws itself each cycle, all one calm rhythm.
+
+Work Log:
+- New src/components/store/trust-icons.tsx: TrustTruck / TrustBadge / TrustGift — geometry copied VERBATIM from lucide-react (truck body/cab paths, badge+check paths, gift rect/ribbons/bow path), same 24×24 viewBox + stroke style → identical look, motion-only difference. Truck wheels = lucide circles + thin hub spokes (spokes make the spin visible); speed lines are 3 tiny rounded dashes at the rear (x 0.8–2.8, inside viewBox) with staggered delays; badge check gets pathLength={9} for an exact CSS dash draw.
+- globals.css: u64-* keyframes section — spin 1.2s linear, judder 0.6s (0.35px amplitude, sub-pixel at render size), dash 1.2s staggered fade, pulse 2.4s (scale 1.06), draw 2.4s (dashoffset 9→0, fade out at cycle end = redraw), hop 2.4s (double mini-bounce at cycle tail), sway 1.2s alternate (-7°↔+7°, transform-origin center bottom = the knot). transform-box: fill-box everywhere. Full @media (prefers-reduced-motion: reduce) shutoff.
+- home-sections.tsx: trust strip map now uses the three Trust components (className/aria-hidden passthrough kept, h-4/5 sizing unchanged). Note: MultiEdit atomicity quirk — failed 3rd comment edit after 2 applied edits; re-verified file state manually (both critical edits were in).
+- Verify: agent-browser computed styles show ALL 7 animations live (u64-spin/judder/dash/pulse/draw/hop/sway with correct durations); desktop + 390 screenshots: icons visually IDENTICAL to the static lucide look (subtlety preserved); console 0 errors; SSR HTML carries u64-wheel after restart; /, /blog, /info/contact 200.
+- OPS: lint 65+2 exact; tsc noise audited (route.ts/home-sections TS2367 + examples/mini-services/prisma errors are PRE-EXISTING, none from new file); build gate pkill → NEXT_BUILD_DIST_DIR Compiled successfully EXIT 0 → rm .next-verify → setsid restart + warm.
+
+Stage Summary:
+- The three trust icons are now quietly alive — spinning wheels + judder + speed lines, hopping gift + swaying bow, pulsing badge + self-drawing check — all sharing one calm 2.4s beat, geometry untouched, motion fully disabled for reduced-motion users. Single re-publish on lubnel.space-z.ai still pending (U36→U64).
