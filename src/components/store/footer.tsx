@@ -10,6 +10,7 @@
 // social icons all stay. Footer is now a tight 3-column lockup.
 
 import Link from 'next/link';
+import { Youtube } from 'lucide-react'; // U67-YOUTUBE-SOCIAL
 import { WHATSAPP_NUMBER } from '@/lib/cart-store';
 import { useT } from '@/lib/i18n';
 import { resolveSiteTexts, type SiteTexts } from '@/lib/site-texts';
@@ -63,6 +64,18 @@ export function StoreFooter({
             label: 'TikTok',
             glyph: <TikTokGlyph className="h-4.5 w-4.5 text-white" />,
             style: { background: '#010101' },
+          },
+        ]
+      : []),
+    // U67-YOUTUBE-SOCIAL — the owner's real channel ships as the site-texts
+    // default; the chip hides only if she ever empties the URL from the admin.
+    ...(copy.youtubeUrl?.trim()
+      ? [
+          {
+            href: copy.youtubeUrl.trim(),
+            label: 'YouTube',
+            glyph: <Youtube className="h-4.5 w-4.5 text-white" />,
+            style: { background: '#FF0000' },
           },
         ]
       : []),

@@ -17,6 +17,7 @@ import {
   ChevronLeft,
 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
+import { TrustVideo } from '@/components/store/animated-icon-video'; // U67-YOUTUBE-SOCIAL
 import {
   FacebookGlyph,
   InstagramGlyph,
@@ -188,6 +189,7 @@ export function ContactPanel({
   facebookUrl,
   whatsappChannelUrl,
   tiktokUrl,
+  youtubeUrl,
 }: {
   waDigits: string;
   email: string;
@@ -199,6 +201,7 @@ export function ContactPanel({
   facebookUrl?: string;
   whatsappChannelUrl?: string;
   tiktokUrl?: string;
+  youtubeUrl?: string;
 }) {
   const { ar, t } = useT();
   // U57-TEXTS-COMPLETE — the WhatsApp prefill line is owner-editable
@@ -217,9 +220,16 @@ export function ContactPanel({
   // the real URLs from the admin, WA channel falls back to the store's own
   // WhatsApp chat and TikTok to the platform home (same fallback doctrine the
   // footer has used since U8). The admin URL always wins when present.
+  // U67-YOUTUBE-SOCIAL — owner: «ضيف معاهم ايقون لليوتيوب يدوس عليه تفتح
+  // القناه» + the animated «Youtube Logo Effect.webm». The card uses the
+  // owner's clip (transparent VP8+alpha) instead of a static glyph circle,
+  // spans the full row on phones (5th card would orphan at half width)
+  // and sits as an equal 5th column on lg.
   const socials: {
     key: string;
     Glyph: typeof WhatsAppGlyph;
+    video?: string;
+    fullRowOnMobile?: boolean;
     chip: { background: string };
     labelAr: string;
     labelEn: string;
@@ -267,6 +277,18 @@ export function ContactPanel({
       badgeAr: t.cpFollowBadge,
       badgeEn: 'Follow us',
     },
+    {
+      key: 'youtube',
+      Glyph: WhatsAppGlyph, // unused when `video` is set (render guard)
+      video: '/icons/youtube.webm',
+      fullRowOnMobile: true,
+      chip: { background: '#FF0000' },
+      labelAr: t.cpYtChannel,
+      labelEn: 'YouTube channel',
+      href: youtubeUrl || 'https://youtube.com/@lubnel9606?si=dBLevXM5C-gjipd8',
+      badgeAr: t.cpFollowBadge,
+      badgeEn: 'Follow us',
+    },
   ];
 
   return (
@@ -311,17 +333,20 @@ export function ContactPanel({
       {/* U52 — «تابعينا على»: the four official-brand slots (WhatsApp channel
           / Facebook / Instagram / TikTok) — ALL live links (owner: «خليهم
           متاحين برضو»); unset URLs fall back instead of showing قريبًا, and
-          the admin URL always wins when she adds it. */}
+          the admin URL always wins when she adds it.
+          U67 — the YouTube channel joins as a fifth slot rendered with the
+          owner's animated webm logo; grid opens to lg:grid-cols-5. */}
       <section aria-label={t.cpSocialAria} className="pt-2.5">
         <h2 className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-primary">
           {t.cpSocialTitle}
           <span className="h-px flex-1 bg-border" aria-hidden />
         </h2>
-        <div className="mt-3 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-          {socials.map(({ key, Glyph, chip, labelAr, labelEn, href, badgeAr, badgeEn }) => {
+        <div className="mt-3 grid grid-cols-2 gap-2.5 lg:grid-cols-5">
+          {socials.map(({ key, Glyph, video, fullRowOnMobile, chip, labelAr, labelEn, href, badgeAr, badgeEn }) => {
             const label = ar ? labelAr : labelEn;
             const cls =
-              'group flex min-h-[112px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-border/60 bg-card px-3 py-3.5 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md';
+              'group flex min-h-[112px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-border/60 bg-card px-3 py-3.5 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md' +
+              (fullRowOnMobile ? ' col-span-2 lg:col-span-1' : '');
             return (
               <a
                 key={key}
@@ -331,13 +356,19 @@ export function ContactPanel({
                 aria-label={`${label} — LUBNÉL`}
                 className={cls}
               >
-                <span
-                  className="grid h-11 w-11 place-items-center rounded-full text-white shadow-md transition-transform duration-200 group-hover:scale-105"
-                  style={chip}
-                  aria-hidden
-                >
-                  <Glyph className="h-5.5 w-5.5" />
-                </span>
+                {video ? (
+                  // the YT clip's canvas carries baked-in padding (~40%) —
+                  // h-16 optically matches the h-11 brand circles beside it
+                  <TrustVideo src={video} className="h-16 w-16" />
+                ) : (
+                  <span
+                    className="grid h-11 w-11 place-items-center rounded-full text-white shadow-md transition-transform duration-200 group-hover:scale-105"
+                    style={chip}
+                    aria-hidden
+                  >
+                    <Glyph className="h-5.5 w-5.5" />
+                  </span>
+                )}
                 <span className="text-[13px] font-bold leading-tight">{label}</span>
                 <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary">
                   {ar ? badgeAr : badgeEn}

@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, MessageCircleHeart } from 'lucide-react';
+import { TrustVideo } from '@/components/store/animated-icon-video';
 import { EditorialCard } from '@/components/store/editorial-card';
 import { Reveal } from '@/components/store/reveal';
 import { AiStylistBanner } from '@/components/store/ai-stylist-banner';
@@ -13,41 +14,9 @@ import type { ProductCardData } from '@/components/store/product-card';
 // resolved (all-defaults-filled) section texts
 type SectionTextsResolved = { [K in keyof SectionTexts]-?: SectionTexts[K] };
 
-// U65-TRUST-VIDEO — the three trust icons are now the owner's animated
-// webm clips (public/icons/*.webm, VP8 + alpha → transparent background,
-// so they sit cleanly on the card). Each clip gets a per-icon height
-// class (truck 150×100, gift 150×119, badge 150×150) so the different
-// aspect ratios read at the same visual weight inside a fixed-size slot.
-// Decorative: muted + autoplay + loop + aria-hidden, pointer-events off,
-// and paused for prefers-reduced-motion users.
-function TrustVideo({ src, className }: { src: string; className?: string }) {
-  const ref = useRef<HTMLVideoElement | null>(null);
-  useEffect(() => {
-    const v = ref.current;
-    if (!v) return;
-    // React does not render the muted attribute — set the property
-    // explicitly so iOS Safari allows autoplay.
-    v.muted = true;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      v.pause();
-    }
-  }, []);
-  return (
-    <video
-      ref={ref}
-      src={src}
-      autoPlay
-      loop
-      muted
-      playsInline
-      preload="auto"
-      disablePictureInPicture
-      aria-hidden="true"
-      tabIndex={-1}
-      className={`pointer-events-none select-none ${className ?? ''}`}
-    />
-  );
-}
+// NOTE (U67-ANIMATED-ICON): TrustVideo moved to
+// @/components/store/animated-icon-video so the contact page's YouTube
+// card can reuse the same muted autoplay/loop/reduced-motion contract.
 
 interface CategoryData {
   slug: string;

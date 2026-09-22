@@ -21,6 +21,7 @@ export type SiteTexts = {
   whatsappUrl?: string; // U22 — رابط واتساب كرابط سوشيال في الفوتر
   whatsappChannelUrl?: string; // U52-CONTACT-SOCIAL — قناة واتساب (صفحة التواصل)
   tiktokUrl?: string; // U52-CONTACT-SOCIAL — بيدج تيك توك
+  youtubeUrl?: string; // U67-YOUTUBE-SOCIAL — قناة يوتيوب (التواصل + الفوتر)
   newsletterAr?: string; // U22 — نص النشرة البريدية (عربي)
   newsletterEn?: string; // U22 — Newsletter text (English)
   copyrightAr?: string;
@@ -60,6 +61,10 @@ export const DEFAULT_SITE_TEXTS: Required<Pick<SiteTexts, 'footerLinks'>> & Site
   // to the platform home — and the admin URL always wins when present.
   whatsappChannelUrl: '',
   tiktokUrl: '',
+  // U67-YOUTUBE-SOCIAL — owner supplied the real channel on delivery:
+  // «ضيف معاهم ايقون لليوتيوب يدوس عليه تفتح القناه». Ships as the default
+  // so the card/footer chip are live immediately; the Studio URL wins when set.
+  youtubeUrl: 'https://youtube.com/@lubnel9606?si=dBLevXM5C-gjipd8',
   newsletterAr: 'إلهام، وصول مبكر، وطقوس جمال حصرية بعناية.',
   newsletterEn: 'Early access, beauty notes, and considered rituals.',
   copyrightAr: '© 2026 LUBNÉL · جميع الحقوق محفوظة',

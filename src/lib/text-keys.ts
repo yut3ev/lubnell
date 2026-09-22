@@ -199,6 +199,7 @@ export const TEXT_META: Record<string, { label: string; group: TextGroupId }> = 
   cpFbPage: { label: 'بطاقة صفحة فيسبوك', group: 'contact' },
   cpIgPage: { label: 'بطاقة صفحة إنستجرام', group: 'contact' },
   cpTtPage: { label: 'بطاقة صفحة تيك توك', group: 'contact' },
+  cpYtChannel: { label: 'بطاقة قناة يوتيوب', group: 'contact' },
   cpSocialTitle: { label: 'قسم تابعينا على — العنوان', group: 'contact' },
   cpSocialAria: { label: 'قسم تابعينا — النص الداخلي', group: 'contact' },
   cpShipFee: { label: 'شريحة رسوم الشحن ({fee} = الرسوم)', group: 'contact' },

@@ -72,7 +72,7 @@ export default async function Home() {
     const t = JSON.parse(textRows[0]?.value ?? '{}') as Record<string, unknown>;
     if (typeof t.newsletterAr === 'string' && t.newsletterAr.trim()) newsletterCopy.ar = t.newsletterAr.trim();
     if (typeof t.newsletterEn === 'string' && t.newsletterEn.trim()) newsletterCopy.en = t.newsletterEn.trim();
-    for (const key of ['instagramUrl', 'facebookUrl', 'tiktokUrl', 'whatsappChannelUrl']) {
+    for (const key of ['instagramUrl', 'facebookUrl', 'tiktokUrl', 'whatsappChannelUrl', 'youtubeUrl']) {
       const v = t[key];
       if (typeof v === 'string' && v.trim()) socialUrls.push(v.trim());
     }

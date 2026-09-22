@@ -299,6 +299,11 @@ function StoreTab() {
             <Label>رابط TikTok</Label>
             <Input dir="ltr" className="text-left" value={tForm.tiktokUrl || ''} onChange={(e) => setT({ tiktokUrl: e.target.value })} placeholder="https://tiktok.com/@…" />
           </div>
+          {/* U67-YOUTUBE-SOCIAL — قناة يوتيوب (نفس حزمة «texts») */}
+          <div className={field}>
+            <Label>رابط قناة يوتيوب</Label>
+            <Input dir="ltr" className="text-left" value={tForm.youtubeUrl || ''} onChange={(e) => setT({ youtubeUrl: e.target.value })} placeholder="https://youtube.com/@…" />
+          </div>
         </div>
         <p className="text-[11px] leading-relaxed text-muted-foreground">
           تُستخدم في تغيير كل صفحات المتجر وقسم النشرة البريدية مباشرة بعد الحفظ.

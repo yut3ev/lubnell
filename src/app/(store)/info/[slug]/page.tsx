@@ -198,6 +198,7 @@ export default async function InfoPage({
           facebookUrl={t.facebookUrl?.trim() || undefined}
           whatsappChannelUrl={t.whatsappChannelUrl?.trim() || undefined}
           tiktokUrl={t.tiktokUrl?.trim() || undefined}
+          youtubeUrl={t.youtubeUrl?.trim() || undefined}
         />
       )}
 

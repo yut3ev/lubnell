@@ -196,6 +196,12 @@ export default function ContentSection() {
             <Input dir="ltr" className="text-left" value={form.tiktokUrl || ''} onChange={(e) => set({ tiktokUrl: e.target.value })} placeholder="https://tiktok.com/@lubnel" />
             <p className="text-[11px] leading-relaxed text-muted-foreground">يظهر في صفحة «تواصلي معنا» — اكتبي رابط حسابك هنا وقت ما يكون جاهز.</p>
           </div>
+          {/* U67-YOUTUBE-SOCIAL — قناة يوتيوب (صفحة التواصل + الفوتر) */}
+          <div className={field}>
+            <Label>رابط قناة يوتيوب</Label>
+            <Input dir="ltr" className="text-left" value={form.youtubeUrl || ''} onChange={(e) => set({ youtubeUrl: e.target.value })} placeholder="https://youtube.com/@lubnel9606" />
+            <p className="text-[11px] leading-relaxed text-muted-foreground">يظهر في قسم «تابعينا على» وفوتر المتجر بأيقونة متحركة — بتفتح القناة في تاب جديد.</p>
+          </div>
         </div>
       </div>
 
