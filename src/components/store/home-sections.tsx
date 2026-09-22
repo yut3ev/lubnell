@@ -1,9 +1,8 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, MessageCircleHeart } from 'lucide-react';
-import { TrustTruck, TrustBadge, TrustGift } from '@/components/store/trust-icons'; // U64-TRUST-MOTION
 import { EditorialCard } from '@/components/store/editorial-card';
 import { Reveal } from '@/components/store/reveal';
 import { AiStylistBanner } from '@/components/store/ai-stylist-banner';
@@ -13,6 +12,42 @@ import type { ProductCardData } from '@/components/store/product-card';
 
 // resolved (all-defaults-filled) section texts
 type SectionTextsResolved = { [K in keyof SectionTexts]-?: SectionTexts[K] };
+
+// U65-TRUST-VIDEO — the three trust icons are now the owner's animated
+// webm clips (public/icons/*.webm, VP8 + alpha → transparent background,
+// so they sit cleanly on the card). Each clip gets a per-icon height
+// class (truck 150×100, gift 150×119, badge 150×150) so the different
+// aspect ratios read at the same visual weight inside a fixed-size slot.
+// Decorative: muted + autoplay + loop + aria-hidden, pointer-events off,
+// and paused for prefers-reduced-motion users.
+function TrustVideo({ src, className }: { src: string; className?: string }) {
+  const ref = useRef<HTMLVideoElement | null>(null);
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    // React does not render the muted attribute — set the property
+    // explicitly so iOS Safari allows autoplay.
+    v.muted = true;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      v.pause();
+    }
+  }, []);
+  return (
+    <video
+      ref={ref}
+      src={src}
+      autoPlay
+      loop
+      muted
+      playsInline
+      preload="auto"
+      disablePictureInPicture
+      aria-hidden="true"
+      tabIndex={-1}
+      className={`pointer-events-none select-none ${className ?? ''}`}
+    />
+  );
+}
 
 interface CategoryData {
   slug: string;
@@ -59,21 +94,25 @@ export function HomeSections({
           ايقونة واحدة» — the third card needed a sideways swipe). Now the
           phone shows a true 3-up compact grid: all three icons side by
           side, nothing to swipe, and the swipe-hint line is gone with it.
-          sm+ keeps the approved 3-column row layout untouched. */}
+          sm+ keeps the approved 3-column row layout untouched.
+          U65-TRUST-VIDEO — the icons are now the owner's animated webm
+          clips; each sits in a fixed-size slot (h-10 w-14 mobile /
+h-12 w-16 sm+) so the three cards stay aligned and the motion
+          never crowds the copy beside it. */}
       <section className="overflow-x-clip border-b border-border/60 bg-secondary/40">
-        <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6">
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 sm:gap-4">
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-7">
+          <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-3 sm:gap-4">
             {[
-              { icon: TrustTruck, t: s ? (ar ? s.trust1TitleAr : s.trust1TitleEn) : ar ? 'شحن مجاني' : 'Free shipping', s: s ? (ar ? s.trust1SubAr : s.trust1SubEn) : ar ? 'للطلبات فوق 900 ج.م' : 'over 900 EGP' },
-              { icon: TrustBadge, t: s ? (ar ? s.trust2TitleAr : s.trust2TitleEn) : ar ? 'منتجات أصلية' : 'Authentic products', s: s ? (ar ? s.trust2SubAr : s.trust2SubEn) : ar ? 'مصادر موثوقة 100%' : '100% trusted sources' },
-              { icon: TrustGift, t: s ? (ar ? s.trust3TitleAr : s.trust3TitleEn) : ar ? 'بوكسات جاهزة للإهداء' : 'Gift-ready boxes', s: s ? (ar ? s.trust3SubAr : s.trust3SubEn) : ar ? 'تغليف أنيق لكل طلب' : 'elegant packaging' },
-            ].map(({ icon: Icon, t: title, s }, i) => (
+              { vid: '/icons/truck.webm', vh: 'h-8 sm:h-10', t: s ? (ar ? s.trust1TitleAr : s.trust1TitleEn) : ar ? 'شحن مجاني' : 'Free shipping', s: s ? (ar ? s.trust1SubAr : s.trust1SubEn) : ar ? 'للطلبات فوق 900 ج.م' : 'over 900 EGP' },
+              { vid: '/icons/badge-check.webm', vh: 'h-9 sm:h-11', t: s ? (ar ? s.trust2TitleAr : s.trust2TitleEn) : ar ? 'منتجات أصلية' : 'Authentic products', s: s ? (ar ? s.trust2SubAr : s.trust2SubEn) : ar ? 'مصادر موثوقة 100%' : '100% trusted sources' },
+              { vid: '/icons/gift-box.webm', vh: 'h-9 sm:h-11', t: s ? (ar ? s.trust3TitleAr : s.trust3TitleEn) : ar ? 'بوكسات جاهزة للإهداء' : 'Gift-ready boxes', s: s ? (ar ? s.trust3SubAr : s.trust3SubEn) : ar ? 'تغليف أنيق لكل طلب' : 'elegant packaging' },
+            ].map(({ vid, vh, t: title, s }, i) => (
               <Reveal key={title} delay={i * 90} className="h-full">
               <div
-                className="flex h-full flex-col items-center gap-2 rounded-xl border border-border/60 bg-card px-1.5 py-3 text-center shadow-sm sm:flex-row sm:gap-3 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:text-right sm:shadow-none"
+                className="flex h-full flex-col items-center gap-2 rounded-xl border border-border/60 bg-card px-2 py-3.5 text-center shadow-sm sm:flex-row sm:gap-3.5 sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:text-right sm:shadow-none"
               >
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-secondary text-primary ring-1 ring-primary/10 sm:h-10 sm:w-10 sm:bg-card sm:shadow-sm sm:ring-0">
-                  <Icon className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
+                <span className="flex h-10 w-14 shrink-0 items-center justify-center sm:h-12 sm:w-16">
+                  <TrustVideo src={vid} className={`${vh} w-auto`} />
                 </span>
                 {/* line-clamps guard the compact card against long
                     Studio-authored copy (trust*Title/Sub are owner-editable) */}
