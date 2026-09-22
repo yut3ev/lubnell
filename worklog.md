@@ -1345,3 +1345,20 @@ Work Log:
 
 Stage Summary:
 - Trust strip is now air: three big animated brand-pink clips on the soft strip background, no boxes anywhere, aligned columns, copy one step larger. Single re-publish on lubnel.space-z.ai still pending (U36→U66).
+
+---
+Task ID: U67-YOUTUBE-SOCIAL
+Agent: Z.ai Code (main)
+Task: Owner: «ضيف معاهم ايقون لليوتيوب يدوس عليه تفتح القناه» (contact-page تابعينا على screenshot) + channel URL https://youtube.com/@lubnel9606?si=dBLevXM5C-gjipd8 + uploads (Youtube Logo Effect.webm 150×150 VP8+alpha 2.3s; brave_jaW1blBbNs.png = reference screenshot only).
+
+Work Log:
+- Asset: upload → public/icons/youtube.webm (alpha_mode=1 verified).
+- New shared module src/components/store/animated-icon-video.tsx: TrustVideo moved out of home-sections (same muted autoplay/loop/reduced-motion contract) so both the trust strip and the contact page reuse it; home-sections now imports it (useEffect/useRef import trimmed).
+- site-texts.ts: youtubeUrl type + DEFAULT = the owner's real channel URL (U45 precedent: real accounts ship as defaults; Studio URL always wins). i18n cpYtChannel AR/EN + text-keys entry (U57 contract).
+- info-panels ContactPanel: youtubeUrl prop; socials gained video?/fullRowOnMobile? fields; youtube entry renders the animated clip (h-16 w-16 — the clip canvas has ~40% baked padding, so 64px optically matches the h-11 brand circles) instead of a static glyph circle, href youtubeUrl || default; grid grid-cols-2 → col-span-2 for the 5th card on phones (no orphan half-width card) and lg:grid-cols-4 → lg:grid-cols-5.
+- Plumb-through: info/[slug]/page.tsx passes youtubeUrl; home page.tsx socialUrls loop adds 'youtubeUrl' (Organization sameAs); footer.tsx adds a #FF0000 lucide-Youtube chip after TikTok (hidden only if she empties the URL); Studio settings.tsx + content.tsx get «رابط قناة يوتيوب» inputs.
+- Verify: SSR grep — channel URL present on / and /info/contact, youtube.webm referenced; agent-browser 390 + 1440: 5-card grid correct (YouTube full-row mobile, equal column desktop), logo visible (first-blank screenshots were the clip's pop-in phase — phase-strip extraction confirmed the burst-in loop), footer chip present (aria-label YouTube, correct href); video 64×64; console errors 0.
+- OPS: lint 65+2 exact (twice); build gate ×2 pkill → NEXT_BUILD_DIST_DIR Compiled successfully EXIT 0 → rm → setsid restart + warm (/ and /info/contact and /icons/youtube.webm all 200).
+
+Stage Summary:
+- تابعينا على is now five live destinations — WA channel, Facebook, Instagram, TikTok, and the animated YouTube card that opens @lubnel9606 in a new tab; the footer's social row gained the matching red YouTube chip; the URL is Studio-editable (كل النصوص + الإعدادات). Single re-publish on lubnel.space-z.ai still pending (U36→U67).
