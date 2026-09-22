@@ -241,7 +241,7 @@ export function NewsletterAdminSection() {
           <div className="overflow-hidden rounded-2xl border border-border/60">
             <iframe
               title="معاينة رسالة النشرة"
-              srcDoc={buildNewsletterHtml({ subject: subject || 'عنوان الرسالة', message: message || 'نص الرسالة سيظهر هنا…', lang: previewLang })}
+              srcDoc={buildNewsletterHtml({ subject: subject || 'عنوان الرسالة', message: message || 'نص الرسالة سيظهر هنا…', lang: previewLang, assetBase: '' })}
               className="h-[480px] w-full bg-white"
               sandbox=""
             />

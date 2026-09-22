@@ -77,7 +77,12 @@ export function buildNewsletterHtml(opts: {
   /** U73 — real one-click unsubscribe link for this recipient; when omitted
    *  (composer preview) the footer falls back to the WhatsApp line only. */
   unsubUrl?: string;
+  /** U74-EMAIL-LOGO — base for the header logo asset: real sends point at the
+   *  live site; the admin preview passes '' so the iframe resolves it on the
+   *  panel origin (works before the site is republished). */
+  assetBase?: string;
 }): string {
+  const assetBase = opts.assetBase !== undefined ? opts.assetBase : STORE_URL;
   const lang = opts.lang === 'en' ? 'en' : 'ar';
   const c = COPY[lang];
   const subject = escapeHtml(opts.subject || (lang === 'ar' ? 'رسالة من لوبنيل' : 'A note from LUBNÉL'));
@@ -101,11 +106,17 @@ export function buildNewsletterHtml(opts: {
   <tr>
     <td align="center">
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:${C.white};border-radius:24px;overflow:hidden;border:1px solid ${C.line};">
-        <!-- header -->
+        <!-- header — U74-EMAIL-LOGO: the owner's real LUBNÉL wordmark band
+             (white on the brand's pure black) instead of live text -->
         <tr>
-          <td style="background-color:${C.wine};padding:30px 32px;text-align:center;">
-            <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;letter-spacing:8px;color:${C.white};font-weight:bold;">LUBNÉL</div>
-            <div style="margin-top:8px;font-size:11px;letter-spacing:4px;color:rgba(255,255,255,0.75);text-transform:uppercase;">${c.heroWord}</div>
+          <td style="background-color:#000000;padding:0;text-align:center;">
+            <img
+              src="${assetBase}/brand/lubnel-band.jpg"
+              width="600"
+              alt="LUBNÉL"
+              style="display:block;width:100%;max-width:600px;height:auto;border:0;outline:none;text-decoration:none;"
+            />
+            <div style="padding:2px 0 24px;font-family:Tahoma,Arial,sans-serif;font-size:11px;letter-spacing:4px;color:rgba(255,255,255,0.72);text-transform:uppercase;">${c.heroWord}</div>
           </td>
         </tr>
         <!-- body -->

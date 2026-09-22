@@ -1458,3 +1458,17 @@ Work Log:
 
 Stage Summary:
 - الاشتراك بقى بييجي معاه إيميل ترحيبي مارك فورًا، وكل إيميلات الموقع فيها إلغاء اشتراك حقيقي بنقرة واحدة (متطلب جيميل) — والإرسال التجريبي بيقول لها تبعث في السبام لو مشت. الرسائل التجريبية السابقة Brevo قبلها فعلاً — وصولها للـ Inbox محتاج خطوة مالكة واحدة: تفعيل تسجيل الدومين عند Brevo (Domains) أو التأشير «مش سبام». Re-publish on lubnel.space-z.ai still pending (U36→U73).
+---
+Task ID: U74-EMAIL-LOGO
+Agent: Z.ai Code (main)
+Task: Owner: «ليه بيوصل من غير صوره حط الايقون دي كصوره بروفايل للايميل الي هيوصل» (+ LUBNÉL white-on-black logo 1080²) — she wants the sender avatar in Gmail to be the LUBNÉL logo.
+
+Work Log:
+- Explained the constraint: the Gmail sender avatar is BIMI (needs an authenticated custom domain + DMARC + a paid Verified Mark Certificate — impossible for a gmail.com From, which Brevo is ALSO rewriting to lubnel.cosmetics@12233673.brevosend.com per her own screenshot, the same root cause as the spam foldering). The owner-side fix remains: custom domain authenticated at Brevo.
+- What CAN be done in code (done): the logo now IS the email. Processed her uploaded square with sharp (threshold-bbox scan: wordmark rows 440–597) → cropped a 1080×417 black band with the white wordmark centered → public/brand/lubnel-band.jpg (served 200).
+- newsletter-template.ts: header replaced (wine text wordmark → full-width black band <img> + heroWord subtitle) via a new `assetBase` option — real sends use STORE_URL absolute (https://lubnel.space-z.ai/brand/lubnel-band.jpg), the admin composer preview passes '' so the iframe resolves it on the panel origin (works before republish). Alt text "LUBNÉL" falls back when remote images are blocked.
+- Verify: lint 65+2 (one false alarm: lint ran while .next-verify from the build gate existed → 12990 problems; re-ran after rm → exact baseline), build EXIT 0, restart + warm (/, /brand/lubnel-band.jpg 200), admin composer preview on 1440 renders the black LUBNÉL band header + template body intact, console 0, session cleaned.
+- OPS: all gates green; committed.
+
+Stage Summary:
+- كل إيميل من الموقع (نشرة + ترحيب) بقى بيفتتح بلوجو LUBNÉL الحقيقي (الأبيض على الأسود من ملفها) بدل الكتابة — شكله ماركة كاملة. صورة بروفايل المرسل في جيميل نفسها (BIMI) محتاجة دومين موثق + شهادة مدفوعة — مش من الكود. Re-publish on lubnel.space-z.ai required for the logo to load inside real emails (U36→U74).
