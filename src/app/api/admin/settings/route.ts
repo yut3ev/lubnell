@@ -2,6 +2,7 @@
 // SUP-8 — multi-key support: `store` (identity/shipping/announcement),
 // `texts` (all site copy + footer), `theme` (color palette).
 // U71-NEWSLETTER-ADMIN — `smtp` (outgoing mail server for newsletter sends).
+// U77-MAINTENANCE-MODE — `maintenance` (site open/close switch + custom message).
 // Each key is an independent StoreSettings row stored as JSON, merged on save.
 import { invalidateSettings } from "@/lib/settings-cache"; // U54-PERF-ROBUST
 import { jsonOk, jsonError, parseBody, requireAdmin, audit } from "@/lib/api-helpers";
@@ -12,7 +13,7 @@ import { db } from "@/lib/db"; // U56-HOTFIX — bare `db` ReferenceError'd at r
 
 export const dynamic = "force-dynamic";
 
-const KEYS = ["store", "texts", "theme", "brand", "seo", "smtp"] as const;
+const KEYS = ["store", "texts", "theme", "brand", "seo", "smtp", "maintenance"] as const;
 type SettingsKey = (typeof KEYS)[number];
 
 function resolveKey(raw: unknown): SettingsKey {

@@ -2,8 +2,13 @@ import { StoreHeader } from "@/components/store/header";
 import { StoreFooter } from "@/components/store/footer";
 import { AssistantWidget } from "@/components/store/assistant";
 import { BottomNav } from "@/components/store/bottom-nav";
+import { MaintenanceScreen } from "@/components/store/maintenance-screen";
 import VisitTracker from "@/components/store/visit-tracker";
+import { cookies } from "next/headers";
+import Link from "next/link";
 import { db } from "@/lib/db";
+import { ADMIN_SESSION_COOKIE, getAdminFromToken } from "@/lib/admin-auth";
+import { getMaintenanceState } from "@/lib/maintenance"; // U77-MAINTENANCE-MODE
 import { getSettingsRows } from "@/lib/settings-cache"; // U54-PERF-ROBUST — hot settings reads served from the TTL cache
 import { resolveSiteTexts, type SiteTexts } from "@/lib/site-texts";
 import { sanitizeTextBag, type TextOverrideBag } from "@/lib/text-keys";
@@ -80,6 +85,25 @@ export default async function StoreLayout({
     // DB unavailable → ship defaults, never block the storefront
   }
 
+  // U77-MAINTENANCE-MODE — when the owner closes the store, visitors see ONLY
+  // the branded maintenance screen (no header/footer/products at all). A
+  // signed-in admin still browses the real storefront — with a wine ribbon
+  // reminding her the site is closed — so she can QA her own store and
+  // re-open it from Studio without losing access.
+  const maintenance = await getMaintenanceState();
+  let maintenanceAdmin = false;
+  if (maintenance.enabled) {
+    try {
+      const token = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
+      maintenanceAdmin = Boolean(await getAdminFromToken(token));
+    } catch {
+      maintenanceAdmin = false;
+    }
+    if (!maintenanceAdmin) {
+      return <MaintenanceScreen message={maintenance.message} logoDark={logoDark} />;
+    }
+  }
+
   // U29 — when a v2 theme is active it owns ALL color tokens; the legacy
   // SUP-8 wrapper palette would fight it via inline-style precedence, so
   // it's suppressed while v2 rules.
@@ -106,6 +130,16 @@ export default async function StoreLayout({
       ) : null}
       {/* U22 — load ONLY the chosen brand font (css2, self-hosted by the browser cache) */}
       {brandFont && <link rel="stylesheet" href={googleFontsHref([brandFont])} precedence="default" />}
+      {/* U77 — while maintenance is ON the admin still browses the store,
+          with this ribbon making the closed state impossible to miss. */}
+      {maintenance.enabled && maintenanceAdmin ? (
+        <div className="sticky top-0 z-[60] flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-[#7a2e3b] px-3 py-2 text-center text-[11px] font-bold text-[#fdf4f5] sm:text-xs">
+          <span>🔒 وضع الصيانة مُفعّل — الزوار شايفين صفحة الصيانة بس، وإنتِ بتشوفي المتجر عادي كمديرة</span>
+          <Link href="/admin" className="rounded-full bg-white/15 px-3 py-0.5 underline-offset-4 transition hover:bg-white/25 hover:underline">
+            فتح الموقع من الإعدادات
+          </Link>
+        </div>
+      ) : null}
       {/* U51-GLOBAL-TEXTS — feeds the DB text overrides to every useT() consumer;
           context (not state) so SSR and hydration render identical text. */}
       <TextsProvider overrides={uiTextOverrides}>

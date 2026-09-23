@@ -4,6 +4,7 @@ import { ensureSeed } from "@/lib/seed";
 import { validateCoupon, incrementCouponUsage } from "@/lib/coupons";
 import { jsonOk, jsonError } from "@/lib/api-helpers";
 import { requestMeta } from "@/lib/admin-auth";
+import { getMaintenanceState } from "@/lib/maintenance"; // U77-MAINTENANCE-MODE
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from "@/lib/lubnel-types";
 import { emitLive } from "@/lib/live";
 
@@ -14,6 +15,13 @@ type OrderItemInput = { id: string; name: string; quantity: number; price: numbe
 export async function POST(req: Request) {
   try {
     await ensureSeed();
+    // U77-MAINTENANCE-MODE — while the owner has the store closed, a stale tab
+    // must not be able to checkout. Visitors get the maintenance screen on any
+    // page load, but this server-side gate protects the money path too.
+    const maintenance = await getMaintenanceState();
+    if (maintenance.enabled) {
+      return jsonError("الموقع مغلق حاليًا للصيانة — جرّبي تاني بعد شوية 🌸", 503);
+    }
     // R35 — shipping values follow the owner's Settings (Studio "حد الشحن المجاني" /
     // "رسوم الشحن"). Before this round the API silently used the baked constants,
     // so changing the settings had no effect on real orders. Sanitized with the

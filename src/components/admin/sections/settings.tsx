@@ -8,11 +8,13 @@
 // 3-card Backup/Export row).
 
 import { useEffect, useRef, useState } from 'react';
-import { Check, Database, Download, FileJson, FileSpreadsheet, Loader2, Save } from 'lucide-react';
+import { Check, Database, Download, FileJson, FileSpreadsheet, Loader2, Lock, LockOpen, Save, Wrench } from 'lucide-react';
 import { apiJson } from '../helpers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import ContentSection from './content';
 import ThemeSection from './theme';
@@ -57,6 +59,13 @@ type SeoSettings = {
   metaDescriptionEn?: string;
   metaKeywords?: string;
   ogImage?: string;
+};
+
+// U77-MAINTENANCE-MODE — site open/close switch + custom maintenance message
+type SiteStatusSettings = {
+  enabled?: boolean;
+  message?: string;
+  updatedAt?: string;
 };
 
 const TABS = [
@@ -164,6 +173,130 @@ const CURRENCY_OPTIONS = [
   { value: 'USD', label: 'USD — دولار أمريكي' },
 ];
 
+// U77-MAINTENANCE-MODE — the owner's site open/close switch. The toggle saves
+// INSTANTLY (no save bar) so «اقفله ولا افتحه» is one tap; the custom message
+// has its own save button; a live mini-preview shows exactly what visitors
+// will see on every device.
+const DEFAULT_MAINTENANCE_MSG = 'نقوم حاليًا بأعمال صيانة وتطوير للموقع — نرجع قريبًا جدًا 🌸';
+
+function MiniGear({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" className={className} aria-hidden fill="currentColor">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <rect key={i} x="45.5" y="2" width="9" height="20" rx="4" transform={`rotate(${i * 45} 50 50)`} />
+      ))}
+      <circle cx="50" cy="50" r="31" />
+      <circle cx="50" cy="50" r="13" fill="#faf6f1" />
+    </svg>
+  );
+}
+
+function SiteStatusCard() {
+  const status = useSettingsBag<SiteStatusSettings>('maintenance');
+  const { toast } = useToast();
+
+  if (!status.form) return null;
+  const closed = status.form.enabled === true;
+  const msg = (status.form.message || '').trim();
+
+  async function toggleEnabled(next: boolean) {
+    if (!status.form) return;
+    const prev = status.form!.enabled === true;
+    if (next === prev) return;
+    status.setForm({ ...status.form!, enabled: next });
+    status.setSaving(true);
+    const ok = await status.persist({ enabled: next, updatedAt: new Date().toISOString() });
+    status.setSaving(false);
+    if (ok) {
+      toast(
+        next
+          ? { title: 'تم قفل الموقع 🔒', description: 'أي زائر هيشوف بس صفحة الصيانة — على الموبايل والتابلت والكمبيوتر. لوحة التحكم فضلت شغالة عادي.' }
+          : { title: 'تم فتح الموقع ✓', description: 'الموقع رجع يشتغل عادي للزوار — كل الصفحات والمنتجات ظهرت تاني.' },
+      );
+    } else {
+      status.setForm({ ...status.form!, enabled: prev }); // revert on failure
+    }
+  }
+
+  async function saveMessage() {
+    status.setSaving(true);
+    const ok = await status.persist({ message: msg, updatedAt: new Date().toISOString() });
+    status.setSaving(false);
+    if (ok) toast({ title: 'تم حفظ رسالة الصيانة ✓' });
+  }
+
+  return (
+    <div className={`${card} border-[#7a2e3b]/25 bg-gradient-to-b from-[#7a2e3b]/[0.04] to-transparent`}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="flex items-center gap-2 text-sm font-black">
+          <Wrench className="h-4 w-4 text-[#7a2e3b]" aria-hidden />
+          حالة الموقع
+        </h3>
+        <span
+          className={`rounded-full px-3 py-1 text-[11px] font-black ${
+            closed ? 'bg-[#7a2e3b] text-[#fdf4f5]' : 'bg-emerald-600/10 text-emerald-700'
+          }`}
+        >
+          {closed ? 'مغلق — وضع الصيانة' : 'مفتوح ✓'}
+        </span>
+      </div>
+
+      <div className="flex items-start justify-between gap-4 rounded-xl border border-border/50 bg-card/60 p-4">
+        <div className="min-w-0">
+          <p className="flex items-center gap-1.5 text-sm font-bold">
+            {closed ? <Lock className="h-4 w-4 text-[#7a2e3b]" aria-hidden /> : <LockOpen className="h-4 w-4 text-emerald-600" aria-hidden />}
+            قفل الموقع (وضع الصيانة)
+          </p>
+          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+            لما تقفلي الموقع، أي حد يفتح أي صفحة هيشوف بس صفحة الصيانة الاحترافية — على الموبايل والتابلت والكمبيوتر.
+            لوحة التحكم هتفضل شغالة عادي، وإنتِ كمان لسه بتقدري تتفرجي على المتجر وإنتي مسجّلة.
+          </p>
+        </div>
+        <Switch
+          checked={closed}
+          onCheckedChange={toggleEnabled}
+          disabled={status.saving}
+          aria-label={closed ? 'فتح الموقع' : 'قفل الموقع'}
+          className="mt-1 data-[state=checked]:bg-[#7a2e3b]"
+        />
+      </div>
+
+      <div className={field}>
+        <Label>رسالة مخصصة على صفحة الصيانة (اختياري)</Label>
+        <Textarea
+          rows={2}
+          value={status.form.message || ''}
+          onChange={(e) => status.setForm({ ...status.form!, message: e.target.value })}
+          placeholder={DEFAULT_MAINTENANCE_MSG}
+        />
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[11px] leading-relaxed text-muted-foreground">لو سبتيها فاضية، هنستخدم الرسالة الافتراضية.</p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={saveMessage}
+            disabled={status.saving}
+            className="h-9 shrink-0 rounded-full px-4 text-xs font-bold"
+          >
+            {status.saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : 'حفظ الرسالة'}
+          </Button>
+        </div>
+      </div>
+
+      {/* live mini-preview of the maintenance screen */}
+      <div>
+        <p className="mb-1.5 text-[11px] font-bold text-muted-foreground">معاينة سريعة — اللي هيشوفه الزوار:</p>
+        <div className="flex flex-col items-center gap-1.5 rounded-2xl border border-border/50 bg-[#faf6f1] px-4 py-6 text-center">
+          <MiniGear className="h-9 w-9 text-[#7a2e3b]/85" />
+          <p className="text-sm font-black text-[#43242b]">الخدمة غير متاحة حاليًا</p>
+          <p className="max-w-xs text-[11px] leading-5 text-[#8a6f75]">{msg || DEFAULT_MAINTENANCE_MSG}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StoreTab() {
   const store = useSettingsBag<StoreSettings>('store');
   const texts = useSettingsBag<SiteTexts>('texts');
@@ -187,6 +320,9 @@ function StoreTab() {
 
   return (
     <div className="space-y-4">
+      {/* U77-MAINTENANCE-MODE — the open/close switch is the first thing she sees */}
+      <SiteStatusCard />
+
       <p className="rounded-2xl border border-border/60 bg-secondary/40 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
         بيانات المتجر والطلب — الاسم، التواصل، العملة، الشحن، ووصف المتجر. تُطبَّق على المتجر بعد الحفظ مباشرة.
       </p>
