@@ -669,7 +669,7 @@ export default function HomepageSection() {
                 </div>
                 <div className="grid gap-2 sm:col-span-2">
                   <Label>صورة الشريحة</Label>
-                  <ImageField value={selected.image} onChange={(url) => patchSelected({ image: url })} placeholder="/uploads/example.jpg" />
+                  <ImageField value={selected.image} onChange={(url) => patchSelected({ image: url })} placeholder="/uploads/example.jpg" variant="hero" />
                 </div>
                 {/* U21-MOBILE-HERO — صورة الموبايل (طولية/مربعة) — اختياري */}
                 <div className="grid gap-2 sm:col-span-2">
@@ -681,6 +681,7 @@ export default function HomepageSection() {
                     value={selected.imageMobile}
                     onChange={(url) => patchSelected({ imageMobile: url })}
                     placeholder="/uploads/example-mobile.jpg"
+                    variant="hero"
                   />
                 </div>
                 {/* U19-VIDEO — فيديو الشريحة (اختياري) */}

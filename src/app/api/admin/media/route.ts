@@ -71,6 +71,21 @@ export async function POST(req: Request) {
       // unsupported input (rare) → keep original bytes as-is
     }
     fs.writeFileSync(path.join(UPLOAD_DIR, fileName), stored);
+    // U75-IMAGE-MOBILE-PREVIEW — report the FINAL stored image's dimensions so
+    // the studio can tell the owner immediately whether the photo is sharp
+    // enough for mobile (product cards render aspect-square, so tiny/oddly
+    // shaped uploads get heavily cropped/stretched).
+    let width: number | null = null;
+    let height: number | null = null;
+    if (!isVideo) {
+      try {
+        const meta = await sharp(stored).metadata();
+        width = meta.width ?? null;
+        height = meta.height ?? null;
+      } catch {
+        /* keep nulls — badge simply won't show */
+      }
+    }
     // U20 — new uploads get a DYNAMIC url (/api/uploads/…): the bytes are also
     // stored in the MediaAsset row and the serving route prefers the DB blob,
     // so no static-file snapshot / platform pinning can ever hide them again.
@@ -91,7 +106,7 @@ export async function POST(req: Request) {
     await audit(ctx, "media.uploaded", "media_asset", String(asset.id), { fileName: file.name, crop });
     // U15 — include ok:true: the studio UI checks data.ok; before this the
     // upload SUCCEEDED but the panel always showed «تعذر رفع الصورة».
-    return jsonOk({ ok: true, success: true, url, asset });
+    return jsonOk({ ok: true, success: true, url, asset, width, height });
   } catch (error) {
     console.error("media upload failed", error);
     return jsonError("تعذر رفع الصورة", 500);

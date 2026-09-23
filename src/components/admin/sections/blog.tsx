@@ -297,6 +297,7 @@ export default function BlogSection() {
               label="صورة الغلاف (اختياري)"
               value={form.coverImage}
               onChange={(url) => setForm({ ...form, coverImage: url })}
+              variant="tall"
             />
 
             <div className="grid gap-4 sm:grid-cols-2">

@@ -78,8 +78,8 @@ export default function MultiImageField({
       for (const f of take) {
         try {
           const uploaded = await uploadImageFile(f);
-          if (imagesRef.current.length < max && !imagesRef.current.includes(uploaded)) {
-            const next = [...imagesRef.current, uploaded];
+          if (imagesRef.current.length < max && !imagesRef.current.includes(uploaded.url)) {
+            const next = [...imagesRef.current, uploaded.url];
             onChange(next); // imagesRef re-syncs on the re-render between awaits
             added += 1;
           }

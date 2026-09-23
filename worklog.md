@@ -1472,3 +1472,19 @@ Work Log:
 
 Stage Summary:
 - كل إيميل من الموقع (نشرة + ترحيب) بقى بيفتتح بلوجو LUBNÉL الحقيقي (الأبيض على الأسود من ملفها) بدل الكتابة — شكله ماركة كاملة. صورة بروفايل المرسل في جيميل نفسها (BIMI) محتاجة دومين موثق + شهادة مدفوعة — مش من الكود. Re-publish on lubnel.space-z.ai required for the logo to load inside real emails (U36→U74).
+---
+Task ID: U75-IMAGE-MOBILE-PREVIEW
+Agent: Z.ai Code (main)
+Task: Owner: «بالنسبه للصور الي هتترفع للمنتجات او الاقسام او ايا كان هيعرف ازاي انها مظبوطه علي الموبايل وشكلها مناسب للمستخدم» — she needs a way to KNOW an uploaded image will look right on mobile before saving.
+
+Work Log:
+- Answer built into the Studio: (1) instant quality verdict, (2) a real phone-frame preview showing the EXACT storefront crop.
+- API (/api/admin/media POST): now measures the FINAL stored image (post-WebP pipeline) with sharp and returns width/height — the badge judges what actually renders, not the raw upload.
+- image-field.tsx: uploadImageFile returns {url,width,height}; qualityVerdict() grades min(w,h) ≥1000 = «دقة ممتازة للموبايل ✓» (green) / ≥700 = acceptable (amber) / smaller = «صغيرة — ممكن تبان ممطوطة» (red); badge + «معاينة على الموبايل» button appear under every image field; upload toast now carries the verdict text.
+- MobileImagePreviewDialog (new, exported): phone bezel (dark bezel + wine LUBNÉL mini header) rendering the image exactly like the storefront — product/category = aspect-square, blog/editorial = 4:5 (variant="tall"), hero slides = full-bleed 300px with gradient + CTA skeleton (variant="hero") — plus the FULL uncropped photo underneath («اللي بيقصها الموبايل هو الجزء الأوسط بس») and a square/portrait 1000px+ tip. Variants wired: homepage hero slides → hero, blog cover → tall; product/category fields default square.
+- multi-image-field.tsx updated for the new uploadImageFile shape (gallery).
+- Verify: lint 65+2 exact, build EXIT 0, restart + warm; desktop browser test — products → edit → «معاينة على الموبايل» dialog renders the bezel with the real product photo cropped square (her own product shot visibly loses its caption text in the crop — exactly the insight she asked for); API test: 640×480 → small verdict, 1400×1400 → excellent (test assets deleted after). A transient parse error in browser console was a mid-edit HMR artifact — dev.log clean, tsc clean, build green.
+- OPS: all gates green; committed.
+
+Stage Summary:
+- كل خانة صورة في لوحة التحكم بقت بتقول لها فورًا: «الصورة دي دقتها كفاية؟» + زر «معاينة على الموبايل» بيوريك بيها الإطار الحقيقي اللي المستخدم هيشوفه (بما فيها الجزء المقولوص) قبل الحفظ. Re-publish on lubnel.space-z.ai still pending (U36→U75).
