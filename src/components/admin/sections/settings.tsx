@@ -8,8 +8,8 @@
 // 3-card Backup/Export row).
 
 import { useEffect, useRef, useState } from 'react';
-import { Check, Database, Download, FileJson, FileSpreadsheet, Loader2, Lock, LockOpen, Save, Wrench } from 'lucide-react';
-import { apiJson } from '../helpers';
+import { Check, Database, Download, FileJson, FileSpreadsheet, Loader2, Lock, LockOpen, Save, Trash2, Upload, Wrench } from 'lucide-react';
+import { apiJson, loadAdminToken } from '../helpers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -62,11 +62,30 @@ type SeoSettings = {
 };
 
 // U77-MAINTENANCE-MODE — site open/close switch + custom maintenance message
+// U78 — + emblem video (her own animation above the text)
 type SiteStatusSettings = {
   enabled?: boolean;
   message?: string;
+  video?: string;
   updatedAt?: string;
 };
+
+// U78 — upload an animation (webm/mp4) from the device into the media library
+async function uploadVideoFile(file: File): Promise<string> {
+  const form = new FormData();
+  form.append('file', file);
+  const token = loadAdminToken();
+  const res = await fetch('/api/admin/media', {
+    method: 'POST',
+    body: form,
+    headers: token ? { 'x-admin-token': token } : undefined,
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !(data?.ok || data?.success) || !data.url) {
+    throw new Error(data?.error || 'تعذر رفع الفيديو');
+  }
+  return data.url as string;
+}
 
 const TABS = [
   { id: 'store', label: 'بيانات المتجر' },
@@ -194,6 +213,8 @@ function MiniGear({ className }: { className?: string }) {
 function SiteStatusCard() {
   const status = useSettingsBag<SiteStatusSettings>('maintenance');
   const { toast } = useToast();
+  const videoRef = useRef<HTMLInputElement>(null);
+  const [videoUploading, setVideoUploading] = useState(false);
 
   if (!status.form) return null;
   const closed = status.form.enabled === true;
@@ -223,6 +244,32 @@ function SiteStatusCard() {
     const ok = await status.persist({ message: msg, updatedAt: new Date().toISOString() });
     status.setSaving(false);
     if (ok) toast({ title: 'تم حفظ رسالة الصيانة ✓' });
+  }
+
+  // U78 — pick the emblem video from the device; saved instantly on success
+  async function handleVideoUpload(file: File | undefined | null) {
+    if (!file) return;
+    if (!file.type.startsWith('video/')) {
+      toast({ title: 'الملف لازم يكون فيديو (webm أو mp4)', variant: 'destructive' });
+      return;
+    }
+    setVideoUploading(true);
+    try {
+      const url = await uploadVideoFile(file);
+      const ok = await status.persist({ video: url, updatedAt: new Date().toISOString() });
+      if (ok) toast({ title: 'تم رفع الفيديو ✓', description: 'هيظهر فوق الكلام في صفحة الصيانة على طول.' });
+    } catch (e) {
+      toast({ title: e instanceof Error ? e.message : 'تعذر رفع الفيديو', variant: 'destructive' });
+    } finally {
+      setVideoUploading(false);
+      if (videoRef.current) videoRef.current.value = '';
+    }
+  }
+
+  async function clearVideo() {
+    status.setForm({ ...status.form!, video: '' });
+    const ok = await status.persist({ video: '', updatedAt: new Date().toISOString() });
+    if (ok) toast({ title: 'تم مسح الفيديو — رجعت الأيقونة الافتراضية' });
   }
 
   return (
@@ -284,11 +331,79 @@ function SiteStatusCard() {
         </div>
       </div>
 
+      {/* U78 — emblem video picker */}
+      <div className={field}>
+        <Label>فيديو الأيقونة (يظهر فوق الكلام في صفحة الصيانة)</Label>
+        <input
+          ref={videoRef}
+          type="file"
+          accept="video/*,.webm,.mp4,.mov"
+          className="hidden"
+          onChange={(e) => handleVideoUpload(e.target.files?.[0])}
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => videoRef.current?.click()}
+            disabled={videoUploading}
+            className="h-11 rounded-full px-4 text-xs font-bold"
+          >
+            {videoUploading ? <Loader2 className="ml-1 h-4 w-4 animate-spin" aria-hidden /> : <Upload className="ml-1 h-4 w-4" aria-hidden />}
+            {videoUploading ? 'جاري الرفع…' : 'رفع فيديو من الجهاز'}
+          </Button>
+          {status.form.video ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={clearVideo}
+              disabled={status.saving}
+              className="h-11 rounded-full px-3 text-xs font-bold text-destructive hover:text-destructive"
+            >
+              <Trash2 className="ml-1 h-4 w-4" aria-hidden />
+              مسح الفيديو
+            </Button>
+          ) : null}
+        </div>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">
+          ارفعي الأنيميشن بتاعك (webm أو mp4 — أقصى حجم 80MB) وهو هيتعرض مكامن الأيقونة تلقائيًا، لو مفيش فيديو هنستخدم الأيقونة المتحركة الافتراضية.
+        </p>
+        {status.form.video ? (
+          <div className="flex justify-center rounded-2xl border border-border/50 bg-[#faf6f1] p-4">
+            <video
+              src={status.form.video}
+              autoPlay
+              loop
+              muted
+              playsInline
+              disablePictureInPicture
+              controls={false}
+              className="max-h-40 w-auto max-w-[220px]"
+            />
+          </div>
+        ) : null}
+      </div>
+
       {/* live mini-preview of the maintenance screen */}
       <div>
         <p className="mb-1.5 text-[11px] font-bold text-muted-foreground">معاينة سريعة — اللي هيشوفه الزوار:</p>
         <div className="flex flex-col items-center gap-1.5 rounded-2xl border border-border/50 bg-[#faf6f1] px-4 py-6 text-center">
-          <MiniGear className="h-9 w-9 text-[#7a2e3b]/85" />
+          {status.form.video ? (
+            <video
+              src={status.form.video}
+              autoPlay
+              loop
+              muted
+              playsInline
+              disablePictureInPicture
+              controls={false}
+              className="max-h-24 w-auto max-w-[140px]"
+            />
+          ) : (
+            <MiniGear className="h-9 w-9 text-[#7a2e3b]/85" />
+          )}
           <p className="text-sm font-black text-[#43242b]">الخدمة غير متاحة حاليًا</p>
           <p className="max-w-xs text-[11px] leading-5 text-[#8a6f75]">{msg || DEFAULT_MAINTENANCE_MSG}</p>
         </div>

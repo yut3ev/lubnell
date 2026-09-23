@@ -13,6 +13,8 @@ type Props = {
   message?: string;
   /** Brand row logo override; falls back to the shipped artwork. */
   logoDark?: string;
+  /** U78 — emblem video (her own animation). Wins over the CSS gear. */
+  video?: string;
 };
 
 const CSS = `
@@ -60,8 +62,9 @@ function Sparkle({ className }: { className?: string }) {
   );
 }
 
-export function MaintenanceScreen({ message, logoDark }: Props) {
+export function MaintenanceScreen({ message, logoDark, video }: Props) {
   const sub = (message || "").trim() || DEFAULT_MAINTENANCE_MESSAGE;
+  const emblemVideo = (video || "").trim();
   return (
     <div
       dir="rtl"
@@ -80,26 +83,51 @@ export function MaintenanceScreen({ message, logoDark }: Props) {
         className="mtn-rise mb-10 h-9 w-auto opacity-90 sm:h-11"
       />
 
-      {/* the animated emblem: pulsing halo + dashed ring + two gears + sparkle */}
-      <div
-        role="img"
-        aria-label="أيقونة الصيانة"
-        className="mtn-rise relative mb-9 grid h-36 w-36 place-items-center sm:h-44 sm:w-44"
-      >
-        <div aria-hidden className="mtn-pulse absolute inset-0 rounded-full bg-primary/15" />
-        <div aria-hidden className="mtn-spin-ring absolute inset-1 rounded-full border-2 border-dashed border-primary/25" />
-        <div aria-hidden className="mtn-spin absolute inset-0 grid place-items-center text-primary/85">
-          <Gear className="h-20 w-20 sm:h-24 sm:w-24" />
-        </div>
+      {/* the emblem: her own animation when set (CSS gear stays behind as a
+          graceful fallback for browsers that can't decode the file), else the
+          animated gear emblem */}
+      {emblemVideo ? (
         <div
-          aria-hidden
-          className="mtn-spin-rev absolute -bottom-1 -left-1 grid h-12 w-12 place-items-center rounded-full bg-white text-primary shadow-md ring-1 ring-primary/15 sm:h-14 sm:w-14"
-          style={{ ["--mtn-bg" as string]: "#ffffff" }}
+          role="img"
+          aria-label="أيقونة الصيانة"
+          className="mtn-rise relative mb-8 grid place-items-center sm:mb-10"
         >
-          <Gear className="h-7 w-7 sm:h-8 sm:w-8" />
+          <div aria-hidden className="mtn-spin absolute inset-0 grid place-items-center text-primary/40">
+            <Gear className="h-20 w-20 sm:h-24 sm:w-24" />
+          </div>
+          <video
+            src={emblemVideo}
+            autoPlay
+            loop
+            muted
+            playsInline
+            disablePictureInPicture
+            controls={false}
+            preload="auto"
+            className="relative max-h-56 w-auto max-w-[300px] drop-shadow-xl sm:max-h-72 sm:max-w-[380px]"
+          />
         </div>
-        <Sparkle className="mtn-twinkle absolute -right-2 -top-2 h-8 w-8 text-primary sm:h-9 sm:w-9" />
-      </div>
+      ) : (
+        <div
+          role="img"
+          aria-label="أيقونة الصيانة"
+          className="mtn-rise relative mb-9 grid h-36 w-36 place-items-center sm:h-44 sm:w-44"
+        >
+          <div aria-hidden className="mtn-pulse absolute inset-0 rounded-full bg-primary/15" />
+          <div aria-hidden className="mtn-spin-ring absolute inset-1 rounded-full border-2 border-dashed border-primary/25" />
+          <div aria-hidden className="mtn-spin absolute inset-0 grid place-items-center text-primary/85">
+            <Gear className="h-20 w-20 sm:h-24 sm:w-24" />
+          </div>
+          <div
+            aria-hidden
+            className="mtn-spin-rev absolute -bottom-1 -left-1 grid h-12 w-12 place-items-center rounded-full bg-white text-primary shadow-md ring-1 ring-primary/15 sm:h-14 sm:w-14"
+            style={{ ["--mtn-bg" as string]: "#ffffff" }}
+          >
+            <Gear className="h-7 w-7 sm:h-8 sm:w-8" />
+          </div>
+          <Sparkle className="mtn-twinkle absolute -right-2 -top-2 h-8 w-8 text-primary sm:h-9 sm:w-9" />
+        </div>
+      )}
 
       {/* the copy — headline first, then the owner's message under it */}
       <h1 className="mtn-rise mtn-d1 text-2xl font-black leading-snug tracking-tight text-[#43242b] sm:text-4xl sm:leading-tight">

@@ -6,6 +6,8 @@ import { MaintenanceScreen } from "@/components/store/maintenance-screen";
 import VisitTracker from "@/components/store/visit-tracker";
 import { cookies } from "next/headers";
 import Link from "next/link";
+import { existsSync } from "fs";
+import path from "path";
 import { db } from "@/lib/db";
 import { ADMIN_SESSION_COOKIE, getAdminFromToken } from "@/lib/admin-auth";
 import { getMaintenanceState } from "@/lib/maintenance"; // U77-MAINTENANCE-MODE
@@ -100,7 +102,11 @@ export default async function StoreLayout({
       maintenanceAdmin = false;
     }
     if (!maintenanceAdmin) {
-      return <MaintenanceScreen message={maintenance.message} logoDark={logoDark} />;
+      // U78 — emblem video: her Studio pick wins; otherwise a drop-in file at
+      // public/brand/maintenance.webm is used automatically; else the CSS gear.
+      const dropIn = path.join(process.cwd(), "public", "brand", "maintenance.webm");
+      const emblemVideo = maintenance.video || (existsSync(dropIn) ? "/brand/maintenance.webm" : "");
+      return <MaintenanceScreen message={maintenance.message} logoDark={logoDark} video={emblemVideo} />;
     }
   }
 

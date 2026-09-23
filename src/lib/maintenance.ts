@@ -15,6 +15,9 @@ export type MaintenanceState = {
   enabled: boolean;
   /** Custom Arabic message shown under the title (owner-editable). */
   message: string;
+  /** U78 — owner-picked emblem video (media library URL); wins over the
+   * drop-in /brand/maintenance.webm; CSS gear is the final fallback. */
+  video: string;
   updatedAt: string | null;
 };
 
@@ -26,7 +29,7 @@ export const DEFAULT_MAINTENANCE_MESSAGE =
 export async function getMaintenanceState(): Promise<MaintenanceState> {
   try {
     const row = await getSettingRow("maintenance");
-    if (!row) return { enabled: false, message: "", updatedAt: null };
+    if (!row) return { enabled: false, message: "", video: "", updatedAt: null };
     let val: Record<string, unknown> = {};
     try {
       val = (JSON.parse(row.value) as Record<string, unknown>) || {};
@@ -36,10 +39,14 @@ export async function getMaintenanceState(): Promise<MaintenanceState> {
     return {
       enabled: val.enabled === true,
       message: typeof val.message === "string" ? val.message.trim() : "",
+      video:
+        typeof val.video === "string" && /^https?:\/\/|^\/[\w/.-]+\.(webm|mp4|mov|m4v)$/i.test(val.video.trim())
+          ? val.video.trim()
+          : "",
       updatedAt: typeof val.updatedAt === "string" ? val.updatedAt : null,
     };
   } catch {
     // fail-open — never lock the storefront because of an infra blip
-    return { enabled: false, message: "", updatedAt: null };
+    return { enabled: false, message: "", video: "", updatedAt: null };
   }
 }

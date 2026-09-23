@@ -1525,3 +1525,18 @@ Work Log:
 
 Stage Summary:
 - الموقع بقى بيها زر فتح/قفل حقيقي: من الإعدادات → بيانات المتجر → «حالة الموقع» ضغطة واحدة تقفل الموقع، وساعتها أي زائر على أي جهاز مش هيشوف غير صفحة الصيانة الاحترافية (لوجو LUBNÉL + أيقونة متحركة + الرسالة) — ولوحة التحكم والمتصفح بتاعها كمديرة فضلوا شغالين، ومفيش طلب ممكن يتسجل والموقع مقفول. ملاحظة: الفيديو المرفق ماوصلش للسيرفر فصمّمت الأيقونة بهوية الماركة؛ لو الملف اتخلص رفعه تاني وهبدّل الأيقونة بالأنيميشن بتاعها. Re-publish on lubnel.space-z.ai still pending (U36→U77).
+---
+Task ID: U78-MAINTENANCE-VIDEO
+Agent: Z.ai Code (main)
+Task: Owner re-sent Tm0TI5WNTU.webm: «اهو الملف ضيفه ف جزية الصيانه» — put HER animation on the maintenance page. The file AGAIN never synced to /upload (polled 60s+, second failure of the chat-upload channel), so the delivery is: the maintenance page is now VIDEO-CAPABLE with a self-service upload path she can use in two taps.
+
+Work Log:
+- src/lib/maintenance.ts: MaintenanceState gains `video` (validated ^https?://|/path.(webm|mp4|mov|m4v)$ — anything else dropped, fail-safe default '').
+- maintenance-screen.tsx: when a video resolves, the CSS gear emblem is replaced by <video autoPlay loop muted playsInline disablePictureInPicture preload=auto> (max-h-56/max-w-[300px] mobile → max-h-72/380px desktop, drop-shadow); the slow gear stays BEHIND the video as a graceful fallback for browsers that can't decode the file. No video → the U77 gear emblem exactly as before.
+- (store)/layout.tsx: emblem resolution order = Studio pick (settings.maintenance.video) → drop-in file public/brand/maintenance.webm (existsSync check — lets me go live with her file instantly whenever it lands) → CSS gear.
+- Studio (SiteStatusCard): new «فيديو الأيقونة» field — upload from device (accept video/webm|mp4|mov, 44px touch targets, busy spinner), instant save via /api/admin/media (videos stored byte-for-byte, 80MB cap) + toast, «مسح الفيديو» restores the default icon, mini-preview now plays HER video so the preview = the real page.
+- E2E: minted temp session → uploaded a real webm through /api/admin/media (200 video/webm) → set as emblem + closed the site → SSR <video> present on / → agent-browser: video PLAYING on 390 (readyState 4, paused=false, currentTime advancing past loop point) and 1440 (150×119, playing), console 0 errors, layout = icon above / text below. Restored: video:'', enabled:false (store OPEN), test MediaAsset row + uploaded file + QA session + mint script all deleted.
+- OPS: lint 65+2 exact; build gate EXIT 0 → restart + warm (/, /admin, /api/health 200); dev.log clean. Tm0TI5WNTU.webm confirmed STILL missing at /upload.
+
+Stage Summary:
+- صفحة الصيانة بقت بتعرض فيديو الأنيميشن بتاعها (مكامن الأيقونة فوق الكلام بالظبط زي ما طلبت) — ترفعه من الإعدادات → بيانات المتجر → «فيديو الأيقونة» بضغطتين، أو أول ما ملف المحادثة يوصل هحطه في public/brand/maintenance.webm وهيشتغل أوتوماتيك. الملف من المحادثة فشل في الوصول مرتين (مشكلة قناة الرفع مش من الكود). Re-publish on lubnel.space-z.ai still pending (U36→U78).
