@@ -1,5 +1,9 @@
 import ZAI from 'z-ai-web-dev-sdk';
 import { db } from '@/lib/db';
+import { writeAudit } from '@/lib/admin-auth'; // U76-AI-IMAGES — product audits from the agent
+import { invalidateCatalog } from '@/lib/settings-cache';
+import { slugify } from '@/lib/api-helpers';
+import { storeDataUrlImage } from '@/lib/media-store';
 
 /**
  * LUBNÉL AI agent — provider-first with hardened local fallback.
@@ -209,16 +213,98 @@ export async function askAssistant(
   return { reply: localFallback(history, grounding), source: 'local', attempts: MAX_ATTEMPTS };
 }
 
-// ── Legacy admin-agent compat shim (outage-recovery era) ─────────────────
-// The pre-wipe admin agent (runAgent with tool execution, images, plan/execute
-// modes) was lost in the sandbox wipe; the rebuilt minimal assistant above
-// covers customer chat only. The admin route (src/app/api/admin/ai/route.ts)
-// still imports the old contract, which broke the production build. This shim
-// adapts the old signature onto askAssistant: chat works, tool execution is
-// unavailable and always returns executed: []. Images are accepted but text
-// is the only channel — documented in the outage-recovery worklog entry.
+// ── U76-AI-IMAGES — admin agent with real vision + product tool execution ──
+// The pre-wipe admin agent was rebuilt as a text-only shim after the sandbox
+// wipe (images were accepted by the route but silently ignored). The owner
+// asked for the assistant to accept product photos ALONGSIDE her instructions
+// (name, price, …) and to act on them professionally on mobile/iPad/tablet.
+// This rebuild gives runAgent two channels:
+//  • text-only  → same live-grounded chat as before (zero regression);
+//  • with image → z-ai vision (createVision) understands the photos TOGETHER
+//    with her message, then the agent EXECUTES: stores every photo through
+//    the shared WebP media pipeline (media-store) and creates the product
+//    with her name/price/category — or returns an honest dry-run plan in
+//    plan mode. Missing details (price/name) come back as a friendly ask.
 export type AgentImage = { url: string };
 export type AgentHistoryItem = { role: 'user' | 'ai'; text: string };
+
+export type AgentToolResult = {
+  tool: string;
+  ok: boolean;
+  dryRun?: boolean;
+  summary?: string;
+};
+
+type VisionExtract = {
+  intent?: 'add_product' | 'describe' | string;
+  nameAr?: string | null;
+  nameEn?: string | null;
+  price?: number | string | null;
+  compareAt?: number | string | null;
+  categoryName?: string | null;
+  stock?: number | string | null;
+  badgeAr?: string | null;
+  description?: string | null;
+  reply?: string | null;
+};
+
+const VISION_TIMEOUT_MS = 45_000;
+
+const normAr = (s: string) =>
+  s.trim().toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/\s+/g, ' ');
+
+function extractJson(raw: string): VisionExtract | null {
+  const cleaned = raw.replace(/```json/gi, '```').split('```').join('\n').trim();
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start === -1 || end <= start) return null;
+  try {
+    const obj = JSON.parse(cleaned.slice(start, end + 1)) as VisionExtract;
+    return obj && typeof obj === 'object' ? obj : null;
+  } catch {
+    return null;
+  }
+}
+
+const num = (v: number | string | null | undefined): number | null => {
+  const n = typeof v === 'string' ? Number(v.replace(/[^\d.]/g, '')) : Number(v);
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
+
+async function uniqueSlug(base: string): Promise<string> {
+  const clean = base || `product-${Date.now()}`;
+  let slug = clean;
+  let n = 1;
+  while (await db.product.findUnique({ where: { slug } })) slug = `${clean}-${n++}`;
+  return slug;
+}
+
+function visionSystemPrompt(categoryNames: string[]): string {
+  return `أنتِ "لُو" — مساعدة لوحة تحكم متجر LUBNÉL (لوبنيل) المصري لمستحضرات التجميل والعناية والبوكسات.
+المديرة بعتّت رسالة وممكن تكون مرفقة صور منتجات (صورة المنتج، بطاقة سعر، لقطة من صفحة أخرى…).
+حللي الصور مع الرسالة، وحددي اللي المديرة عايزاه، وردّي بصيغة JSON فقط — بدون أي نص خارج الـ JSON:
+
+{
+  "intent": "add_product" أو "describe",
+  "nameAr": "اسم المنتج بالعربي (من كلام المديرة أولًا، وإلا من الصورة)",
+  "nameEn": "الاسم بالإنجليزي إن أمكن أو null",
+  "price": رقم أو null,
+  "compareAt": السعر قبل الخصم إن وُجد (رقم أو null),
+  "categoryName": "أقرب قسم من القائمة اللي تحت بالعربي أو null",
+  "stock": عدد القطع إن ذُكر (رقم أو null),
+  "badgeAr": "بادج قصير بالعربي مثل «جديد» أو null",
+  "description": "وصف تسويقي قصير بالعربي (جملة أو جملتين) مستوحى من الصورة والرسالة",
+  "reply": "رد ودود مختصر بالعربي للمديرة يلخص اللي فهمتيه"
+}
+
+القواعد:
+- كلام المديرة أولى بصح على أي اسم أو رقم ظاهر في الصورة.
+- لو المديرة طالبة إضافة/إنشاء منتج (أضيفي/اعملي/سجلي/ضيفي…) حتى لو البيانات ناقصة، خلي intent = "add_product" وكمّلي الناقص من الصورة (زي السعر من بطاقة السعر).
+- ممنوع تمامًا تقولي في reply إنك أضفتِ أو نفذتِ أي حاجة — إنتِ بتحللي وتكتبي فهمتك فقط؛ التنفيذ الفعلي بيحصل من النظام بعد ردك.
+- لو الرسالة سؤال أو تحليل أو وصف عام للصور، خلي intent = "describe" واكتبي إجابتك الكاملة في reply.
+- الأسعار أرقام بالجنيه المصري بدون عملة.
+قائمة الأقسام المتاحة: ${categoryNames.length ? categoryNames.join('، ') : '(لا توجد أقسام بعد)'}`;
+}
 
 export async function runAgent(opts: {
   message: string;
@@ -230,18 +316,249 @@ export async function runAgent(opts: {
   permissions?: string[];
 }): Promise<{
   reply: string;
-  executed: { tool: string; ok: boolean; dryRun: boolean }[];
+  executed: AgentToolResult[];
   provider: 'provider' | 'local';
 }> {
-  const history: ChatMessage[] = [
-    ...(opts.history || []).map((h) => ({
-      role: (h.role === 'ai' ? 'assistant' : 'user') as 'assistant' | 'user',
-      content: h.text,
-    })),
-    { role: 'user', content: opts.message },
-  ];
-  const result = await askAssistant(history);
-  return { reply: result.reply, executed: [], provider: result.source };
+  const images = (opts.images || []).filter((i) => typeof i?.url === 'string' && i.url.startsWith('data:image/'));
+
+  // No attachments → the exact same live-grounded chat as before.
+  if (!images.length) {
+    const history: ChatMessage[] = [
+      ...(opts.history || []).map((h) => ({
+        role: (h.role === 'ai' ? 'assistant' : 'user') as 'assistant' | 'user',
+        content: h.text,
+      })),
+      { role: 'user', content: opts.message },
+    ];
+    const result = await askAssistant(history);
+    return { reply: result.reply, executed: [], provider: result.source };
+  }
+
+  return runVisionAgent(opts, images);
+}
+
+async function runVisionAgent(
+  opts: {
+    message: string;
+    execute?: boolean;
+    admin?: { id: number | string; username: string };
+  },
+  images: AgentImage[]
+): Promise<{
+  reply: string;
+  executed: AgentToolResult[];
+  provider: 'provider' | 'local';
+}> {
+  const executed: AgentToolResult[] = [];
+  try {
+    const categories = await db.category.findMany({
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true, nameAr: true, nameEn: true },
+    });
+    const categoryNames = categories.map((c) => c.nameAr);
+
+    const zai = await ZAI.create();
+    const completion = await withTimeout(
+      zai.chat.completions.createVision({
+        // server's own default vision model (verified live U76); the TS body
+        // type requires an explicit model string
+        model: 'glm-5v-turbo',
+        messages: [
+          { role: 'system', content: visionSystemPrompt(categoryNames) },
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: opts.message },
+              ...images.slice(0, 5).map((i) => ({
+                type: 'image_url' as const,
+                image_url: { url: i.url },
+              })),
+            ],
+          },
+        ],
+        thinking: { type: 'disabled' },
+      }),
+      VISION_TIMEOUT_MS
+    );
+    const raw = completion.choices[0]?.message?.content?.trim() || '';
+    if (!raw) throw new Error('empty vision response');
+    const parsed = extractJson(raw);
+
+    // U76 fix (browser-test finding): the model sometimes labels an add
+    // request as "describe" while writing a misleading "تمت الإضافة بنجاح"
+    // reply — decide the add flow by CONTENT (extracted name/price or an add
+    // verb in her message), not by the intent label alone.
+    const addVerb = /أضيفي|اضيفي|اعملي|عملي|سجلي|انشئي|أنشئي|ضيفي|حطي|إضافة|اضافة|زودي|سجلّي/i.test(opts.message);
+    const wantAdd =
+      !!parsed &&
+      (parsed.intent === 'add_product' ||
+        ((parsed.nameAr || '').trim().length > 0 && (num(parsed.price) !== null || addVerb)));
+
+    // describe intent (or unparseable JSON) → the vision reply IS the answer
+    if (!parsed || !wantAdd) {
+      const reply =
+        (parsed?.reply || '').trim() ||
+        raw
+          .replace(/^\s*\{[\s\S]*\}\s*$/, '')
+          .trim() ||
+        'شفت الصور اللي بعتيها 🌸 قوليلي تحبي أعمل بيها إيه — أضيفها منتج جديد بأي اسم وسعر؟';
+      return { reply, executed, provider: 'provider' };
+    }
+
+    // ── add_product flow ──
+    const exec = !!opts.execute;
+    const nameAr = (parsed.nameAr || '').trim();
+    const price = num(parsed.price);
+    const compareAt = num(parsed.compareAt);
+    const stock = num(parsed.stock);
+    const givenCat = (parsed.categoryName || '').trim();
+
+    if (!nameAr) {
+      return {
+        reply:
+          'وصلتني الصور وشفتها 👌 بس ناقصني حاجة واحدة عشان أضيف المنتج: الاسم. اكتبي اسم المنتج وأنا أكمّل الباقي فورًا.',
+        executed: [{ tool: 'product.prepare', ok: false, summary: 'الاسم ناقص' }],
+        provider: 'provider',
+      };
+    }
+    if (!price) {
+      return {
+        reply: `جاهزة أضيف «${nameAr}» على طول ✨ بس قوليلي السعر بكام (وممكن كمان سعره قبل الخصم لو فيه عرض) وأنفذ فورًا.`,
+        executed: [{ tool: 'product.prepare', ok: false, summary: 'السعر ناقص' }],
+        provider: 'provider',
+      };
+    }
+
+    // resolve / create the category
+    const nGiven = givenCat ? normAr(givenCat) : '';
+    let category =
+      (givenCat &&
+        (categories.find((c) => normAr(c.nameAr) === nGiven) ||
+          categories.find((c) => c.nameEn.trim().toLowerCase() === givenCat.toLowerCase()) ||
+          categories.find((c) => normAr(c.nameAr).includes(nGiven) || nGiven.includes(normAr(c.nameAr))))) ||
+      null;
+    let catNote = '';
+    if (!category && givenCat && exec) {
+      const catSlug = await uniqueSlug(slugify(parsed.nameEn || givenCat));
+      const created = await db.category.create({
+        data: {
+          slug: catSlug,
+          nameAr: givenCat,
+          nameEn: (parsed.nameEn || givenCat).trim(),
+          description: `قسم أُنشئ تلقائيًا بواسطة المساعد الذكي`,
+        },
+      });
+      category = { id: created.id, nameAr: created.nameAr, nameEn: created.nameEn };
+      executed.push({ tool: 'category.create', ok: true, summary: created.nameAr });
+    }
+    if (!category && categories.length) {
+      category = categories[0];
+      if (givenCat) catNote = ` (مفيش قسم باسم «${givenCat}» — ضفته في «${category.nameAr}» وتقدري تنقليه)`;
+      else catNote = ` (أول قسم في المتجر — تقدري تنقليه لقسم تاني)`;
+    }
+
+    if (exec) {
+      // store every attached photo through the shared WebP pipeline
+      const storedUrls: string[] = [];
+      const stamp = Date.now();
+      for (let i = 0; i < Math.min(images.length, 5); i++) {
+        try {
+          const stored = await storeDataUrlImage(
+            images[i].url,
+            `ai-product-${stamp}-${i + 1}`,
+            opts.admin?.id ? String(opts.admin.id) : undefined
+          );
+          if (stored) {
+            storedUrls.push(stored.url);
+            executed.push({ tool: 'media.upload', ok: true, summary: stored.fileName });
+          }
+        } catch {
+          executed.push({ tool: 'media.upload', ok: false, summary: `صورة ${i + 1} فشلت` });
+        }
+      }
+
+      if (!category) {
+        return {
+          reply: 'مفيش أقسام في المتجر لسه — اعملي قسم أول (أو قوليلي اسم القسم اللي عايزاه وأنا أعمله وأضيف المنتج فيه).',
+          executed: [...executed, { tool: 'product.create', ok: false, summary: 'لا يوجد قسم' }],
+          provider: 'provider',
+        };
+      }
+
+      const slug = await uniqueSlug(slugify(parsed.nameEn || nameAr));
+      const product = await db.product.create({
+        data: {
+          slug,
+          nameAr,
+          nameEn: (parsed.nameEn || nameAr).trim(),
+          description: (parsed.description || '').trim() || nameAr,
+          price,
+          compareAt: compareAt && compareAt > price ? compareAt : null,
+          image: storedUrls[0] || '/products/placeholder.svg',
+          gallery: storedUrls.length > 1 ? JSON.stringify(storedUrls.slice(1)) : null,
+          categoryId: category.id,
+          badgeAr: (parsed.badgeAr || '').trim() || null,
+          badgeEn: null,
+          stock: stock ? Math.max(0, Math.floor(stock)) : 20,
+          published: true,
+        },
+      });
+      executed.push({
+        tool: 'product.create',
+        ok: true,
+        summary: `${nameAr} — ${price} ج.م — ${category.nameAr}`,
+      });
+      await writeAudit({
+        actor: opts.admin?.username ?? null,
+        action: 'product.created',
+        entity: 'product',
+        entityId: product.id,
+        meta: { userAgent: 'ai-assistant' },
+      });
+      invalidateCatalog();
+
+      const lines = [
+        `تم يا فندم، المنتج بقي على الأرض ✅`,
+        `«${nameAr}» — ${price} ج.م — قسم «${category.nameAr}»${catNote}`,
+      ];
+      if (compareAt && compareAt > price) lines.push(`مكتوب عليه إنه مخفّض من ${compareAt} ج.م 🏷️`);
+      if (storedUrls.length) {
+        lines.push(
+          storedUrls.length === 1
+            ? `والصورة اللي بعتيها بقت هي صورته الأساسية 📸`
+            : `الصورة الأولى بقت صورته الأساسية و${storedUrls.length - 1} صورة تانية في الجاليري 📸`
+        );
+      } else {
+        lines.push('ملحوظة: تعذر تخزين الصور، فضعنا الصورة الافتراضية مؤقتًا — ارفعي الصورة من صفحة المنتجات أو ابعتيها تاني.');
+      }
+      lines.push('تلاقيه في صفحة المنتجات دلوقتي — ولو عايزة تعدلي الوصف أو تضيفي صور، قوليلي 🌸');
+      return { reply: lines.join('\n'), executed, provider: 'provider' };
+    }
+
+    // plan mode → honest dry-run plan
+    const planSummary = `${nameAr} — ${price} ج.م — ${givenCat || category?.nameAr || 'قسم جديد'}`;
+    const plan = [
+      `جهزتلك خطة إضافة المنتج من الصور 📋`,
+      `• الاسم: «${nameAr}»`,
+      `• السعر: ${price} ج.م${compareAt && compareAt > price ? ` (مخفّض من ${compareAt} ج.م)` : ''}`,
+      `• القسم: ${givenCat || category?.nameAr || 'هعمل قسم جديد'}${givenCat && !category ? ' (هجيب أقرب قسم أو أعمل جديد)' : ''}`,
+      `• الصور: ${images.length === 1 ? 'الصورة المرفقة هتبقى صورته الأساسية' : `أول ${Math.min(images.length, 5)} صور — الأولى أساسية والباقي جاليري`}`,
+      `فعلي «وضع التنفيذ الفعلي» من فوق وابعتي الطلب تاني — وأنفذ كل ده فورًا.`,
+    ];
+    return {
+      reply: plan.join('\n'),
+      executed: [{ tool: 'product.create', ok: true, dryRun: true, summary: planSummary }],
+      provider: 'provider',
+    };
+  } catch (error) {
+    console.error('[ai-agent] vision agent failed', error);
+    return {
+      reply:
+        'تعذر قراءة الصور دلوقتي — غالبًا مشكلة مؤقتة في خدمة الذكاء الاصطناعي 😔 جرّبي تاني بعد دقيقة، أو ضيفي المنتج بالصورة عادي من قسم المنتجات. وأنا موجودة لأي سؤال نصي 🌸',
+      executed,
+      provider: 'local',
+    };
+  }
 }
 
 /* ---------- AI provider settings (outage-recovery rebuild) ----------

@@ -20,7 +20,19 @@ export async function POST(req: Request) {
   try {
     const body = await parseBody<Body>(req);
     const message = (body.message || "").trim().slice(0, 4000);
-    const images = (body.images || []).filter(i => typeof i?.url === "string" && i.url.startsWith("data:")).slice(0, 5);
+    // U76-AI-IMAGES — data-URL photos from the compressed client upload; a
+    // per-image char cap (≈1.9MB binary) + total cap keep the JSON body sane.
+    const images = (body.images || [])
+      .filter(
+        (i) =>
+          typeof i?.url === "string" &&
+          i.url.startsWith("data:image/") &&
+          i.url.length <= 2_500_000
+      )
+      .slice(0, 5)
+      .filter((i, idx, arr) => arr.indexOf(i) === idx); // drop exact duplicates
+    const totalImageChars = images.reduce((s, i) => s + i.url.length, 0);
+    if (totalImageChars > 9_000_000) images.length = 0;
     const history = (body.history || [])
       .filter(h => (h.role === "user" || h.role === "ai") && typeof h.text === "string" && h.text.trim())
       .slice(-8)
