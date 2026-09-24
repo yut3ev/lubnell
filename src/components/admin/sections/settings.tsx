@@ -72,14 +72,41 @@ type SiteStatusSettings = {
 };
 
 // U78 — upload an animation (webm/mp4) from the device into the media library
+// U83-PHASE4 — files over ~4MB go browser→R2 DIRECTLY with a presigned URL
+// (Vercel rejects large request bodies at 4.5MB; the server only records the
+// asset afterwards). Small files keep the classic server upload.
+const DIRECT_UPLOAD_THRESHOLD = 4_000_000;
+
 async function uploadVideoFile(file: File): Promise<string> {
+  const token = loadAdminToken();
+  const authHeaders = token ? { 'x-admin-token': token } : undefined;
+  if (file.size > DIRECT_UPLOAD_THRESHOLD) {
+    const pre = await apiJson<{ ok: boolean; uploadUrl?: string; key?: string; error?: string }>('/api/admin/media/presign', {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({ fileName: file.name, contentType: file.type || 'video/mp4' }),
+    });
+    if (!pre.ok || !pre.data?.uploadUrl || !pre.data?.key) throw new Error(pre.data?.error || 'تعذر تجهيز الرفع المباشر');
+    const put = await fetch(pre.data.uploadUrl, {
+      method: 'PUT',
+      body: file,
+      headers: { 'Content-Type': file.type || 'video/mp4' },
+    });
+    if (!put.ok) throw new Error(`تعذر رفع الفيديو مباشرة (${put.status})`);
+    const conf = await apiJson<{ ok: boolean; url?: string; error?: string }>('/api/admin/media/confirm', {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({ key: pre.data.key, fileName: file.name, mimeType: file.type || 'video/mp4' }),
+    });
+    if (!conf.ok || !conf.data?.ok || !conf.data?.url) throw new Error(conf.data?.error || 'تعذر تسجيل الفيديو');
+    return conf.data.url as string;
+  }
   const form = new FormData();
   form.append('file', file);
-  const token = loadAdminToken();
   const res = await fetch('/api/admin/media', {
     method: 'POST',
     body: form,
-    headers: token ? { 'x-admin-token': token } : undefined,
+    headers: authHeaders,
   });
   const data = await res.json().catch(() => null);
   if (!res.ok || !(data?.ok || data?.success) || !data.url) {
