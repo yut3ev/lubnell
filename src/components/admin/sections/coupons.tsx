@@ -1,5 +1,8 @@
 'use client';
 
+import { confirmDialog } from '@/components/ui/confirm-service';
+
+
 // U17-COUPONS — «العروض والكوبونات» rebuilt to the owner's exact spec:
 // header copy, «عرض جديد» dialog with كود الخصم / اسم العرض / نوع الخصم /
 // قيمة الخصم / الحد الأدنى للطلب / أقصى خصم اختياري / يبدأ في / ينتهي في /
@@ -126,7 +129,7 @@ export default function CouponsSection() {
   }
 
   async function remove(c: Coupon) {
-    if (!window.confirm(`حذف العرض ${c.code} نهائيًا؟`)) return;
+    if (!(await confirmDialog({ title: 'حذف العرض', message: `حذف العرض ${c.code} نهائيًا؟`, confirmText: 'حذف نهائي', danger: true }))) return;
     const { ok, data } = await apiJson<{ ok: boolean; error?: string }>(`/api/admin/coupons/${c.id}`, { method: 'DELETE' });
     if (ok) {
       toast({ title: 'تم حذف العرض' });

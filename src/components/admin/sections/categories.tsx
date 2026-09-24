@@ -1,5 +1,8 @@
 'use client';
 
+import { confirmDialog } from '@/components/ui/confirm-service';
+
+
 // U22-CATEGORY-PAGE — rebuilt to the owner's screenshots (brave_wEq4QTgibM /
 // brave_qDhM7iJYon): add + edit dialogs both carry the full field set —
 // names, slug, order, short description (under the name on the homepage),
@@ -210,7 +213,7 @@ export default function CategoriesSection() {
   }
 
   async function remove(c: Category) {
-    if (!window.confirm(`حذف قسم "${c.nameAr}"؟`)) return;
+    if (!(await confirmDialog({ title: 'حذف القسم', message: `حذف قسم "${c.nameAr}"؟`, confirmText: 'حذف القسم', danger: true }))) return;
     const { ok, data } = await apiJson<{ ok: boolean; error?: string }>(`/api/admin/categories/${c.id}`, { method: 'DELETE' });
     if (ok) {
       toast({ title: 'تم حذف القسم' });

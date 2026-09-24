@@ -1,3 +1,4 @@
+import { confirmDialog } from '@/components/ui/confirm-service';
 "use client";
 
 // LUBNÉL storefront views: home, shop, product, cart, wishlist, static pages
@@ -1398,7 +1399,7 @@ export function TrackView({ lang }: { lang: "ar" | "en" }) {
     }
   };
   const requestCancel = async (order: TrackedOrder) => {
-    if (!window.confirm(ar ? `هل تريدين إرسال طلب إلغاء للطلب ${order.orderNumber}؟ سيراجعه الفريق ويتواصل معكِ.` : `Request cancellation of ${order.orderNumber}? Our team will review and contact you.`)) return;
+    if (!(await confirmDialog({ title: ar ? 'طلب إلغاء الطلب' : 'Cancellation request', message: ar ? `إرسال طلب إلغاء للطلب ${order.orderNumber}؟ سيراجعه الفريق ويتواصل معكِ.` : `Request cancellation of ${order.orderNumber}? Our team will review and contact you.`, confirmText: ar ? 'إرسال الطلب' : 'Send request', cancelText: ar ? 'رجوع' : 'Back' }))) return;
     setCancelBusy(order.orderNumber);
     try {
       const res = await fetch("/api/store/orders/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderNumber: order.orderNumber, phone: normalizeEgyptPhone(phone) || phone.trim() }) });

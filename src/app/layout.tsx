@@ -5,6 +5,7 @@ import { siteUrl } from "@/lib/site-url";
 import { Geist, Geist_Mono, Cairo } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { ConfirmHost } from "@/components/ui/confirm-service";
 import { ExtensionShield } from "@/components/extension-shield";
 import { StoreBoot } from "@/components/store-boot";
 import { VersionWatch } from "@/components/version-watch";
@@ -155,6 +156,7 @@ export default function RootLayout({
             BEFORE React pairs them with mismatched markup (aria-controls) */}
         <VersionWatch />
         {children}
+        <ConfirmHost />
         <Toaster />
       </body>
     </html>

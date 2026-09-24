@@ -1,5 +1,8 @@
 'use client';
 
+import { confirmDialog } from '@/components/ui/confirm-service';
+
+
 // U22-PAGES — rebuilt to the owner's screenshot (brave_HaG5DxB5r3):
 // «الصفحات المدمجة — كل صفحة تُعرض تلقائيًا في المتجر حتى بدون تعديل!» —
 // the 7 built-in info slugs always render as cards (افتراضية → مخصصة once
@@ -121,10 +124,7 @@ export default function PagesSection() {
 
   async function remove(p: AdminPage) {
     const builtIn = (INFO_SLUGS as readonly string[]).includes(p.slug);
-    if (!window.confirm(builtIn
-      ? `حذف التعديلات على "${p.titleAr}"؟ ستعود الصفحة إلى النسخة الافتراضية تلقائيًا.`
-      : `حذف صفحة "${p.titleAr}"؟`))
-      return;
+    if (!(await confirmDialog({ title: 'حذف الصفحة', message: builtIn ? `حذف التعديلات على "${p.titleAr}"؟ ستعود الصفحة إلى النسخة الافتراضية تلقائيًا.` : `حذف صفحة "${p.titleAr}" نهائيًا؟`, confirmText: 'حذف', danger: true }))) return;
     const { ok } = await apiJson('/api/admin/pages', {
       method: 'POST',
       body: JSON.stringify({ action: 'remove', slug: p.slug }),

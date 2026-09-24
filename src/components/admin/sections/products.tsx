@@ -1,5 +1,8 @@
 'use client';
 
+import { confirmDialog } from '@/components/ui/confirm-service';
+
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Download, Eye, EyeOff, Loader2, Pencil, Plus, Search, Star, Trash2, X } from 'lucide-react';
 import { apiJson, EGP } from '../helpers';
@@ -130,7 +133,7 @@ export default function ProductsSection() {
   }
 
   async function remove(p: Product) {
-    if (!window.confirm(`حذف "${p.nameAr}"؟`)) return;
+    if (!(await confirmDialog({ title: 'حذف المنتج', message: `حذف "${p.nameAr}" نهائيًا؟`, confirmText: 'حذف نهائي', danger: true }))) return;
     const { ok, data } = await apiJson<{ ok: boolean; softCleared?: boolean }>(`/api/admin/products/${p.id}`, { method: 'DELETE' });
     if (ok) {
       toast({ title: data?.softCleared ? 'المنتج مرتبط بطلبات — تم تصفير مخزونه وتمييزه' : 'تم حذف المنتج' });

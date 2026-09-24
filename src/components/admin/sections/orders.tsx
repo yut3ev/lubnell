@@ -1,5 +1,8 @@
 'use client';
 
+import { confirmDialog } from '@/components/ui/confirm-service';
+
+
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Download, Loader2, Trash2 } from 'lucide-react';
 import { apiJson, EGP, fmtDate, ORDER_STATUSES, orderNo, STATUS_CLASS, STATUS_LABEL } from '../helpers';
@@ -71,7 +74,7 @@ export default function OrdersSection() {
   }
 
   async function remove(id: string) {
-    if (!window.confirm(`حذف الطلب ${orderNo(id)} نهائيًا؟`)) return;
+    if (!(await confirmDialog({ title: 'حذف الطلب', message: `سيتم حذف الطلب ${orderNo(id)} نهائيًا من السجل — لا يمكن الرجوع بعد التأكيد.`, confirmText: 'حذف نهائي', danger: true }))) return;
     /* U50-ORDER-DELETE-FK — الرسالة القديمة «(Owner فقط)» كانت بتظهر لأي فشل حذف
        حتى لو السبب قيد FK وليس صلاحيات. الآن نُظهر سبب الخطر الحقيقي من السيرفر. */
     const { ok, status, data } = await apiJson<{ ok: boolean; error?: string }>(`/api/admin/orders/${id}`, { method: 'DELETE' });

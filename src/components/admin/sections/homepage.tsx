@@ -1,5 +1,8 @@
 'use client';
 
+import { confirmDialog } from '@/components/ui/confirm-service';
+
+
 // U17-HOME-EDITOR — «محرر السلايدر» rebuilt to the owner's target shape:
 // أقسام الصفحة (hide/show + template per homepage section, published live),
 // الشرائح panel with drag-to-reorder, an inline تفاصيل الشريحة editor and a
@@ -189,7 +192,7 @@ export default function HomepageSection() {
   }
 
   async function removeSlide(id: string) {
-    if (!window.confirm('حذف هذه الشريحة نهائيًا؟')) return;
+    if (!(await confirmDialog({ title: 'حذف الشريحة', message: 'حذف هذه الشريحة نهائيًا من الصفحة الرئيسية؟', confirmText: 'حذف نهائي', danger: true }))) return;
     const { ok } = await apiJson('/api/admin/slides', {
       method: 'POST',
       body: JSON.stringify({ action: 'remove', id }),

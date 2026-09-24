@@ -1,5 +1,8 @@
 'use client';
 
+import { confirmDialog } from '@/components/ui/confirm-service';
+
+
 // U61-BLOG — Studio → «المدونة»: the owner writes SEO journal articles
 // (مقالات) that render at /blog + /blog/[slug]. Editor covers: bilingual
 // title/excerpt/content, cover image (shared ImageField: upload / URL /
@@ -165,7 +168,7 @@ export default function BlogSection() {
   }
 
   async function remove(p: AdminPost) {
-    if (!window.confirm(`حذف مقال "${p.titleAr}"؟ لا يمكن الرجوع.`)) return;
+    if (!(await confirmDialog({ title: 'حذف المقال', message: `حذف مقال "${p.titleAr}" نهائيًا — لا يمكن الرجوع.`, confirmText: 'حذف نهائي', danger: true }))) return;
     const { ok } = await apiJson('/api/admin/posts', {
       method: 'POST',
       body: JSON.stringify({ action: 'remove', id: p.id }),

@@ -1,3 +1,4 @@
+import { confirmDialog } from '@/components/ui/confirm-service';
 "use client";
 
 // LUBNÉL Admin Studio — full dashboard: overview, orders, products, coupons, categories,
@@ -1413,7 +1414,7 @@ function ProductsSection({ products, reload, openAdd }: { products: Product[]; r
   const editVariants = (p: Product) => setEditingId(p.id);
   const editingProduct = editingId ? products.find(p => p.id === editingId) || null : null;
   const removeProduct = async (p: Product) => {
-    if (!window.confirm(ar ? `حذف المنتج "${p.nameAr}" نهائيًا؟` : `Delete the product "${p.name}" permanently?`)) return;
+    if (!(await confirmDialog({ title: ar ? 'حذف المنتج' : 'Delete product', message: ar ? `حذف المنتج "${p.nameAr}" نهائيًا؟ لا يمكن الرجوع.` : `Delete "${p.name}" permanently? This cannot be undone.`, confirmText: ar ? 'حذف نهائي' : 'Delete', cancelText: ar ? 'إلغاء' : 'Cancel', danger: true }))) return;
     try {
       await fetch(`/api/admin/products?slug=${encodeURIComponent(p.id)}`, { method: "DELETE" });
       toast.success(t("تم حذف المنتج"));
@@ -1610,7 +1611,7 @@ function CategoriesSection() {
     catch (e) { toast.error(e instanceof Error ? e.message : t("فشل التعديل")); }
   };
   const remove = async (c: typeof cats[number]) => {
-    if (!window.confirm(ar ? `حذف فئة "${c.nameAr}"؟` : `Delete the "${c.name}" category?`)) return;
+    if (!(await confirmDialog({ title: ar ? 'حذف الفئة' : 'Delete category', message: ar ? `حذف فئة "${c.nameAr}"؟` : `Delete the "${c.name}" category?`, confirmText: ar ? 'حذف الفئة' : 'Delete', cancelText: ar ? 'إلغاء' : 'Cancel', danger: true }))) return;
     try { await fetch(`/api/admin/categories`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "remove", id: c.id }) }); toast.success(t("تم الحذف")); load(); }
     catch (e) { toast.error(e instanceof Error ? e.message : t("فشل الحذف")); }
   };
@@ -3021,7 +3022,7 @@ function UsersSection() {
     catch (e) { toast.error(e instanceof Error ? e.message : t("فشل التحديث")); }
   };
   const removeUser = async (u: AdminUserRow) => {
-    if (!window.confirm(ar ? `تعطيل ${u.displayName} نهائيًا؟` : `Disable ${u.displayName} permanently?`)) return;
+    if (!(await confirmDialog({ title: ar ? 'تعطيل العضو' : 'Disable member', message: ar ? `تعطيل ${u.displayName} نهائيًا؟ سيفقد الوصول إلى لوحة الإدارة.` : `Disable ${u.displayName} permanently? Panel access will be removed.`, confirmText: ar ? 'تعطيل' : 'Disable', cancelText: ar ? 'إلغاء' : 'Cancel', danger: true }))) return;
     try { await api("/api/admin/users", post("/api/admin/users", { action: "remove", id: u.id })); toast.success(t("تم تعطيل المستخدم")); load(); }
     catch (e) { toast.error(e instanceof Error ? e.message : t("فشل التعطيل")); }
   };
