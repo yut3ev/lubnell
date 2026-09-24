@@ -219,7 +219,7 @@ function QuickViewModal({ lang, product, rating, close, addToCart, onPrev, onNex
             else { if (dx < 0) onNext?.(); else onPrev?.(); }
           }}
         >
-          <img src={product.image} alt={product.alt} fetchPriority="high" decoding="async" />
+          <img src={product.image} alt={product.alt || product.nameAr || product.name} fetchPriority="high" decoding="async" />
           {product.badge && <span className="product-badge">{ar ? product.badgeAr : product.badge}</span>}
           {salePct > 0 && <span className="sale-pct">−{salePct}%</span>}
         </div>
@@ -1092,8 +1092,8 @@ export function ProductView({ lang, products, wishCounts = {}, wishIds, toggleWi
       <a href="#/shop" className="back-link"><ArrowRight size={16} /> {ar ? "العودة للتسوّق" : "Back to shop"}</a>
       <div className="product-detail">
         <div className="gallery">
-          <div className="thumbs">{galleryImages.map(image => <button key={image} className={active === image ? "active" : ""} onClick={() => setActiveThumb(image)} aria-label="thumbnail"><img src={image} alt="" loading="lazy" decoding="async" /></button>)}</div>
-          <div className="main-product-image"><img src={active} alt={product.alt} fetchPriority="high" decoding="async" /><span className="zoom-hint"><Eye size={15} /> {ar ? "مرّري للتكبير" : "Hover to zoom"}</span></div>
+          <div className="thumbs">{galleryImages.map((image, gi) => <button key={image} className={active === image ? "active" : ""} onClick={() => setActiveThumb(image)} aria-label="thumbnail"><img src={image} alt={`${product.nameAr || product.name} — صورة ${gi + 1}`} loading="lazy" decoding="async" /></button>)}</div>
+          <div className="main-product-image"><img src={active} alt={product.alt || product.nameAr || product.name} fetchPriority="high" decoding="async" /><span className="zoom-hint"><Eye size={15} /> {ar ? "مرّري للتكبير" : "Hover to zoom"}</span></div>
         </div>
         <div className="product-detail-copy">
           <span className="eyebrow">{ar ? product.categoryAr : product.category} / LUBNÉL</span>
