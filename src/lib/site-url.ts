@@ -10,7 +10,7 @@
 // official production domain. Dev-only, internal localhost usage elsewhere
 // is untouched.
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || 'https://lubnel.space-z.ai';
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://lubnel.vercel.app';
 
 export function siteUrl(): string {
   return SITE_URL;

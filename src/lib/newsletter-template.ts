@@ -8,7 +8,7 @@
 // Brand: LUBNÉL wine ≈ #8E3D43 (oklch 0.47 0.11 18 — see U48-CLUB-PRIMARY),
 // soft blush background ≈ the storefront's bg-secondary tone.
 
-export const STORE_URL = 'https://lubnel.space-z.ai';
+export const STORE_URL = 'https://lubnel.vercel.app';
 export const STORE_WA_URL = 'https://wa.me/201228405377';
 
 export type NewsletterLang = 'ar' | 'en';
