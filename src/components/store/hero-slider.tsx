@@ -271,7 +271,7 @@ export function HeroSlider({
           <source media="(max-width: 639px)" srcSet={slide.imageMobile} />
           <img
             src={slide.image}
-            alt={slide.titleAr?.replace(/\n/g, ' ') || 'LUBNÉL'}
+            alt={(slide.titleAr || '').replace(/\n/g, ' ').trim() || 'LUBNÉL'}
             loading={i === 0 ? 'eager' : 'lazy'}
             fetchPriority={i === 0 ? 'high' : 'auto'}
             decoding={i === 0 ? 'sync' : 'async'}
@@ -281,7 +281,7 @@ export function HeroSlider({
       ) : (
         <img
           src={slide.image}
-          alt={slide.titleAr?.replace(/\n/g, ' ') || 'LUBNÉL'}
+          alt={(slide.titleAr || '').replace(/\n/g, ' ').trim() || 'LUBNÉL'}
           loading={i === 0 ? 'eager' : 'lazy'}
           fetchPriority={i === 0 ? 'high' : 'auto'}
           decoding={i === 0 ? 'sync' : 'async'}
