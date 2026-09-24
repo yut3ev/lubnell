@@ -10,6 +10,7 @@ export async function GET() {
       ok: true,
       site: 'LUBNÉL',
       products,
+      version: process.env.VERCEL_GIT_COMMIT_SHA || 'local',
       time: new Date().toISOString(),
     });
   } catch {
