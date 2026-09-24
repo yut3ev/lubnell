@@ -114,8 +114,25 @@ const NAV: { id: string; label: string; icon: React.ComponentType<{ className?: 
 ];
 
 export default function AdminDashboard({ admin, onLogout }: { admin: AdminInfo; onLogout: () => void }) {
-  const [section, setSection] = useState('overview');
+  // U84 — remember the last section per browser: leaving and coming back (or
+  // a refresh) reopens where she was instead of jumping to نظرة عامة. The
+  // saved section is honored only if it still exists and she may see it.
+  const [section, setSection] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lubnel_admin_section');
+      if (saved) {
+        const n = NAV.find((x) => x.id === saved);
+        const allowed =
+          n && (!n.ownerOnly || admin.role === 'owner') && (!n.perm || admin.role === 'owner' || (admin.permissions || []).includes(n.perm));
+        if (allowed) return saved;
+      }
+    } catch { /* private mode etc. — default below */ }
+    return 'overview';
+  });
   const [mobileNav, setMobileNav] = useState(false);
+  useEffect(() => {
+    try { localStorage.setItem('lubnel_admin_section', section); } catch { /* ignore */ }
+  }, [section]);
   const title = NAV.find((n) => n.id === section)?.label || 'نظرة عامة';
   const isOwner = admin.role === 'owner';
   const perms = admin.permissions || [];

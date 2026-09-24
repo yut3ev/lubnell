@@ -154,7 +154,10 @@ export default function RootLayout({
         <StoreBoot />
         {/* U23-BOOTID — refreshes stale tabs that outlived a server restart
             BEFORE React pairs them with mismatched markup (aria-controls) */}
-        <VersionWatch />
+        {/* U84 — disabled on Vercel: every serverless instance has its own
+            boot id, so the watchdog would reload her tab every minute and
+            destroy in-progress work. Self-hosted (z.ai/local/VPS) keeps it. */}
+        {process.env.VERCEL ? null : <VersionWatch />}
         {children}
         <ConfirmHost />
         <Toaster />
