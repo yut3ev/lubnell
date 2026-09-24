@@ -222,7 +222,7 @@ export function ProductDetail({
                     imgIdx === i ? 'border-primary shadow-md' : 'border-border/70 opacity-75 hover:opacity-100'
                   }`}
                 >
-                  <img src={img} alt="" aria-hidden className="h-full w-full object-cover" loading="lazy" />
+                  <img src={img} alt={name} aria-hidden className="h-full w-full object-cover" loading="lazy" />
                 </button>
               ))}
             </div>
@@ -428,7 +428,7 @@ export function ProductDetail({
         data-testid="sticky-atc"
       >
         <div className="mx-auto flex max-w-6xl items-center gap-3">
-          <img src={activeImg} alt="" aria-hidden className="h-11 w-11 rounded-xl border border-border/60 object-cover" />
+          <img src={activeImg} alt={name} aria-hidden className="h-11 w-11 rounded-xl border border-border/60 object-cover" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-bold">{name}</p>
             <p className="text-sm font-bold text-primary">
