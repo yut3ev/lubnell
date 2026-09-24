@@ -1540,3 +1540,5 @@ Work Log:
 
 Stage Summary:
 - صفحة الصيانة بقت بتعرض فيديو الأنيميشن بتاعها (مكامن الأيقونة فوق الكلام بالظبط زي ما طلبت) — ترفعه من الإعدادات → بيانات المتجر → «فيديو الأيقونة» بضغطتين، أو أول ما ملف المحادثة يوصل هحطه في public/brand/maintenance.webm وهيشتغل أوتوماتيك. الملف من المحادثة فشل في الوصول مرتين (مشكلة قناة الرفع مش من الكود). Re-publish on lubnel.space-z.ai still pending (U36→U78).
+
+- U83: deploy-safety comprehensive verification round
