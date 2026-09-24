@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { getAdminFromRequest, permissionsFor, requestMeta, writeAudit, type RequestMeta } from "@/lib/admin-auth";
 import type { AdminUser } from "@prisma/client";
-import { db } from "@/lib/db";
+import { db, checkpointWal } from "@/lib/db";
 
 export const jsonOk = <T>(data: T, init?: ResponseInit) => NextResponse.json(data as object, init);
 export const jsonError = (message: string, status = 400) => NextResponse.json({ error: message }, { status });
@@ -63,6 +63,8 @@ export async function audit(ctx: AdminContext, action: string, entity: string, e
     // Prisma write throw (swallowed by .catch) and silently dropped ALL
     // studio CRUD audit rows. Fixed SUP-8.
     await writeAudit({ actor: ctx.admin?.username ?? null, action, entity, entityId, meta: ctx.meta });
+    // U80 — every admin write path audits on success → checkpoint there too
+    checkpointWal();
   } catch {
     // audit failures must never break the request
   }

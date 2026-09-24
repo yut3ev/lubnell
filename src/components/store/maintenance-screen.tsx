@@ -7,6 +7,7 @@
 // Responsive from 320px phones to desktop, honors prefers-reduced-motion,
 // and fails graceful (static icon) on old browsers.
 import { DEFAULT_MAINTENANCE_MESSAGE } from "@/lib/maintenance";
+import { resolveVideoSource } from "@/lib/video-embed";
 
 type Props = {
   /** Owner-written custom message (Studio → حالة الموقع). */
@@ -65,6 +66,9 @@ function Sparkle({ className }: { className?: string }) {
 export function MaintenanceScreen({ message, logoDark, video }: Props) {
   const sub = (message || "").trim() || DEFAULT_MAINTENANCE_MESSAGE;
   const emblemVideo = (video || "").trim();
+  // U82 — a YouTube/Vimeo link becomes a 16:9 embed; a direct file plays at
+  // full natural size (no crop, clamped to the viewport); empty → CSS gear
+  const source = resolveVideoSource(emblemVideo);
   return (
     <div
       dir="rtl"
@@ -83,29 +87,43 @@ export function MaintenanceScreen({ message, logoDark, video }: Props) {
         className="mtn-rise mb-10 h-9 w-auto opacity-90 sm:h-11"
       />
 
-      {/* the emblem: her own animation when set (CSS gear stays behind as a
-          graceful fallback for browsers that can't decode the file), else the
-          animated gear emblem */}
-      {emblemVideo ? (
-        <div
-          role="img"
-          aria-label="أيقونة الصيانة"
-          className="mtn-rise relative mb-8 grid place-items-center sm:mb-10"
-        >
-          <div aria-hidden className="mtn-spin absolute inset-0 grid place-items-center text-primary/40">
-            <Gear className="h-20 w-20 sm:h-24 sm:w-24" />
+      {/* the emblem: her own animation when set — a YouTube/Vimeo link renders
+          as a 16:9 embed, a direct file plays full-width at its natural aspect
+          (never cropped, capped to the viewport), the CSS gear stays behind as
+          a graceful fallback for undecodable files, else the animated gear */}
+      {source.kind === "youtube" || source.kind === "vimeo" ? (
+        <div className="mtn-rise relative mb-8 mx-auto w-full max-w-lg sm:mb-10 sm:max-w-2xl lg:max-w-3xl">
+          <div
+            className="relative w-full overflow-hidden rounded-2xl bg-black/5 shadow-xl ring-1 ring-black/5"
+            style={{ aspectRatio: "16 / 9" }}
+          >
+            <iframe
+              src={source.src}
+              title="أيقونة الصيانة"
+              className="absolute inset-0 h-full w-full"
+              allow="autoplay; encrypted-media; picture-in-picture"
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
           </div>
-          <video
-            src={emblemVideo}
-            autoPlay
-            loop
-            muted
-            playsInline
-            disablePictureInPicture
-            controls={false}
-            preload="auto"
-            className="relative max-h-56 w-auto max-w-[300px] drop-shadow-xl sm:max-h-72 sm:max-w-[380px]"
-          />
+        </div>
+      ) : source.kind === "file" ? (
+        <div className="mtn-rise relative mb-8 mx-auto w-full max-w-lg sm:mb-10 sm:max-w-2xl lg:max-w-3xl">
+          <div className="relative grid place-items-center">
+            <div aria-hidden className="mtn-spin absolute inset-0 grid place-items-center text-primary/40">
+              <Gear className="h-20 w-20 sm:h-24 sm:w-24" />
+            </div>
+            <video
+              src={source.src}
+              autoPlay
+              loop
+              muted
+              playsInline
+              disablePictureInPicture
+              controls={false}
+              preload="auto"
+              className="relative max-h-[70vh] w-full object-contain drop-shadow-xl"
+            />
+          </div>
         </div>
       ) : (
         <div

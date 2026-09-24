@@ -12,7 +12,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const ctx = await requireAdmin(req, "roles.write");
+  // U79 — «roles.write» لم تكن موجودة في الكتالوج أصلاً (401 للكل حتى الاونر)؛
+  // إدارة الأدوار جزء من إدارة الفريق → users.write
+  const ctx = await requireAdmin(req, ["users.write"]);
   if (!ctx) return jsonError("غير مصرح", 401);
   const { roleName, permissions } = await parseBody<{ roleName?: string; permissions?: string[] }>(req);
   const name = (roleName || "").trim();

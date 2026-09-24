@@ -22,7 +22,8 @@ export type AdminReviewRecord = {
 };
 
 export async function GET(req: Request) {
-  const ctx = await requireAdmin(req, "products.read");
+  // U79 — صلاحيات التقييمات الممنوحة من مصفوفة الفريق تعمل الآن (كانت تُطبَّق products.*)
+  const ctx = await requireAdmin(req, ["reviews.read", "products.read"]);
   if (!ctx) return jsonError("غير مصرح", 401);
   const { searchParams } = new URL(req.url);
 
@@ -75,7 +76,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const ctx = await requireAdmin(req, "products.write");
+  // U79 — أي-of: reviews.write الممنوحة أو products.write القديمة
+  const ctx = await requireAdmin(req, ["reviews.write", "products.write"]);
   if (!ctx) return jsonError("غير مصرح", 401);
   const { id, action } = await parseBody<{ id?: string; action?: string }>(req);
   if (!id || !["approve", "unpublish", "delete", "feature", "unfeature"].includes(action || "")) return jsonError("طلب غير صالح");

@@ -1,5 +1,5 @@
 // Public order creation (WhatsApp checkout flow) + admin listing lives under /api/admin/orders
-import { db } from "@/lib/db";
+import { db, checkpointWal } from "@/lib/db";
 import { ensureSeed } from "@/lib/seed";
 import { validateCoupon, incrementCouponUsage } from "@/lib/coupons";
 import { jsonOk, jsonError } from "@/lib/api-helpers";
@@ -100,6 +100,7 @@ export async function POST(req: Request) {
       },
     });
     if (appliedCode) await incrementCouponUsage(appliedCode);
+    checkpointWal(); // U80 — the customer's order is durable the moment it's saved
     // R48 — rail-pull conversion: if this browser clicked an also-saved rail
     // card in the last 24h (same anonymous vid), stamp those unconverted
     // pulls as converted. Fire-and-forget semantics — a failure here must

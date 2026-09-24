@@ -1,8 +1,25 @@
 import { PrismaClient } from '@prisma/client'
+import { PrismaLibSQL } from '@prisma/adapter-libsql'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
   __lubnelDbReady?: Promise<void>
+}
+
+// U83-HOSTING — dual-mode database: local/VPS keeps the SQLite file exactly as
+// before, while Turso (libSQL) is enabled by setting TURSO_DB_URL +
+// DATABASE_AUTH_TOKEN. NOTE: DATABASE_URL stays a `file:` value in BOTH modes
+// (Prisma validates its protocol even when a driver adapter owns the real
+// connection) — on Vercel it's a harmless `file:./dev.db` placeholder.
+function makeClient(): PrismaClient {
+  const tursoUrl = process.env.TURSO_DB_URL;
+  if (tursoUrl) {
+    // adapter v6 takes a CONFIG object (it builds its own libsql client)
+    return new PrismaClient({
+      adapter: new PrismaLibSQL({ url: tursoUrl, authToken: process.env.DATABASE_AUTH_TOKEN }),
+    });
+  }
+  return new PrismaClient();
 }
 
 // U54-PERF-ROBUST — the client is cached on globalThis in EVERY environment
@@ -10,7 +27,7 @@ const globalForPrisma = globalThis as unknown as {
 // never spawn a second connection pool against the same SQLite file.
 export const db =
   globalForPrisma.prisma ??
-  new PrismaClient()
+  makeClient()
 
 globalForPrisma.prisma = db
 
@@ -46,3 +63,10 @@ if (!globalForPrisma.__lubnelDbReady) {
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
 // U10-DIAG: touched to force stale-module invalidation (pre-restore compiled graph was serving a prisma extension with AND 1=1 that no longer exists in source)
+
+// U80 — fold the WAL into the main DB file: called right after every admin
+// save / order so a committed edit never lives only in the -wal side file
+// (which a killed dev server, disk cleaner, or workspace restore can lose).
+export function checkpointWal(): void {
+  db.$executeRawUnsafe('PRAGMA wal_checkpoint(TRUNCATE);').catch(() => undefined);
+}

@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // U83-HOSTING — standalone for self-hosted runs (z.ai build.sh, local, VPS);
+  // Vercel injects VERCEL and prefers its own default output.
+  output: process.env.VERCEL ? undefined : "standalone",
   // U23-DEPLOY — deploy builds run INSIDE this sandbox next to the live dev
   // server (platform build.sh → bun run build). A separate distDir lets us
   // verify the production build without clobbering the dev server's .next.

@@ -17,6 +17,7 @@ import path from "path";
 import { Readable } from "stream";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { r2Configured, r2Get } from "@/lib/r2";
 
 export const dynamic = "force-dynamic";
 
@@ -102,6 +103,28 @@ export async function GET(req: Request, { params }: { params: Promise<{ file: st
   const fp = path.resolve(ROOT, rel);
   if (fp !== ROOT && !fp.startsWith(ROOT + path.sep)) {
     return new NextResponse("Not found", { status: 404 });
+  }
+
+  // U83 — R2 mode: the bucket is the primary store; stream straight through
+  // with Range passthrough (video seek works). A miss/hiccup falls through to
+  // the legacy DB-blob and disk paths below, so nothing breaks mid-migration.
+  if (r2Configured()) {
+    const ext = path.extname(rel).slice(1).toLowerCase();
+    try {
+      const r2res = await r2Get(`uploads/${rel}`, req.headers.get("range"));
+      if (r2res.ok) {
+        const headers = new Headers();
+        for (const h of ["content-type", "content-length", "content-range", "accept-ranges", "etag", "last-modified"]) {
+          const v = r2res.headers.get(h);
+          if (v) headers.set(h, v);
+        }
+        if (!headers.has("content-type")) headers.set("Content-Type", MIME[ext] || "application/octet-stream");
+        headers.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+        return new NextResponse(r2res.body, { status: r2res.status, headers });
+      }
+    } catch {
+      // R2 hiccup → legacy paths
+    }
   }
 
   // U20 — DB blob first: exact storageKey match (`uploads/<rel>`).

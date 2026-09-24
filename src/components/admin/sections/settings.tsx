@@ -22,6 +22,7 @@ import UsersSection from './users';
 import ImageField from '../image-field';
 import { BRAND_FONTS, BRAND_FONT_TAGS, brandFontById, googleFontsHref } from '@/lib/brand-fonts';
 import type { SiteTexts } from '@/lib/site-texts';
+import { resolveVideoSource } from '@/lib/video-embed';
 
 type StoreSettings = {
   storeName?: string;
@@ -85,6 +86,21 @@ async function uploadVideoFile(file: File): Promise<string> {
     throw new Error(data?.error || 'تعذر رفع الفيديو');
   }
   return data.url as string;
+}
+
+// U81 — remove an old maintenance video by its /api/uploads URL (row + disk
+// file) so repeated uploads never pile up copies. Best-effort: the media
+// DELETE endpoint reference-checks first, so an asset still used elsewhere
+// is refused and nothing can break.
+async function cleanupMediaAsset(url: string): Promise<void> {
+  try {
+    const { data } = await apiJson<{ ok: boolean; media?: Array<{ id: string; url: string }> }>('/api/admin/media');
+    const asset = data?.media?.find((m) => m.url === url);
+    if (!asset) return;
+    await apiJson(`/api/admin/media?id=${asset.id}`, { method: 'DELETE' });
+  } catch {
+    // best-effort — never block the upload flow
+  }
 }
 
 const TABS = [
@@ -215,6 +231,13 @@ function SiteStatusCard() {
   const { toast } = useToast();
   const videoRef = useRef<HTMLInputElement>(null);
   const [videoUploading, setVideoUploading] = useState(false);
+  // U82 — optional YouTube/Vimeo/direct-link field next to the device upload
+  const [linkDraft, setLinkDraft] = useState('');
+  useEffect(() => {
+    // prefill the link box only when the saved value is a LINK (not an upload)
+    const v = status.form?.video || '';
+    setLinkDraft(v && /^https?:\/\//i.test(v) && !v.startsWith('/api/uploads/') ? v : '');
+  }, [status.form?.video]);
 
   if (!status.form) return null;
   const closed = status.form.enabled === true;
@@ -256,8 +279,17 @@ function SiteStatusCard() {
     setVideoUploading(true);
     try {
       const url = await uploadVideoFile(file);
+      const prevVideo = status.form!.video || '';
       const ok = await status.persist({ video: url, updatedAt: new Date().toISOString() });
-      if (ok) toast({ title: 'تم رفع الفيديو ✓', description: 'هيظهر فوق الكلام في صفحة الصيانة على طول.' });
+      if (ok) {
+        // U81 — persist() only saves server-side; updating the form here is
+        // what makes the two live previews show the new video immediately
+        status.setForm({ ...status.form!, video: url, updatedAt: new Date().toISOString() });
+        // U81 — the previous maintenance video is now an orphan: remove it so
+        // repeated uploads never stack copies on disk (reference-safe delete)
+        if (prevVideo && prevVideo !== url) void cleanupMediaAsset(prevVideo);
+        toast({ title: 'تم رفع الفيديو ✓', description: 'هيظهر فوق الكلام في صفحة الصيانة على طول.' });
+      }
     } catch (e) {
       toast({ title: e instanceof Error ? e.message : 'تعذر رفع الفيديو', variant: 'destructive' });
     } finally {
@@ -270,6 +302,39 @@ function SiteStatusCard() {
     status.setForm({ ...status.form!, video: '' });
     const ok = await status.persist({ video: '', updatedAt: new Date().toISOString() });
     if (ok) toast({ title: 'تم مسح الفيديو — رجعت الأيقونة الافتراضية' });
+  }
+
+  // U82 — normalize a pasted link (bare youtube.com/… gets https://)
+  function normalizeVideoLink(raw: string): string {
+    let v = raw.trim();
+    if (v && !/^https?:\/\//i.test(v) && /^(www\.|youtube\.com|youtu\.be|vimeo\.com)/i.test(v)) {
+      v = 'https://' + v;
+    }
+    return v;
+  }
+
+  async function saveVideoLink() {
+    const v = normalizeVideoLink(linkDraft);
+    if (!v) {
+      toast({ title: 'اكتبي لينك الفيديو الأول (يوتيوب أو رابط مباشر)', variant: 'destructive' });
+      return;
+    }
+    if (!/^https?:\/\//i.test(v)) {
+      toast({ title: 'اللينك لازم يبدأ بـ https:// — زي لينك يوتيوب أو رابط mp4 مباشر', variant: 'destructive' });
+      return;
+    }
+    if (v === (status.form!.video || '')) {
+      toast({ title: 'اللينك ده محفوظ بالفعل ✓' });
+      return;
+    }
+    const ok = await status.persist({ video: v, updatedAt: new Date().toISOString() });
+    if (ok) {
+      const prev = status.form!.video || '';
+      status.setForm({ ...status.form!, video: v, updatedAt: new Date().toISOString() });
+      // replacing an uploaded file with a link orphans the old file → clean it
+      if (prev && prev !== v && prev.startsWith('/api/uploads/')) void cleanupMediaAsset(prev);
+      toast({ title: 'تم حفظ لينك الفيديو ✓', description: 'هيظهر فوق الكلام في صفحة الصيانة على طول.' });
+    }
   }
 
   return (
@@ -367,43 +432,87 @@ function SiteStatusCard() {
             </Button>
           ) : null}
         </div>
+        {/* U82 — paste a video link (YouTube / Vimeo / direct file) instead of uploading */}
+        <div className="flex gap-2">
+          <Input
+            value={linkDraft}
+            onChange={(e) => setLinkDraft(e.target.value)}
+            placeholder="أو الصقي لينك فيديو — يوتيوب / فيميو / رابط mp4 مباشر"
+            dir="ltr"
+            className="h-11 flex-1 rounded-full text-xs"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={saveVideoLink}
+            disabled={status.saving}
+            className="h-11 shrink-0 rounded-full px-4 text-xs font-bold"
+          >
+            {status.saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : 'حفظ اللينك'}
+          </Button>
+        </div>
         <p className="text-[11px] leading-relaxed text-muted-foreground">
-          ارفعي الأنيميشن بتاعك (webm أو mp4 — أقصى حجم 80MB) وهو هيتعرض مكامن الأيقونة تلقائيًا، لو مفيش فيديو هنستخدم الأيقونة المتحركة الافتراضية.
+          ارفعي الأنيميشن من جهازك (webm أو mp4 — أقصى حجم 80MB) أو الصقي لينك يوتيوب/فيميو أو رابط مباشر — الاتنين بيظهروا فوق الكلام في صفحة الصيانة بحجم كامل ومناسب لكل الشاشات، ولو مفيش فيديو هنستخدم الأيقونة المتحركة الافتراضية.
         </p>
-        {status.form.video ? (
-          <div className="flex justify-center rounded-2xl border border-border/50 bg-[#faf6f1] p-4">
-            <video
-              src={status.form.video}
-              autoPlay
-              loop
-              muted
-              playsInline
-              disablePictureInPicture
-              controls={false}
-              className="max-h-40 w-auto max-w-[220px]"
-            />
-          </div>
-        ) : null}
+        {(() => {
+          const src = resolveVideoSource(status.form.video);
+          return src.kind === 'youtube' || src.kind === 'vimeo' ? (
+            <div className="relative mx-auto w-full max-w-[300px] overflow-hidden rounded-xl bg-black/5 shadow-md" style={{ aspectRatio: '16 / 9' }}>
+              <iframe
+                src={src.src}
+                title="أيقونة الصيانة"
+                className="absolute inset-0 h-full w-full"
+                allow="autoplay; encrypted-media; picture-in-picture"
+              />
+            </div>
+          ) : src.kind === 'file' ? (
+            <div className="flex justify-center rounded-2xl border border-border/50 bg-[#faf6f1] p-4">
+              <video
+                src={src.src}
+                autoPlay
+                loop
+                muted
+                playsInline
+                disablePictureInPicture
+                controls={false}
+                className="max-h-56 w-full max-w-[240px] object-contain"
+              />
+            </div>
+          ) : null;
+        })()}
       </div>
 
       {/* live mini-preview of the maintenance screen */}
       <div>
         <p className="mb-1.5 text-[11px] font-bold text-muted-foreground">معاينة سريعة — اللي هيشوفه الزوار:</p>
         <div className="flex flex-col items-center gap-1.5 rounded-2xl border border-border/50 bg-[#faf6f1] px-4 py-6 text-center">
-          {status.form.video ? (
-            <video
-              src={status.form.video}
-              autoPlay
-              loop
-              muted
-              playsInline
-              disablePictureInPicture
-              controls={false}
-              className="max-h-24 w-auto max-w-[140px]"
-            />
-          ) : (
-            <MiniGear className="h-9 w-9 text-[#7a2e3b]/85" />
-          )}
+          {(() => {
+            const src = resolveVideoSource(status.form.video);
+            return src.kind === 'youtube' || src.kind === 'vimeo' ? (
+              <div className="relative w-full overflow-hidden rounded-lg bg-black/5" style={{ aspectRatio: '16 / 9' }}>
+                <iframe
+                  src={src.src}
+                  title="أيقونة الصيانة"
+                  className="absolute inset-0 h-full w-full"
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                />
+              </div>
+            ) : src.kind === 'file' ? (
+              <video
+                src={src.src}
+                autoPlay
+                loop
+                muted
+                playsInline
+                disablePictureInPicture
+                controls={false}
+                className="max-h-28 w-auto max-w-[150px]"
+              />
+            ) : (
+              <MiniGear className="h-9 w-9 text-[#7a2e3b]/85" />
+            );
+          })()}
           <p className="text-sm font-black text-[#43242b]">الخدمة غير متاحة حاليًا</p>
           <p className="max-w-xs text-[11px] leading-5 text-[#8a6f75]">{msg || DEFAULT_MAINTENANCE_MSG}</p>
         </div>

@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"] // U83-HOSTING — Turso (libSQL) support
 }
 
 datasource db {

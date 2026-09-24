@@ -82,6 +82,7 @@ const PERM_SECTIONS: { group: string; hint: string; sections: PermSection[] }[] 
         actions: [
           { key: 'orders.read', label: 'عرض' },
           { key: 'orders.write', label: 'تعديل الحالة والتأكيد' },
+          { key: 'orders.delete', label: 'حذف' },
         ],
       },
       {

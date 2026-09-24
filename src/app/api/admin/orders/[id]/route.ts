@@ -32,7 +32,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await requireAdmin(req);
-  if (!admin || admin.role !== 'owner') return NextResponse.json({ ok: false }, { status: 401 });
+  // U79 — الاونر أو أدمن مُنحت صلاحية «orders.delete»
+  if (!admin || !(admin.role === 'owner' || admin.perms.includes('orders.delete')))
+    return NextResponse.json({ ok: false }, { status: 401 });
   const { id } = await params;
   try {
     await db.order.delete({ where: { id } });

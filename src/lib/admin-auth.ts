@@ -8,6 +8,7 @@ export const ADMIN_SESSION_TTL_MS = 1000 * 60 * 60 * 12; // 12h, mirrors origina
 export const ADMIN_PERMISSIONS = [
   'orders.read',
   'orders.write',
+  'orders.delete', // U79 — «حذف الطلبات» أصبح صلاحية قابلة للمنح (كانت Owner فقط)
   'products.read',
   'products.write',
   'products.delete',
