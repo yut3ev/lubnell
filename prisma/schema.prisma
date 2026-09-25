@@ -263,6 +263,48 @@ model Visit {
   visitEvents VisitEvent[]
 }
 
+model StoreProduct {
+  id         String  @id @default(cuid())
+  slug       String  @unique
+  name       String
+  nameAr     String
+  price      Float
+  oldPrice   Float?
+  images     String?
+  stock      Int     @default(10)
+  visible    Boolean @default(true)
+  shareCount Int     @default(0)
+  alt        String?
+}
+
+model StoreCategory {
+  id      String  @id @default(cuid())
+  slug    String  @unique
+  nameAr  String
+  visible Boolean @default(true)
+}
+
+model RailEvent {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  productId   String
+  targetId    String
+  vid         String?
+  convertedAt DateTime?
+
+  @@index([targetId])
+}
+
+model WishEvent {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  productId String
+  action    String
+  ip        String?
+
+  @@index([productId, action])
+}
+
 model VisitEvent {
   id        String   @id @default(cuid())
   visitId   String

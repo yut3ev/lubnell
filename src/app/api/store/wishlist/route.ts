@@ -23,7 +23,9 @@ export async function POST(req: Request) {
     const action = ACTIONS.has(String(body.action || "")) ? String(body.action) : "add";
     if (!slug) return jsonError("slug مطلوب", 400);
 
-    const exists = await db.storeProduct.findUnique({ where: { slug }, select: { id: true } });
+    // U85 — the live catalog lives in Product (the legacy storeProduct table
+    // was never populated on this deployment)
+    const exists = await db.product.findUnique({ where: { slug }, select: { id: true } });
     if (!exists) return jsonError("منتج غير معروف", 404);
 
     // U23-REALIP — real visitor IP (gateway rewrites x-forwarded-for to its own hop)

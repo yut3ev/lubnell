@@ -372,75 +372,96 @@ export default function ProductsSection() {
               <Label htmlFor="p-desc">الوصف</Label>
               <textarea id="p-desc" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="resize-none rounded-md border border-input bg-background px-3 py-2 text-sm" />
             </div>
-            {/* U85-V2 — مجموعة الأنواع: الريحة/اللون بخيارات متعددة، لكل خيار صورته */}
-            <div className="grid gap-2 rounded-2xl border border-primary/20 bg-primary/[0.03] p-3">
-              <div className="grid gap-1.5">
-                <Label htmlFor="p-vargroup">اسم مجموعة الأنواع * (مثال: الريحة / اللون)</Label>
-                <Input id="p-vargroup" value={variantGroup} onChange={(e) => setVariantGroup(e.target.value)} placeholder="مثال: الريحة أو اللون" />
-              </div>
-              <div className="grid gap-2">
-                <Label className="font-bold">الخيارات — لكل خيار اسم وصورة (ولون اختياري)</Label>
-                {variantOptions.map((o, i) => (
-                  <div key={i} className="flex items-center gap-2 rounded-xl border border-border/50 bg-background/40 p-2">
-                    <label
-                      className="relative grid h-12 w-12 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-lg border border-border/60 bg-secondary/40 text-muted-foreground"
-                      title="صورة الخيار"
-                    >
-                      {variantUploading === i ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : o.image ? (
-                        <img src={o.image} alt={o.value} className="h-full w-full object-cover" loading="lazy" />
-                      ) : (
-                        <Upload className="h-4 w-4" />
-                      )}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        hidden
-                        onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadVariantImage(i, f); e.target.value = ''; }}
-                      />
-                    </label>
+            {/* U85-V3 — مجموعات الأنواع: اللون + الحجم + الريحة… لكل خيار صورته */}
+            <div className="grid gap-3 rounded-2xl border border-primary/20 bg-primary/[0.03] p-3">
+              <Label className="font-black">مجموعات الأنواع — أضيفي مجموعة لون أو حجم أو ريحة، ولكل خيار اسم وصورة</Label>
+              {variantGroups.map((g, gi) => (
+                <div key={gi} className="grid gap-2 rounded-xl border border-border/50 bg-background/60 p-2.5">
+                  <div className="flex items-center gap-2">
                     <Input
-                      value={o.value}
-                      onChange={(e) => setVariantOptions((current) => current.map((item, index) => (index === i ? { ...item, value: e.target.value } : item)))}
-                      placeholder={`اسم الخيار ${i + 1} — مثال: تفاح`}
+                      value={g.name}
+                      onChange={(e) => setVariantGroups((cur) => cur.map((it, idx) => (idx === gi ? { ...it, name: e.target.value } : it)))}
+                      placeholder="اسم المجموعة — مثال: اللون / الحجم / الريحة"
+                      className="flex-1 font-bold"
                     />
-                    <label
-                      className="relative h-9 w-9 shrink-0 cursor-pointer overflow-hidden rounded-full border border-border/60"
-                      title="لون الخيار (اختياري)"
-                      style={{ background: o.color || '#ffffff' }}
-                    >
-                      <input
-                        type="color"
-                        value={o.color || '#ffffff'}
-                        onChange={(e) => setVariantOptions((current) => current.map((item, index) => (index === i ? { ...item, color: e.target.value } : item)))}
-                        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                        aria-label={`لون الخيار ${i + 1}`}
-                      />
-                    </label>
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
-                      aria-label={`حذف الخيار ${i + 1}`}
-                      onClick={() => setVariantOptions((current) => current.filter((_, index) => index !== i))}
+                      variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                      aria-label={`حذف مجموعة ${g.name || gi + 1}`}
+                      onClick={() => setVariantGroups((cur) => cur.filter((_, idx) => idx !== gi))}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full gap-1.5"
-                  onClick={() => setVariantOptions((current) => [...current, { value: '' }])}
+                  {g.options.map((o, oi) => (
+                    <div key={oi} className="flex items-center gap-2 rounded-lg border border-border/40 bg-background/80 p-1.5">
+                      <label
+                        className="relative grid h-11 w-11 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-lg border border-border/60 bg-secondary/40 text-muted-foreground"
+                        title="صورة الخيار"
+                      >
+                        {variantUploading === `${gi}-${oi}` ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : o.image ? (
+                          <img src={o.image} alt={o.value} className="h-full w-full object-cover" loading="lazy" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
+                        <input type="file" accept="image/*" hidden
+                          onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadGroupOptionImage(gi, oi, f); e.target.value = ''; }} />
+                      </label>
+                      <Input
+                        value={o.value}
+                        onChange={(e) => setVariantGroups((cur) => cur.map((it, idx) => (idx === gi ? { ...it, options: it.options.map((op, opi) => (opi === oi ? { ...op, value: e.target.value } : op)) } : it)))}
+                        placeholder={`الخيار ${oi + 1} — مثال: أحمر / 250 مل / تفاح`}
+                      />
+                      <label
+                        className="relative h-8 w-8 shrink-0 cursor-pointer overflow-hidden rounded-full border border-border/60"
+                        title="لون الخيار (اختياري)"
+                        style={{ background: o.color || '#ffffff' }}
+                      >
+                        <input type="color" value={o.color || '#ffffff'}
+                          onChange={(e) => setVariantGroups((cur) => cur.map((it, idx) => (idx === gi ? { ...it, options: it.options.map((op, opi) => (opi === oi ? { ...op, color: e.target.value } : op)) } : it)))}
+                          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                          aria-label={`لون الخيار ${oi + 1}`} />
+                      </label>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                        aria-label={`حذف الخيار ${oi + 1}`}
+                        onClick={() => setVariantGroups((cur) => cur.map((it, idx) => (idx === gi ? { ...it, options: it.options.filter((_, opi) => opi !== oi) } : it)))}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button type="button" variant="outline" size="sm" className="rounded-full gap-1.5"
+                    onClick={() => setVariantGroups((cur) => cur.map((it, idx) => (idx === gi ? { ...it, options: [...it.options, { value: '' }] } : it)))}
+                  >
+                    <Plus className="h-3.5 w-3.5" /> إضافة خيار للمجموعة
+                  </Button>
+                </div>
+              ))}
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="outline" size="sm" className="rounded-full gap-1.5"
+                  onClick={() => setVariantGroups((cur) => [...cur, { name: 'اللون', options: [{ value: '' }] }])}
                 >
-                  <Plus className="h-3.5 w-3.5" /> إضافة خيار
+                  <Plus className="h-3.5 w-3.5" /> مجموعة ألوان
+                </Button>
+                <Button type="button" variant="outline" size="sm" className="rounded-full gap-1.5"
+                  onClick={() => setVariantGroups((cur) => [...cur, { name: 'الحجم', options: [{ value: '' }] }])}
+                >
+                  <Plus className="h-3.5 w-3.5" /> مجموعة أحجام
+                </Button>
+                <Button type="button" variant="outline" size="sm" className="rounded-full gap-1.5"
+                  onClick={() => setVariantGroups((cur) => [...cur, { name: 'الريحة', options: [{ value: '' }] }])}
+                >
+                  <Plus className="h-3.5 w-3.5" /> مجموعة روائح
+                </Button>
+                <Button type="button" variant="outline" size="sm" className="rounded-full gap-1.5"
+                  onClick={() => setVariantGroups((cur) => [...cur, { name: '', options: [{ value: '' }] }])}
+                >
+                  <Plus className="h-3.5 w-3.5" /> مجموعة مخصصة
                 </Button>
               </div>
               <p className="text-[11px] leading-relaxed text-muted-foreground">
-                مثال: المجموعة «الريحة» وخياراتها تفاح/خوخ/شمندر بصورها — أو «اللون» بأحمر/أخضر/أصفر. الزبونة تختار خيارًا واحدًا في صفحة المنتج فتتبدل صورة المنتج وتُسجل مع طلبها.
+                مثال: مجموعة «اللون» بخيارات أحمر/أخضر/أصفر بصورها + مجموعة «الحجم» 100 مل/250 مل. الزبونة تختار من كل مجموعة في صفحة المنتج وكل اختياراتها تُسجل مع الطلب.
               </p>
             </div>
             <label className="flex cursor-pointer items-center gap-2 text-sm font-bold">

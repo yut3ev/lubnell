@@ -17,7 +17,6 @@ export async function GET(req: NextRequest) {
     take: 200,
     include: {
       admin: { select: { username: true, displayName: true, role: true } },
-      _count: { select: { audits: true } },
     },
   });
 
@@ -34,7 +33,6 @@ export async function GET(req: NextRequest) {
     endedAt: s.endedAt,
     endedReason: s.endedReason,
     active: !s.endedAt && s.expiresAt.getTime() > Date.now(),
-    actionCount: s._count.audits,
     current: s.id === ctx.sessionId,
   }));
 
