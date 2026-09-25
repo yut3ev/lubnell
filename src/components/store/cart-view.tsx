@@ -346,7 +346,7 @@ export function CartView({ whatsapp }: { whatsapp?: string }) {
         {/* items */}
         <section aria-label={ar ? 'منتجات السلة' : 'Bag items'} className="space-y-4">
           {items.map((i) => (
-            <div key={i.id} className="flex gap-4 rounded-2xl border border-border/70 bg-card p-4 shadow-sm">
+            <div key={i.key || i.id} className="flex gap-4 rounded-2xl border border-border/70 bg-card p-4 shadow-sm">
               <Link href={`/p/${i.slug}`} className="shrink-0 overflow-hidden rounded-xl bg-secondary/40">
                 { }
                 <img src={i.image} alt={i.nameAr} loading="lazy" decoding="async" className="h-24 w-24 object-cover" />
