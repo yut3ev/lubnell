@@ -65,6 +65,28 @@ export function localFallback(messages: ChatMessage[], g?: Grounding): string {
   if (/شحن|توصيل|delivery|shipping/.test(q)) {
     return g?.shippingLine || 'الشحن 60 ج.م، ومجاني تمامًا للطلبات فوق 900 ج.م. التوصيل بيستغرق من 2 لـ 5 أيام عمل لجميع محافظات مصر 🌸';
   }
+  // U86-STOREFRONT — real discount/offer answers from the live catalog
+  if (/خصم|خصومات|تخفيض|تخفيزات|عرض|عروض|وفّر|وفري|offer|discount|sale/.test(q)) {
+    const discounted = (g?.productLines || []).filter((l) => l.includes('مخفّض'));
+    if (discounted.length) {
+      return `أيوه، عندنا خصومات شغالة دلوقتي 🌸 دي القايمة بالأسعار الحقيقية من الموقع:\n${discounted.join('\n')}\nوالتوصيل مجاني للطلبات فوق 900 ج.م 🚚`;
+    }
+    return 'مفيش خصومات شغالة في اللحظة دي — بس أسعارنا ثابتة ومتنافسة، والتوصيل مجاني للطلبات فوق 900 ج.م 🌸';
+  }
+  // U86-STOREFRONT — product search by name from the live catalog
+  const nameWords = q
+    .replace(/[؟?.!،]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length >= 4);
+  const nameHit = (g?.productLines || []).find((l) =>
+    nameWords.some((w) => normAr(l.toLowerCase()).includes(normAr(w)))
+  );
+  if (nameHit) {
+    const matches = (g?.productLines || []).filter((l) =>
+      nameWords.some((w) => normAr(l.toLowerCase()).includes(normAr(w)))
+    );
+    return `لقيتها عندنا 🌸 دي المنتجات المطابقة من الموقع:\n${matches.join('\n')}\nتلاقيها في صفحة «كل المنتجات» — ولو محتاجة مساعدة في الاختيار قوليلي.`;
+  }
   if (/إرجاع|استبدال|ارجاع|return|refund/.test(q)) {
     return 'ممكن الإرجاع أو الاستبدال خلال 14 يوم من الاستلام بشرط بقاء المنتج بحالته الأصلية. تواصلي معانا وهنرتب كل حاجة فورًا.';
   }
