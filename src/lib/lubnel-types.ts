@@ -1,6 +1,49 @@
 // Shared LUBNÉL types (client + server safe)
 
+// U85-V1 (legacy) — [{label, value, ...}] rows
 export type Variant = { label: string; value: string; price?: number; image?: string; color?: string; kind?: string };
+
+// U85-V2 — ONE option group per product (الريحة / اللون…) with multiple
+// options; the customer picks exactly ONE value for the cart line.
+export type VariantOption = { value: string; image?: string; color?: string; description?: string };
+export type ProductVariants = { group: string; options: VariantOption[] };
+
+/** Parses the stored variants JSON — supports BOTH the legacy row array and
+ * the V2 group object. Returns null when there are no usable options. */
+export function parseVariants(json: string | null | undefined): ProductVariants | null {
+  if (!json) return null;
+  try {
+    const parsed = JSON.parse(json) as unknown;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const obj = parsed as { group?: unknown; options?: unknown };
+      if (Array.isArray(obj.options) && obj.options.length) {
+        const group = String(obj.group ?? 'النوع').trim() || 'النوع';
+        const options = (obj.options as VariantOption[]).filter((o) => o && String(o.value || '').trim());
+        return options.length ? { group, options } : null;
+      }
+      return null;
+    }
+    if (Array.isArray(parsed) && parsed.length) {
+      // legacy rows: identical labels = the group name; differing labels = the
+      // option NAMES themselves → neutral group «النوع»
+      const labels = (parsed as Variant[]).map((v) => String(v.label ?? '').trim()).filter(Boolean);
+      const unique = [...new Set(labels)];
+      const group = unique.length === 1 ? unique[0] : 'النوع';
+      const options = (parsed as Variant[]).map((v) => ({
+        value: String(v.label ?? v.value ?? '').trim(),
+        image: v.image,
+        color: v.color,
+        description: v.value && (!v.label || v.value !== v.label) ? String(v.value) : undefined,
+      })).filter((o) => o.value);
+      return options.length ? { group, options } : null;
+    }
+  } catch { /* malformed → no variants */ }
+  return null;
+}
+
+export function serializeVariants(v: ProductVariants): string {
+  return JSON.stringify({ group: v.group.trim() || 'النوع', options: v.options.filter((o) => String(o.value || '').trim()) });
+}
 
 export type Product = {
   id: string;

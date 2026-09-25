@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useCart, WHATSAPP_NUMBER } from '@/lib/cart-store';
+import type { ProductVariants } from '@/lib/lubnel-types';
 import { useT } from '@/lib/i18n';
 import { useStorePrefs } from '@/lib/store-prefs';
 import { Button } from '@/components/ui/button';
@@ -36,7 +37,7 @@ export interface ProductDetailData {
   gallery: string[];
   badgeAr: string | null;
   badgeEn: string | null;
-  variants: { label: string; value: string }[];
+  variants: ProductVariants | null;
   stock: number;
   rating: number;
   reviews: number;
@@ -68,9 +69,9 @@ export function ProductDetail({
   const [lightbox, setLightbox] = useState(false);
   const touchX = useRef<number | null>(null);
   const thumbsRef = useRef<HTMLDivElement>(null);
-  const [picked, setPicked] = useState<Record<string, string>>(() =>
-    Object.fromEntries(product.variants.map((v) => [v.label, v.value]))
-  );
+  // U85-V2 — ONE picked value from the option group (الريحة/اللون) — the cart
+  // line and the order record carry «المجموعة: القيمة» exactly once
+  const [picked, setPicked] = useState<string | null>(() => product.variants?.options[0]?.value ?? null);
 
   const name = ar ? product.nameAr : product.nameEn;
   const discount =
@@ -80,9 +81,9 @@ export function ProductDetail({
   // U58-GALLERY — the primary image is ALWAYS first, then the owner-ordered
   // gallery (dedup) — matches the «تعيين كصورة رئيسية» star in Studio.
   const images = Array.from(new Set([product.image, ...product.gallery]));
-  // U85-VARIANTS — picking a color/scent option shows ITS photo as the main
-  // image until she manually picks a gallery shot
-  const pickedVariantImage = product.variants.find((v) => picked[v.label] === v.value && v.image)?.image;
+  // U85-V2 — the picked option's photo becomes the main image
+  const pickedOption = product.variants?.options.find((o) => o.value === picked);
+  const pickedVariantImage = pickedOption?.image;
   const activeImg = sel && images.includes(sel) ? sel : (pickedVariantImage || images[0]);
   const imgIdx = Math.max(0, images.indexOf(activeImg));
   const select = (i: number) => setSel(images[((i % images.length) + images.length) % images.length]);
@@ -94,13 +95,11 @@ export function ProductDetail({
   }, [imgIdx, images.length]);
 
   function addToCart(then?: 'cart') {
-    // U85-VARIANTS — the picked options ride along: the cart line, the
-    // WhatsApp message and the order record all carry «الريحة: تفاح · اللون: أحمر»
-    const variantSummary = Object.entries(picked)
-      .filter(([label]) => product.variants.some((v) => v.label === label))
-      .map(([label, value]) => `${label}: ${value}`)
-      .join(' · ');
-    const variantImage = product.variants.find((v) => picked[v.label] === v.value && v.image)?.image;
+    // U85-V2 — the cart line and the order record carry the picked option
+    // exactly once: «الريحة: خوخ»
+    const variantSummary =
+      product.variants && picked ? `${product.variants.group}: ${picked}` : undefined;
+    const variantImage = pickedOption?.image;
     add(
       {
         id: product.id,
@@ -280,78 +279,57 @@ export function ProductDetail({
 
           <p className="mt-5 leading-loose text-foreground/85">{product.description}</p>
 
-          {/* variants — U85: color groups render as real swatch circles (the
-              color itself, her photo overrides), scent/custom groups as chips;
-              picking an option that has a photo swaps the main product image */}
-          {product.variants.length > 0 && (
+          {/* U85-V2 — ONE option group (الريحة / اللون…): color options render
+              as swatch circles (her photo overrides the color fill), others as
+              image/text chips; the picked value feeds the cart line */}
+          {product.variants && product.variants.options.length > 0 && (
             <div className="mt-5 grid gap-3">
-              {[...new Set(product.variants.map((v) => v.label))].map((label) => {
-                const group = product.variants.filter((v) => v.label === label);
-                const isColorGroup = group.some((v) => v.color);
-                return (
-                  <div key={label}>
-                    <span className="mb-1.5 block text-sm font-bold">{label}</span>
-                    <div className={isColorGroup ? 'flex flex-wrap gap-3' : 'flex flex-wrap gap-2'}>
-                      {group.map((v) => {
-                        const on = picked[label] === v.value;
-                        if (isColorGroup) {
-                          return (
-                            <button
-                              key={v.value}
-                              type="button"
-                              onClick={() => { setPicked((p) => ({ ...p, [label]: v.value })); setSel(null); }}
-                              aria-pressed={on}
-                              className="grid w-14 justify-items-center gap-1"
-                              title={v.value}
-                            >
-                              <span
-                                className={`relative block h-10 w-10 overflow-hidden rounded-full transition-all ${
-                                  on ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'ring-1 ring-black/10'
-                                }`}
-                                style={v.color && !v.image ? { background: v.color } : undefined}
-                              >
-                                {v.image ? (
-                                  <img src={v.image} alt={v.value} className="h-full w-full object-cover" loading="lazy" />
-                                ) : null}
-                                {on && (
-                                  <span className="absolute inset-0 grid place-items-center bg-black/25 text-[11px] font-black text-white">✓</span>
-                                )}
-                              </span>
-                              <span className={`text-[11px] font-bold ${on ? 'text-primary' : 'text-muted-foreground'}`}>{v.value}</span>
-                            </button>
-                          );
-                        }
-                        return (
-                          <button
-                            key={v.value}
-                            type="button"
-                            onClick={() => { setPicked((p) => ({ ...p, [label]: v.value })); setSel(null); }}
-                            aria-pressed={on}
-                            className={`inline-flex items-center gap-1.5 rounded-full border py-1 text-xs font-bold transition-all ${
-                              v.image ? 'pl-1 pr-3.5' : 'px-3.5'
-                            } ${
+              <span className="block text-sm font-bold">{product.variants.group}</span>
+              <div className={product.variants.options.some((o) => o.color && !o.image) ? 'flex flex-wrap gap-3' : 'flex flex-wrap gap-2'}>
+                {product.variants.options.map((o) => {
+                  const on = picked === o.value;
+                  const isSwatch = !!o.color || !!o.image;
+                  return (
+                    <button
+                      key={o.value}
+                      type="button"
+                      onClick={() => { setPicked(o.value); setSel(null); }}
+                      aria-pressed={on}
+                      title={o.description || o.value}
+                      className={
+                        isSwatch
+                          ? `grid w-16 justify-items-center gap-1 ${on ? '' : 'opacity-80 hover:opacity-100'}`
+                          : `inline-flex items-center rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all ${
                               on
                                 ? 'border-primary bg-primary text-primary-foreground shadow-sm'
                                 : 'border-primary/20 bg-secondary/60 text-primary hover:bg-secondary'
-                            }`}
-                          >
-                            {v.image ? (
-                              <img
-                                src={v.image}
-                                alt=""
-                                aria-hidden
-                                className="h-7 w-7 rounded-full object-cover"
-                                loading="lazy"
-                              />
-                            ) : null}
-                            {v.value}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
+                            }`
+                      }
+                    >
+                      {isSwatch ? (
+                        <span
+                          className={`relative block h-12 w-12 overflow-hidden rounded-full transition-all ${
+                            on ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'ring-1 ring-black/10'
+                          }`}
+                          style={o.color && !o.image ? { background: o.color } : undefined}
+                        >
+                          {o.image ? (
+                            <img src={o.image} alt={o.value} className="h-full w-full object-cover" loading="lazy" />
+                          ) : null}
+                          {on && (
+                            <span className="absolute inset-0 grid place-items-center bg-black/25 text-xs font-black text-white">✓</span>
+                          )}
+                        </span>
+                      ) : null}
+                      {isSwatch ? (
+                        <span className={`text-[11px] font-bold ${on ? 'text-primary' : 'text-muted-foreground'}`}>{o.value}</span>
+                      ) : (
+                        o.value
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
 

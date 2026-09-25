@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { siteUrl } from '@/lib/site-url';
 import { ProductDetail } from '@/components/store/product-detail';
 import { EditorialCard } from '@/components/store/editorial-card';
+import { parseVariants } from '@/lib/lubnel-types';
 import { ProductRelated } from '@/components/store/product-related';
 import { FbtRow } from '@/components/store/fbt-row';
 
@@ -113,12 +114,7 @@ export default async function ProductPage({
   } catch {
     gallery = [];
   }
-  let variants: { label: string; value: string }[] = [];
-  try {
-    variants = product.variants ? (JSON.parse(product.variants) as { label: string; value: string }[]) : [];
-  } catch {
-    variants = [];
-  }
+  const variantsV2 = parseVariants(product.variants);
 
   const pdpProduct = {
     id: product.id,
@@ -132,7 +128,7 @@ export default async function ProductPage({
     gallery,
     badgeAr: product.badgeAr,
     badgeEn: product.badgeEn,
-    variants,
+    variants: variantsV2,
     stock: product.stock,
     rating: realAvg,
     reviews: realCount,
