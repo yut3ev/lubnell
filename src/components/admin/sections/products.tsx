@@ -1,7 +1,7 @@
 'use client';
 
 import { confirmDialog } from '@/components/ui/confirm-service';
-import { parseVariants, serializeVariants } from '@/lib/lubnel-types';
+import { parseVariants, serializeGroups, type VariantGroup } from '@/lib/lubnel-types';
 
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -49,11 +49,10 @@ export default function ProductsSection() {
   const [form, setForm] = useState(EMPTY);
   const [gallery, setGallery] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-  // U85-V2 — ONE option group (الريحة/اللون) + options with photos; the cart
-  // line and the order record carry «المجموعة: الخيار» exactly once
-  const [variantGroup, setVariantGroup] = useState('النوع');
-  const [variantOptions, setVariantOptions] = useState<{ value: string; image?: string; color?: string }[]>([]);
-  const [variantUploading, setVariantUploading] = useState<number | null>(null);
+  // U85-V3 — MULTIPLE option groups (اللون + الحجم + الريحة…): the customer
+  // picks ONE value from EACH group and the cart line carries them all
+  const [variantGroups, setVariantGroups] = useState<VariantGroup[]>([]);
+  const [variantUploading, setVariantUploading] = useState<string | null>(null);
   const { toast } = useToast();
 
   const load = useCallback(async () => {
@@ -82,8 +81,7 @@ export default function ProductsSection() {
   function openNew() {
     setForm(EMPTY);
     setGallery([]);
-    setVariantGroup('النوع');
-    setVariantOptions([]);
+    setVariantGroups([]);
     setModal('new');
   }
 
@@ -129,10 +127,11 @@ export default function ProductsSection() {
       featured: form.featured,
       published: form.published,
       gallery,
-      variants: serializeVariants({
-        group: variantGroup.trim() || 'النوع',
-        options: variantOptions.filter((o) => o.value.trim()),
-      }),
+      variants: serializeGroups(
+        variantGroups
+          .map((g) => ({ name: g.name, options: g.options.filter((o) => o.value.trim()) }))
+          .filter((g) => g.name.trim() && g.options.length)
+      ),
     };
     const { ok, data } = editing
       ? await apiJson(`/api/admin/products/${(modal as Product).id}`, { method: 'PATCH', body: JSON.stringify(body) })
@@ -164,23 +163,25 @@ export default function ProductsSection() {
     } else toast({ title: 'تعذر الحذف', variant: 'destructive' });
   }
 
-  // U85-VARIANTS — upload a photo for an option (الريحة/اللون): compressed →
-  // media library (R2) → attached to the variant row. uploadImageFile is the
-  // battle-tested plain-fetch uploader — apiJson would force a JSON
-  // Content-Type header that breaks multipart file bodies.
-  async function uploadVariantImage(index: number, file: File) {
+  // U85-V3 — upload a photo for an option inside a group
+  async function uploadGroupOptionImage(gi: number, oi: number, file: File) {
     if (!file.type.startsWith('image/')) {
       toast({ title: 'اختاري صورة صالحة', variant: 'destructive' });
       return;
     }
-    setVariantUploading(index);
+    const uploadKey = `${gi}-${oi}`;
+    setVariantUploading(uploadKey);
     try {
       const compressed = await compressImage(file, 1200, 0.82);
       const uploaded = await uploadImageFile(compressed);
-      setVariantOptions((current) => current.map((item, i) => (i === index ? { ...item, image: uploaded.url } : item)));
-      toast({ title: 'تم رفع صورة النوع ✓' });
+      setVariantGroups((current) =>
+        current.map((item, index) =>
+          index === gi ? { ...item, options: item.options.map((op, opi) => (opi === oi ? { ...op, image: uploaded.url } : op)) } : item
+        )
+      );
+      toast({ title: 'تم رفع صورة الخيار ✓' });
     } catch (e) {
-      toast({ title: e instanceof Error ? e.message : 'فشل رفع صورة النوع', variant: 'destructive' });
+      toast({ title: e instanceof Error ? e.message : 'فشل رفع صورة الخيار', variant: 'destructive' });
     } finally {
       setVariantUploading(null);
     }

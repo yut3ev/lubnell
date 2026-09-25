@@ -37,7 +37,7 @@ export interface ProductDetailData {
   gallery: string[];
   badgeAr: string | null;
   badgeEn: string | null;
-  variants: ProductVariants | null;
+  variants: ProductVariants[];
   stock: number;
   rating: number;
   reviews: number;
@@ -69,9 +69,13 @@ export function ProductDetail({
   const [lightbox, setLightbox] = useState(false);
   const touchX = useRef<number | null>(null);
   const thumbsRef = useRef<HTMLDivElement>(null);
-  // U85-V2 — ONE picked value from the option group (الريحة/اللون) — the cart
-  // line and the order record carry «المجموعة: القيمة» exactly once
-  const [picked, setPicked] = useState<string | null>(() => product.variants?.options[0]?.value ?? null);
+  // U85-V3 — MULTIPLE option groups (اللون + الحجم + الريحة…): the customer
+  // picks ONE value from EACH group and the cart line carries them all
+  const [picked, setPicked] = useState<Record<string, string>>(() =>
+    Object.fromEntries((product.variants || []).map((g) => [g.name, g.options[0]?.value ?? '']))
+  );
+  // the most recently clicked option photo drives the main image
+  const [pickedImage, setPickedImage] = useState<string | null>(null);
 
   const name = ar ? product.nameAr : product.nameEn;
   const discount =
@@ -81,9 +85,8 @@ export function ProductDetail({
   // U58-GALLERY — the primary image is ALWAYS first, then the owner-ordered
   // gallery (dedup) — matches the «تعيين كصورة رئيسية» star in Studio.
   const images = Array.from(new Set([product.image, ...product.gallery]));
-  // U85-V2 — the picked option's photo becomes the main image
-  const pickedOption = product.variants?.options.find((o) => o.value === picked);
-  const pickedVariantImage = pickedOption?.image;
+  // U85-V3 — the most recently clicked option photo becomes the main image
+  const pickedVariantImage = pickedImage;
   const activeImg = sel && images.includes(sel) ? sel : (pickedVariantImage || images[0]);
   const imgIdx = Math.max(0, images.indexOf(activeImg));
   const select = (i: number) => setSel(images[((i % images.length) + images.length) % images.length]);
@@ -95,11 +98,13 @@ export function ProductDetail({
   }, [imgIdx, images.length]);
 
   function addToCart(then?: 'cart') {
-    // U85-V2 — the cart line and the order record carry the picked option
-    // exactly once: «الريحة: خوخ»
-    const variantSummary =
-      product.variants && picked ? `${product.variants.group}: ${picked}` : undefined;
-    const variantImage = pickedOption?.image;
+    // U85-V3 — the cart line and the order record carry EVERY picked group:
+    // «اللون: أحمر · الحجم: 250ml»
+    const variantSummary = (product.variants || [])
+      .map((g) => (picked[g.name] ? `${g.name}: ${picked[g.name]}` : ''))
+      .filter(Boolean)
+      .join(' · ');
+    const variantImage = pickedImage;
     add(
       {
         id: product.id,
@@ -279,57 +284,77 @@ export function ProductDetail({
 
           <p className="mt-5 leading-loose text-foreground/85">{product.description}</p>
 
-          {/* U85-V2 — ONE option group (الريحة / اللون…): color options render
-              as swatch circles (her photo overrides the color fill), others as
-              image/text chips; the picked value feeds the cart line */}
-          {product.variants && product.variants.options.length > 0 && (
-            <div className="mt-5 grid gap-3">
-              <span className="block text-sm font-bold">{product.variants.group}</span>
-              <div className={product.variants.options.some((o) => o.color && !o.image) ? 'flex flex-wrap gap-3' : 'flex flex-wrap gap-2'}>
-                {product.variants.options.map((o) => {
-                  const on = picked === o.value;
-                  const isSwatch = !!o.color || !!o.image;
-                  return (
-                    <button
-                      key={o.value}
-                      type="button"
-                      onClick={() => { setPicked(o.value); setSel(null); }}
-                      aria-pressed={on}
-                      title={o.description || o.value}
-                      className={
-                        isSwatch
-                          ? `grid w-16 justify-items-center gap-1 ${on ? '' : 'opacity-80 hover:opacity-100'}`
-                          : `inline-flex items-center rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all ${
+          {/* U85-V3 — MULTIPLE option groups (اللون + الحجم + الريحة…): color
+              groups render as swatch circles (her photo overrides the fill),
+              others as image/text chips; the picked values feed the cart line */}
+          {(product.variants || []).length > 0 && (
+            <div className="mt-5 grid gap-4">
+              {product.variants.map((g) => {
+                const isColorGroup = g.options.some((o) => o.color && !o.image);
+                return (
+                  <div key={g.name}>
+                    <span className="mb-1.5 block text-sm font-bold">{g.name}</span>
+                    <div className={isColorGroup ? 'flex flex-wrap gap-3' : 'flex flex-wrap gap-2'}>
+                      {g.options.map((o) => {
+                        const on = picked[g.name] === o.value;
+                        if (isColorGroup) {
+                          return (
+                            <button
+                              key={o.value}
+                              type="button"
+                              onClick={() => { setPicked((p) => ({ ...p, [g.name]: o.value })); if (o.image) setPickedImage(o.image); setSel(null); }}
+                              aria-pressed={on}
+                              title={o.description || o.value}
+                              className="grid w-16 justify-items-center gap-1"
+                            >
+                              <span
+                                className={`relative block h-12 w-12 overflow-hidden rounded-full transition-all ${
+                                  on ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'ring-1 ring-black/10'
+                                }`}
+                                style={o.color && !o.image ? { background: o.color } : undefined}
+                              >
+                                {o.image ? (
+                                  <img src={o.image} alt={o.value} className="h-full w-full object-cover" loading="lazy" />
+                                ) : null}
+                                {on && (
+                                  <span className="absolute inset-0 grid place-items-center bg-black/25 text-[11px] font-black text-white">✓</span>
+                                )}
+                              </span>
+                              <span className={`text-[11px] font-bold ${on ? 'text-primary' : 'text-muted-foreground'}`}>{o.value}</span>
+                            </button>
+                          );
+                        }
+                        return (
+                          <button
+                            key={o.value}
+                            type="button"
+                            onClick={() => { setPicked((p) => ({ ...p, [g.name]: o.value })); if (o.image) setPickedImage(o.image); setSel(null); }}
+                            aria-pressed={on}
+                            className={`inline-flex items-center gap-1.5 rounded-full border py-1 text-xs font-bold transition-all ${
+                              o.image ? 'pl-1 pr-3.5' : 'px-3.5'
+                            } ${
                               on
                                 ? 'border-primary bg-primary text-primary-foreground shadow-sm'
                                 : 'border-primary/20 bg-secondary/60 text-primary hover:bg-secondary'
-                            }`
-                      }
-                    >
-                      {isSwatch ? (
-                        <span
-                          className={`relative block h-12 w-12 overflow-hidden rounded-full transition-all ${
-                            on ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'ring-1 ring-black/10'
-                          }`}
-                          style={o.color && !o.image ? { background: o.color } : undefined}
-                        >
-                          {o.image ? (
-                            <img src={o.image} alt={o.value} className="h-full w-full object-cover" loading="lazy" />
-                          ) : null}
-                          {on && (
-                            <span className="absolute inset-0 grid place-items-center bg-black/25 text-xs font-black text-white">✓</span>
-                          )}
-                        </span>
-                      ) : null}
-                      {isSwatch ? (
-                        <span className={`text-[11px] font-bold ${on ? 'text-primary' : 'text-muted-foreground'}`}>{o.value}</span>
-                      ) : (
-                        o.value
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+                            }`}
+                          >
+                            {o.image ? (
+                              <img
+                                src={o.image}
+                                alt=""
+                                aria-hidden
+                                className="h-7 w-7 rounded-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : null}
+                            {o.value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 

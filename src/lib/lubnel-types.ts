@@ -3,46 +3,61 @@
 // U85-V1 (legacy) — [{label, value, ...}] rows
 export type Variant = { label: string; value: string; price?: number; image?: string; color?: string; kind?: string };
 
-// U85-V2 — ONE option group per product (الريحة / اللون…) with multiple
-// options; the customer picks exactly ONE value for the cart line.
+// U85-V3 — MULTIPLE option groups per product (اللون + الحجم + الريحة…):
+// the customer picks ONE value from EACH group and the cart line carries them all.
 export type VariantOption = { value: string; image?: string; color?: string; description?: string };
-export type ProductVariants = { group: string; options: VariantOption[] };
+export type VariantGroup = { name: string; options: VariantOption[] };
+export type ProductVariants = VariantGroup[];
 
-/** Parses the stored variants JSON — supports BOTH the legacy row array and
- * the V2 group object. Returns null when there are no usable options. */
-export function parseVariants(json: string | null | undefined): ProductVariants | null {
-  if (!json) return null;
+/** Parses the stored variants JSON — supports the legacy row array, the V2
+ * single-group object, and the V3 groups array. Returns [] when empty. */
+export function parseVariants(json: string | null | undefined): VariantGroup[] {
+  if (!json) return [];
   try {
     const parsed = JSON.parse(json) as unknown;
+    if (Array.isArray(parsed) && parsed.length && typeof parsed[0] === 'object' && 'name' in (parsed[0] as object)) {
+      // V3 groups array
+      return (parsed as VariantGroup[]).filter((g) => g && String(g.name || '').trim() && Array.isArray(g.options) && g.options.some((o) => String(o.value || '').trim()));
+    }
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      const obj = parsed as { group?: unknown; options?: unknown };
+      const obj = parsed as { groups?: unknown; group?: unknown; options?: unknown };
+      // U85-V3 — the groups array: [{name, options[…]}]
+      if (Array.isArray(obj.groups) && obj.groups.length) {
+        return (obj.groups as VariantGroup[]).filter(
+          (g) => g && String(g.name || '').trim() && Array.isArray(g.options) && g.options.some((o) => String(o.value || '').trim())
+        );
+      }
+      // V2-single group object
       if (Array.isArray(obj.options) && obj.options.length) {
         const group = String(obj.group ?? 'النوع').trim() || 'النوع';
         const options = (obj.options as VariantOption[]).filter((o) => o && String(o.value || '').trim());
-        return options.length ? { group, options } : null;
+        return options.length ? [{ name: group, options }] : [];
       }
-      return null;
+      return [];
     }
     if (Array.isArray(parsed) && parsed.length) {
       // legacy rows: identical labels = the group name; differing labels = the
       // option NAMES themselves → neutral group «النوع»
       const labels = (parsed as Variant[]).map((v) => String(v.label ?? '').trim()).filter(Boolean);
       const unique = [...new Set(labels)];
-      const group = unique.length === 1 ? unique[0] : 'النوع';
+      const name = unique.length === 1 ? unique[0] : 'النوع';
       const options = (parsed as Variant[]).map((v) => ({
         value: String(v.label ?? v.value ?? '').trim(),
         image: v.image,
         color: v.color,
         description: v.value && (!v.label || v.value !== v.label) ? String(v.value) : undefined,
       })).filter((o) => o.value);
-      return options.length ? { group, options } : null;
+      return options.length ? [{ name, options }] : [];
     }
   } catch { /* malformed → no variants */ }
-  return null;
+  return [];
 }
 
-export function serializeVariants(v: ProductVariants): string {
-  return JSON.stringify({ group: v.group.trim() || 'النوع', options: v.options.filter((o) => String(o.value || '').trim()) });
+export function serializeGroups(groups: VariantGroup[]): string {
+  const clean = groups
+    .map((g) => ({ name: (g.name || '').trim() || 'النوع', options: (g.options || []).filter((o) => String(o.value || '').trim()) }))
+    .filter((g) => g.options.length);
+  return JSON.stringify(clean);
 }
 
 export type Product = {
