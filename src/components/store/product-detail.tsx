@@ -299,7 +299,7 @@ export function ProductDetail({
                             <button
                               key={v.value}
                               type="button"
-                              onClick={() => setPicked((p) => ({ ...p, [label]: v.value }))}
+                              onClick={() => { setPicked((p) => ({ ...p, [label]: v.value })); setSel(null); }}
                               aria-pressed={on}
                               className="grid w-14 justify-items-center gap-1"
                               title={v.value}
@@ -325,7 +325,7 @@ export function ProductDetail({
                           <button
                             key={v.value}
                             type="button"
-                            onClick={() => setPicked((p) => ({ ...p, [label]: v.value }))}
+                            onClick={() => { setPicked((p) => ({ ...p, [label]: v.value })); setSel(null); }}
                             aria-pressed={on}
                             className={`inline-flex items-center gap-1.5 rounded-full border py-1 text-xs font-bold transition-all ${
                               v.image ? 'pl-1 pr-3.5' : 'px-3.5'
