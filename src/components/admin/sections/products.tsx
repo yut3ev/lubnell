@@ -4,7 +4,8 @@ import { confirmDialog } from '@/components/ui/confirm-service';
 
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Download, Eye, EyeOff, Loader2, Pencil, Plus, Search, Star, Trash2, X } from 'lucide-react';
+import { Download, Eye, EyeOff, Loader2, Pencil, Plus, Search, Star, Trash2, Upload, X } from 'lucide-react';
+import { compressImage } from '@/lib/lubnel-helpers';
 import { apiJson, EGP } from '../helpers';
 import ImageField from '../image-field';
 import MultiImageField from '../multi-image-field'; // U58-GALLERY
@@ -31,6 +32,7 @@ type Product = {
   stock: number;
   featured: boolean;
   published: boolean;
+  variants: string | null;
 };
 
 const EMPTY = {
@@ -46,6 +48,9 @@ export default function ProductsSection() {
   const [form, setForm] = useState(EMPTY);
   const [gallery, setGallery] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  // U85-VARIANTS — options editor (الريحة/اللون) with a photo per option
+  const [variants, setVariants] = useState<{ label: string; value: string; image?: string }[]>([]);
+  const [variantUploading, setVariantUploading] = useState<number | null>(null);
   const { toast } = useToast();
 
   const load = useCallback(async () => {
@@ -74,6 +79,7 @@ export default function ProductsSection() {
   function openNew() {
     setForm(EMPTY);
     setGallery([]);
+    setVariants([]);
     setModal('new');
   }
 
@@ -89,6 +95,12 @@ export default function ProductsSection() {
       setGallery(p.gallery ? (JSON.parse(p.gallery) as string[]) : []);
     } catch {
       setGallery([]);
+    }
+    // U85-VARIANTS — restore the product's options (الريحة/اللون + صورة كل نوع)
+    try {
+      setVariants(p.variants ? (JSON.parse(p.variants) as { label: string; value: string; image?: string }[]) : []);
+    } catch {
+      setVariants([]);
     }
     setModal(p);
   }
@@ -110,6 +122,7 @@ export default function ProductsSection() {
       featured: form.featured,
       published: form.published,
       gallery,
+      variants: variants.filter((v) => v.label.trim() || v.value.trim()),
     };
     const { ok, data } = editing
       ? await apiJson(`/api/admin/products/${(modal as Product).id}`, { method: 'PATCH', body: JSON.stringify(body) })
@@ -139,6 +152,30 @@ export default function ProductsSection() {
       toast({ title: data?.softCleared ? 'المنتج مرتبط بطلبات — تم تصفير مخزونه وتمييزه' : 'تم حذف المنتج' });
       load();
     } else toast({ title: 'تعذر الحذف', variant: 'destructive' });
+  }
+
+  // U85-VARIANTS — upload a photo for an option (الريحة/اللون): compressed →
+  // media library (R2) → attached to the variant row
+  async function uploadVariantImage(index: number, file: File) {
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'اختاري صورة صالحة', variant: 'destructive' });
+      return;
+    }
+    setVariantUploading(index);
+    try {
+      const compressed = await compressImage(file, 1200, 0.82);
+      const fd = new FormData();
+      fd.append('file', compressed);
+      fd.append('altText', `${form.nameAr || 'منتج'} — ${variants[index]?.value || ''}`);
+      const { ok, data } = await apiJson<{ ok: boolean; url?: string; error?: string }>('/api/admin/media', { method: 'POST', body: fd });
+      if (!ok || !data?.url) throw new Error(data?.error || 'تعذر الرفع');
+      setVariants((current) => current.map((item, i) => (i === index ? { ...item, image: data.url as string } : item)));
+      toast({ title: 'تم رفع صورة النوع ✓' });
+    } catch (e) {
+      toast({ title: e instanceof Error ? e.message : 'فشل رفع صورة النوع', variant: 'destructive' });
+    } finally {
+      setVariantUploading(null);
+    }
   }
 
   // U58-GALLERY — «تعيين كصورة رئيسية» ينتقل من الـ MultiImageField إلى حقل الصورة الرئيسية
@@ -325,6 +362,57 @@ export default function ProductsSection() {
             <div className="grid gap-1.5">
               <Label htmlFor="p-desc">الوصف</Label>
               <textarea id="p-desc" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="resize-none rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            </div>
+            {/* U85-VARIANTS — options editor: الريحة/اللون with a photo per option */}
+            <div className="grid gap-2 rounded-2xl border border-primary/20 bg-primary/[0.03] p-3">
+              <Label className="font-black">الأنواع (الريحة، اللون…) — لكل نوع صورته</Label>
+              {variants.map((v, i) => (
+                <div key={i} className="flex items-center gap-2 rounded-xl border border-border/50 bg-background/40 p-2">
+                  <label
+                    className="relative grid h-12 w-12 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-lg border border-border/60 bg-secondary/40 text-muted-foreground"
+                    title="اختاري صورة النوع"
+                  >
+                    {variantUploading === i ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : v.image ? (
+                      <img src={v.image} alt={v.value || v.label} className="h-full w-full object-cover" loading="lazy" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadVariantImage(i, f); e.target.value = ''; }}
+                    />
+                  </label>
+                  <div className="grid flex-1 gap-1.5">
+                    <Input value={v.label} onChange={(e) => setVariants((current) => current.map((item, index) => (index === i ? { ...item, label: e.target.value } : item)))} placeholder="النوع — مثال: الريحة / اللون" />
+                    <Input value={v.value} onChange={(e) => setVariants((current) => current.map((item, index) => (index === i ? { ...item, value: e.target.value } : item)))} placeholder="القيمة — مثال: تفاح" />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                    aria-label={`حذف النوع ${v.value || i + 1}`}
+                    onClick={() => setVariants((current) => current.filter((_, index) => index !== i))}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-full gap-1.5"
+                onClick={() => setVariants((current) => [...current, { label: '', value: '' }])}
+              >
+                <Plus className="h-3.5 w-3.5" /> إضافة نوع
+              </Button>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                مثال: منتج زيت — النوع «الريحة» والقيم تفاح/خوخ/شمندر، لكل قيمة صورتها. الزبونة تختار النوع في صفحة المنتج وتظهر صورتها وتُسجل مع الطلب.
+              </p>
             </div>
             <label className="flex cursor-pointer items-center gap-2 text-sm font-bold">
               <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} className="h-4 w-4 accent-[var(--primary)]" />
