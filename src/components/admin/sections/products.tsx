@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Download, Droplet, Eye, EyeOff, Flower2, Loader2, Palette, Pencil, Plus, Search, Star, Trash2, Upload, X } from 'lucide-react';
 import { compressImage } from '@/lib/lubnel-helpers';
 import { apiJson, EGP } from '../helpers';
-import ImageField from '../image-field';
+import ImageField, { uploadImageFile } from '../image-field';
 import MultiImageField from '../multi-image-field'; // U58-GALLERY
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -155,7 +155,9 @@ export default function ProductsSection() {
   }
 
   // U85-VARIANTS — upload a photo for an option (الريحة/اللون): compressed →
-  // media library (R2) → attached to the variant row
+  // media library (R2) → attached to the variant row. uploadImageFile is the
+  // battle-tested plain-fetch uploader — apiJson would force a JSON
+  // Content-Type header that breaks multipart file bodies.
   async function uploadVariantImage(index: number, file: File) {
     if (!file.type.startsWith('image/')) {
       toast({ title: 'اختاري صورة صالحة', variant: 'destructive' });
@@ -164,12 +166,8 @@ export default function ProductsSection() {
     setVariantUploading(index);
     try {
       const compressed = await compressImage(file, 1200, 0.82);
-      const fd = new FormData();
-      fd.append('file', compressed);
-      fd.append('altText', `${form.nameAr || 'منتج'} — ${variants[index]?.value || ''}`);
-      const { ok, data } = await apiJson<{ ok: boolean; url?: string; error?: string }>('/api/admin/media', { method: 'POST', body: fd });
-      if (!ok || !data?.url) throw new Error(data?.error || 'تعذر الرفع');
-      setVariants((current) => current.map((item, i) => (i === index ? { ...item, image: data.url as string } : item)));
+      const uploaded = await uploadImageFile(compressed);
+      setVariants((current) => current.map((item, i) => (i === index ? { ...item, image: uploaded.url } : item)));
       toast({ title: 'تم رفع صورة النوع ✓' });
     } catch (e) {
       toast({ title: e instanceof Error ? e.message : 'فشل رفع صورة النوع', variant: 'destructive' });
