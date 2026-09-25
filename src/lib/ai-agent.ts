@@ -1,4 +1,5 @@
 import ZAI from 'z-ai-web-dev-sdk';
+import { tryLocalAdminCommand, adminGroundedReply } from '@/lib/ai-cmd';
 import { db } from '@/lib/db';
 import { writeAudit } from '@/lib/admin-auth'; // U76-AI-IMAGES — product audits from the agent
 import { invalidateCatalog } from '@/lib/settings-cache';
@@ -185,6 +186,43 @@ export async function askAssistant(
     ...history.slice(-10),
   ];
 
+  // U86-AI — Gemini provider (Studio → إعدادات الذكاء الاصطناعي): a real
+  // model for free-form questions without the z-ai platform
+  const aiSettings = await loadAiSettings();
+  if (aiSettings.provider === 'gemini' && aiSettings.geminiApiKey) {
+    try {
+      const res = await withTimeout(
+        fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${aiSettings.geminiModel}:generateContent?key=${encodeURIComponent(aiSettings.geminiApiKey)}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              system_instruction: { parts: [{ text: buildSystemPrompt(grounding) }] },
+              contents: msgs.slice(1).map((h) => ({
+                role: h.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text: h.content }],
+              })),
+              generationConfig: { temperature: 0.7, maxOutputTokens: 512 },
+            }),
+          }
+        ),
+        PROVIDER_TIMEOUT_MS
+      );
+      if (res.ok) {
+        const j = await res.json();
+        const content = (j?.candidates?.[0]?.content?.parts || [])
+          .map((p: { text?: string }) => p.text || '')
+          .join('')
+          .trim();
+        if (content) return { reply: content, source: 'provider', attempts: 1 };
+      }
+      // gemini hiccup → fall through to the z-ai/local chain
+    } catch {
+      // fall through
+    }
+  }
+
   let lastError = '';
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
@@ -321,8 +359,17 @@ export async function runAgent(opts: {
 }> {
   const images = (opts.images || []).filter((i) => typeof i?.url === 'string' && i.url.startsWith('data:image/'));
 
-  // No attachments → the exact same live-grounded chat as before.
+  // No attachments → U86-AI-CMD: the admin command interpreter runs first
+  // (real Arabic admin actions executed locally), then the live-grounded chat.
   if (!images.length) {
+    if (opts.execute) {
+      const cmd = await tryLocalAdminCommand({
+        message: opts.message,
+        admin: opts.admin,
+        permissions: opts.permissions,
+      });
+      if (cmd) return { reply: cmd.reply, executed: cmd.executed, provider: 'local' };
+    }
     const history: ChatMessage[] = [
       ...(opts.history || []).map((h) => ({
         role: (h.role === 'ai' ? 'assistant' : 'user') as 'assistant' | 'user',
@@ -331,6 +378,11 @@ export async function runAgent(opts: {
       { role: 'user', content: opts.message },
     ];
     const result = await askAssistant(history);
+    if (result.source === 'local' && opts.admin) {
+      // U86-AI-CMD — the admin gets a grounded status reply instead of the
+      // storefront customer-service canned fallback
+      return { reply: await adminGroundedReply(opts.message), executed: [], provider: 'local' };
+    }
     return { reply: result.reply, executed: [], provider: result.source };
   }
 
