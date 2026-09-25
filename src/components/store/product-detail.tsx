@@ -280,17 +280,47 @@ export function ProductDetail({
 
           <p className="mt-5 leading-loose text-foreground/85">{product.description}</p>
 
-          {/* variants — U14: selectable choice chips */}
+          {/* variants — U85: color groups render as real swatch circles (the
+              color itself, her photo overrides), scent/custom groups as chips;
+              picking an option that has a photo swaps the main product image */}
           {product.variants.length > 0 && (
-            <div className="mt-5 grid gap-2.5">
-              {[...new Set(product.variants.map((v) => v.label))].map((label) => (
-                <div key={label}>
-                  <span className="mb-1.5 block text-sm font-bold">{label}</span>
-                  <div className="flex flex-wrap gap-2">
-                    {product.variants
-                      .filter((v) => v.label === label)
-                      .map((v) => {
+            <div className="mt-5 grid gap-3">
+              {[...new Set(product.variants.map((v) => v.label))].map((label) => {
+                const group = product.variants.filter((v) => v.label === label);
+                const isColorGroup = group.some((v) => v.color);
+                return (
+                  <div key={label}>
+                    <span className="mb-1.5 block text-sm font-bold">{label}</span>
+                    <div className={isColorGroup ? 'flex flex-wrap gap-3' : 'flex flex-wrap gap-2'}>
+                      {group.map((v) => {
                         const on = picked[label] === v.value;
+                        if (isColorGroup) {
+                          return (
+                            <button
+                              key={v.value}
+                              type="button"
+                              onClick={() => setPicked((p) => ({ ...p, [label]: v.value }))}
+                              aria-pressed={on}
+                              className="grid w-14 justify-items-center gap-1"
+                              title={v.value}
+                            >
+                              <span
+                                className={`relative block h-10 w-10 overflow-hidden rounded-full transition-all ${
+                                  on ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'ring-1 ring-black/10'
+                                }`}
+                                style={v.color && !v.image ? { background: v.color } : undefined}
+                              >
+                                {v.image ? (
+                                  <img src={v.image} alt={v.value} className="h-full w-full object-cover" loading="lazy" />
+                                ) : null}
+                                {on && (
+                                  <span className="absolute inset-0 grid place-items-center bg-black/25 text-[11px] font-black text-white">✓</span>
+                                )}
+                              </span>
+                              <span className={`text-[11px] font-bold ${on ? 'text-primary' : 'text-muted-foreground'}`}>{v.value}</span>
+                            </button>
+                          );
+                        }
                         return (
                           <button
                             key={v.value}
@@ -308,7 +338,7 @@ export function ProductDetail({
                             {v.image ? (
                               <img
                                 src={v.image}
-                                alt={v.value}
+                                alt=""
                                 aria-hidden
                                 className="h-7 w-7 rounded-full object-cover"
                                 loading="lazy"
@@ -318,9 +348,10 @@ export function ProductDetail({
                           </button>
                         );
                       })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

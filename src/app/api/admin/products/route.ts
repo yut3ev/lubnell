@@ -39,9 +39,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'الاسم والسعر والقسم مطلوبة' }, { status: 400 });
     }
     const slugBase = String(b.slug || '').trim() || slugify(String(b.nameEn || nameAr));
-    let slug = slugBase;
+    // U85 — Arabic-only names produce Arabic slugs; App Router params stay
+    // percent-encoded so /p/<arabic-slug> 404s. Guarantee a latin-safe slug.
+    const latinSafe = /^[a-z0-9]+(-[a-z0-9]+)*$/.test(slugBase);
+    let slug = latinSafe ? slugBase : `p-${Date.now()}`;
     let n = 1;
-    while (await db.product.findUnique({ where: { slug } })) slug = `${slugBase}-${n++}`;
+    while (await db.product.findUnique({ where: { slug } })) slug = `${slug}-${n++}`;
     const product = await db.product.create({
       data: {
         slug,

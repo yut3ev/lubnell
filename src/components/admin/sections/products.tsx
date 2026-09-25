@@ -4,7 +4,7 @@ import { confirmDialog } from '@/components/ui/confirm-service';
 
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Download, Eye, EyeOff, Loader2, Pencil, Plus, Search, Star, Trash2, Upload, X } from 'lucide-react';
+import { Download, Droplet, Eye, EyeOff, Flower2, Loader2, Palette, Pencil, Plus, Search, Star, Trash2, Upload, X } from 'lucide-react';
 import { compressImage } from '@/lib/lubnel-helpers';
 import { apiJson, EGP } from '../helpers';
 import ImageField from '../image-field';
@@ -48,8 +48,8 @@ export default function ProductsSection() {
   const [form, setForm] = useState(EMPTY);
   const [gallery, setGallery] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-  // U85-VARIANTS — options editor (الريحة/اللون) with a photo per option
-  const [variants, setVariants] = useState<{ label: string; value: string; image?: string }[]>([]);
+  // U85-VARIANTS — options editor: color (with picker), scent, shade, custom
+  const [variants, setVariants] = useState<{ kind?: string; label: string; value: string; color?: string; image?: string }[]>([]);
   const [variantUploading, setVariantUploading] = useState<number | null>(null);
   const { toast } = useToast();
 
@@ -363,55 +363,125 @@ export default function ProductsSection() {
               <Label htmlFor="p-desc">الوصف</Label>
               <textarea id="p-desc" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="resize-none rounded-md border border-input bg-background px-3 py-2 text-sm" />
             </div>
-            {/* U85-VARIANTS — options editor: الريحة/اللون with a photo per option */}
+            {/* U85-VARIANTS — options editor: color (with picker), scent, shade, custom */}
             <div className="grid gap-2 rounded-2xl border border-primary/20 bg-primary/[0.03] p-3">
-              <Label className="font-black">الأنواع (الريحة، اللون…) — لكل نوع صورته</Label>
-              {variants.map((v, i) => (
-                <div key={i} className="flex items-center gap-2 rounded-xl border border-border/50 bg-background/40 p-2">
-                  <label
-                    className="relative grid h-12 w-12 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-lg border border-border/60 bg-secondary/40 text-muted-foreground"
-                    title="اختاري صورة النوع"
-                  >
-                    {variantUploading === i ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : v.image ? (
-                      <img src={v.image} alt={v.value || v.label} className="h-full w-full object-cover" loading="lazy" />
-                    ) : (
-                      <Upload className="h-4 w-4" />
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      hidden
-                      onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadVariantImage(i, f); e.target.value = ''; }}
-                    />
-                  </label>
-                  <div className="grid flex-1 gap-1.5">
-                    <Input value={v.label} onChange={(e) => setVariants((current) => current.map((item, index) => (index === i ? { ...item, label: e.target.value } : item)))} placeholder="النوع — مثال: الريحة / اللون" />
-                    <Input value={v.value} onChange={(e) => setVariants((current) => current.map((item, index) => (index === i ? { ...item, value: e.target.value } : item)))} placeholder="القيمة — مثال: تفاح" />
+              <Label className="font-black">الأنواع — لون، ريحة، درجة لون… لكل نوع صورته</Label>
+              {variants.map((v, i) => {
+                const isColorKind = v.kind === 'color' || v.kind === 'shade';
+                return (
+                  <div key={i} className="rounded-xl border border-border/50 bg-background/40 p-2.5">
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={v.kind || 'custom'}
+                        aria-label="نوع الخيار"
+                        onChange={(e) =>
+                          setVariants((current) =>
+                            current.map((item, index) => {
+                              if (index !== i) return item;
+                              const kind = e.target.value;
+                              const presetLabel =
+                                kind === 'color' ? 'اللون' : kind === 'shade' ? 'درجة اللون' : kind === 'scent' ? 'الريحة' : '';
+                              return {
+                                ...item,
+                                kind,
+                                label: !item.label || [ 'اللون', 'الريحة', 'درجة اللون' ].includes(item.label) ? presetLabel || item.label : item.label,
+                              };
+                            })
+                          )
+                        }
+                        className="h-9 shrink-0 rounded-lg border border-input bg-background px-2 text-xs font-bold"
+                      >
+                        <option value="color">🎨 لون</option>
+                        <option value="scent">🌸 ريحة</option>
+                        <option value="shade">🎯 درجة لون</option>
+                        <option value="custom">🏷️ مخصص</option>
+                      </select>
+                      <Input
+                        value={v.label}
+                        onChange={(e) => setVariants((current) => current.map((item, index) => (index === i ? { ...item, label: e.target.value } : item)))}
+                        placeholder="النوع — مثال: اللون"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                        aria-label={`حذف النوع ${v.value || i + 1}`}
+                        onClick={() => setVariants((current) => current.filter((_, index) => index !== i))}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      {isColorKind && (
+                        <label
+                          className="relative h-9 w-9 shrink-0 cursor-pointer overflow-hidden rounded-full border-2 border-border/60 shadow-inner"
+                          title="اختاري اللون"
+                          style={{ background: v.color || '#ffffff' }}
+                        >
+                          <input
+                            type="color"
+                            value={v.color || '#e11d48'}
+                            onChange={(e) => setVariants((current) => current.map((item, index) => (index === i ? { ...item, color: e.target.value } : item)))}
+                            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                            aria-label={`منتقي اللون ${v.value || ''}`}
+                          />
+                        </label>
+                      )}
+                      <Input
+                        value={v.value}
+                        onChange={(e) => setVariants((current) => current.map((item, index) => (index === i ? { ...item, value: e.target.value } : item)))}
+                        placeholder={isColorKind ? 'اسم اللون — مثال: أحمر' : 'القيمة — مثال: تفاح'}
+                      />
+                      <label
+                        className="relative grid h-9 w-9 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-lg border border-border/60 bg-secondary/40 text-muted-foreground"
+                        title="صورة النوع (اختياري — تظهر عند اختياره)"
+                      >
+                        {variantUploading === i ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : v.image ? (
+                          <img src={v.image} alt={v.value || v.label} className="h-full w-full object-cover" loading="lazy" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          hidden
+                          onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadVariantImage(i, f); e.target.value = ''; }}
+                        />
+                      </label>
+                    </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
-                    aria-label={`حذف النوع ${v.value || i + 1}`}
-                    onClick={() => setVariants((current) => current.filter((_, index) => index !== i))}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="rounded-full gap-1.5"
-                onClick={() => setVariants((current) => [...current, { label: '', value: '' }])}
-              >
-                <Plus className="h-3.5 w-3.5" /> إضافة نوع
-              </Button>
+                );
+              })}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button" variant="outline" size="sm" className="rounded-full gap-1.5"
+                  onClick={() => setVariants((current) => [...current, { kind: 'color', label: 'اللون', value: '', color: '#e11d48' }])}
+                >
+                  <Palette className="h-3.5 w-3.5" /> إضافة لون
+                </Button>
+                <Button
+                  type="button" variant="outline" size="sm" className="rounded-full gap-1.5"
+                  onClick={() => setVariants((current) => [...current, { kind: 'shade', label: 'درجة اللون', value: '', color: '#f59e0b' }])}
+                >
+                  <Droplet className="h-3.5 w-3.5" /> درجة لون
+                </Button>
+                <Button
+                  type="button" variant="outline" size="sm" className="rounded-full gap-1.5"
+                  onClick={() => setVariants((current) => [...current, { kind: 'scent', label: 'الريحة', value: '' }])}
+                >
+                  <Flower2 className="h-3.5 w-3.5" /> إضافة ريحة
+                </Button>
+                <Button
+                  type="button" variant="outline" size="sm" className="rounded-full gap-1.5"
+                  onClick={() => setVariants((current) => [...current, { kind: 'custom', label: '', value: '' }])}
+                >
+                  <Plus className="h-3.5 w-3.5" /> مخصص
+                </Button>
+              </div>
               <p className="text-[11px] leading-relaxed text-muted-foreground">
-                مثال: منتج زيت — النوع «الريحة» والقيم تفاح/خوخ/شمندر، لكل قيمة صورتها. الزبونة تختار النوع في صفحة المنتج وتظهر صورتها وتُسجل مع الطلب.
+                مثال: منتج زيت — «لون» بثلاث درجات (أحمر/أخضر/أصفر) ولكل لون صورته، أو «ريحة» تفاح/خوخ/شمندر. الزبونة تختار النوع في صفحة المنتج فتتبدل صورة المنتج وتُسجل مع طلبها.
               </p>
             </div>
             <label className="flex cursor-pointer items-center gap-2 text-sm font-bold">
