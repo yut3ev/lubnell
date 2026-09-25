@@ -38,9 +38,28 @@ export function ProductFormModal({ product, onClose, onSaved, eyebrow, title }: 
   const [images, setImages] = useState<string[]>(
     (product.images?.length ? product.images : product.image ? [product.image] : []).filter(Boolean),
   );
-  const [variants, setVariants] = useState<{ label: string; value: string }[]>(
-    (product.variants || []).map(v => ({ label: v.label, value: v.value })),
+  const [variants, setVariants] = useState<{ label: string; value: string; image?: string }[]>(
+    (product.variants || []).map(v => ({ label: v.label, value: v.value, image: (v as { image?: string }).image })),
   );
+  const pickingVariant = useRef<number | null>(null);
+  const variantFileInput = useRef<HTMLInputElement>(null);
+
+  // U85-VARIANTS — every option (الريحة/اللون) carries its own photo: the
+  // customer taps the option and its photo becomes the product image.
+  const uploadVariantImage = async (index: number, file: File) => {
+    if (!file.type.startsWith("image/")) return toast.error(t("اختاري صورة صالحة"));
+    try {
+      const compressed = await compressImage(file, 1200, 0.82);
+      const fd = new FormData();
+      fd.append("file", compressed);
+      fd.append("altText", `${form.nameAr || form.name} — ${variants[index]?.value || ""}`);
+      const res = await api<{ url: string }>("/api/admin/media", { method: "POST", body: fd });
+      setVariants(current => current.map((item, i) => (i === index ? { ...item, image: res.url } : item)));
+      toast.success(t("تم رفع صورة النوع ✓"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("فشل رفع صورة النوع"));
+    }
+  };
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -157,17 +176,28 @@ export function ProductFormModal({ product, onClose, onSaved, eyebrow, title }: 
           <label className="wide">{t("الوصف")}<textarea rows={3} value={form.description} onChange={e => set({ description: e.target.value })} /></label>
 
           <div className="wide">
-            <span className="variants-label">{t("المتغيرات (اللون، الحجم…)")}</span>
+            <span className="variants-label">{t("الأنواع (الريحة، اللون…) — لكل نوع صورته")}</span>
             {variants.map((v, i) => (
-              <div className="variant-row" key={i}>
-                <input value={v.label} placeholder={t("الاسم — مثال: اللون")} onChange={e => setVariants(current => current.map((item, index) => index === i ? { ...item, label: e.target.value } : item))} />
-                <input value={v.value} placeholder={t("القيمة — مثال: وردي")} onChange={e => setVariants(current => current.map((item, index) => index === i ? { ...item, value: e.target.value } : item))} />
+              <div className="variant-row flex items-center gap-2 rounded-xl border border-border/50 bg-background/40 p-2" key={i}>
+                <label
+                  className="relative grid h-12 w-12 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-lg border border-border/60 bg-secondary/40 text-muted-foreground"
+                  title={t("اختاري صورة النوع")}
+                >
+                  {v.image ? <img src={v.image} alt={v.value || v.label} className="h-full w-full object-cover" loading="lazy" /> : <Upload size={14} />}
+                  <input type="file" accept="image/*" hidden
+                    onChange={e => { const f = e.target.files?.[0]; if (f) void uploadVariantImage(i, f); e.target.value = ""; }} />
+                </label>
+                <input value={v.label} placeholder={t("النوع — مثال: الريحة / اللون")} onChange={e => setVariants(current => current.map((item, index) => index === i ? { ...item, label: e.target.value } : item))} />
+                <input value={v.value} placeholder={t("القيمة — مثال: تفاح")} onChange={e => setVariants(current => current.map((item, index) => index === i ? { ...item, value: e.target.value } : item))} />
                 <button type="button" className="icon-button" aria-label={t("حذف المتغير")} onClick={() => setVariants(current => current.filter((_, index) => index !== i))}><X size={14} /></button>
               </div>
             ))}
             <button type="button" className="button button-outline small-add" onClick={() => setVariants(current => [...current, { label: "", value: "" }])}>
-              <Plus size={13} /> {t("إضافة متغير")}
+              <Plus size={13} /> {t("إضافة نوع")}
             </button>
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
+              {t("اضيفي نوعًا لكل ريحة أو لون مع صورته — الزبونة تختار النوع في صفحة المنتج وتظهر صورته في السلة والطلب.")}
+            </p>
           </div>
 
           <div className="ai-edit-toggles wide">

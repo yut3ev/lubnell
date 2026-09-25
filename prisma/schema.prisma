@@ -135,6 +135,7 @@ model OrderItem {
   image     String?
   price     Float
   qty       Int
+  variant   String? // U85-VARIANTS — «الريحة: تفاح» / «اللون: أحمر» (اختيار الزبونة)
 }
 
 // ---- admin panel extended models (SUP-6 full-panel build) ----

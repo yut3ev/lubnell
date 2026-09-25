@@ -1,6 +1,6 @@
 // Shared LUBNÉL types (client + server safe)
 
-export type Variant = { label: string; value: string; price?: number };
+export type Variant = { label: string; value: string; price?: number; image?: string };
 
 export type Product = {
   id: string;

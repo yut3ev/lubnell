@@ -194,7 +194,7 @@ export default function OrdersSection() {
                             <ul className="space-y-1.5">
                               {o.items.map((it, i) => (
                                 <li key={i} className="flex justify-between text-sm">
-                                  <span>{it.nameAr} × {it.qty}</span>
+                                  <span>{it.nameAr} × {it.qty}{(it as { variant?: string }).variant ? <b className="ms-1 font-bold text-primary"> · {(it as { variant?: string }).variant}</b> : null}</span>
                                   <b>{EGP(it.price * it.qty)}</b>
                                 </li>
                               ))}

@@ -12,16 +12,20 @@ export interface CartItem {
   nameAr: string;
   price: number;
   image: string;
+  variant?: string; // U85-VARIANTS — «الريحة: تفاح · اللون: أحمر»
+  key?: string; // U85 — cart-line key: id + variant (variants of one product = separate lines)
   qty: number;
 }
 
 interface CartState {
   items: CartItem[];
   add: (item: Omit<CartItem, 'qty'>, qty?: number) => void;
-  remove: (id: string) => void;
-  setQty: (id: string, qty: number) => void;
+  remove: (key: string) => void;
+  setQty: (key: string, qty: number) => void;
   clear: () => void;
 }
+
+const lineKey = (id: string, variant?: string) => (variant ? `${id}::${variant}` : id);
 
 export const useCart = create<CartState>()(
   persist(
@@ -29,24 +33,25 @@ export const useCart = create<CartState>()(
       items: [],
       add: (item, qty = 1) =>
         set((state) => {
-          const existing = state.items.find((i) => i.id === item.id);
+          const key = lineKey(item.id, item.variant);
+          const existing = state.items.find((i) => (i.key || i.id) === key);
           if (existing) {
             return {
               items: state.items.map((i) =>
-                i.id === item.id ? { ...i, qty: i.qty + qty } : i
+                (i.key || i.id) === key ? { ...i, qty: i.qty + qty } : i
               ),
             };
           }
-          return { items: [...state.items, { ...item, qty }] };
+          return { items: [...state.items, { ...item, key, qty }] };
         }),
-      remove: (id) =>
-        set((state) => ({ items: state.items.filter((i) => i.id !== id) })),
-      setQty: (id, qty) =>
+      remove: (key) =>
+        set((state) => ({ items: state.items.filter((i) => (i.key || i.id) !== key) })),
+      setQty: (key, qty) =>
         set((state) => ({
           items:
             qty <= 0
-              ? state.items.filter((i) => i.id !== id)
-              : state.items.map((i) => (i.id === id ? { ...i, qty } : i)),
+              ? state.items.filter((i) => (i.key || i.id) !== key)
+              : state.items.map((i) => ((i.key || i.id) === key ? { ...i, qty } : i)),
         })),
       clear: () => set({ items: [] }),
     }),

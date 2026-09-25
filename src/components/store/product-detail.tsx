@@ -80,7 +80,10 @@ export function ProductDetail({
   // U58-GALLERY — the primary image is ALWAYS first, then the owner-ordered
   // gallery (dedup) — matches the «تعيين كصورة رئيسية» star in Studio.
   const images = Array.from(new Set([product.image, ...product.gallery]));
-  const activeImg = sel && images.includes(sel) ? sel : images[0];
+  // U85-VARIANTS — picking a color/scent option shows ITS photo as the main
+  // image until she manually picks a gallery shot
+  const pickedVariantImage = product.variants.find((v) => picked[v.label] === v.value && v.image)?.image;
+  const activeImg = sel && images.includes(sel) ? sel : (pickedVariantImage || images[0]);
   const imgIdx = Math.max(0, images.indexOf(activeImg));
   const select = (i: number) => setSel(images[((i % images.length) + images.length) % images.length]);
 
@@ -91,13 +94,21 @@ export function ProductDetail({
   }, [imgIdx, images.length]);
 
   function addToCart(then?: 'cart') {
+    // U85-VARIANTS — the picked options ride along: the cart line, the
+    // WhatsApp message and the order record all carry «الريحة: تفاح · اللون: أحمر»
+    const variantSummary = Object.entries(picked)
+      .filter(([label]) => product.variants.some((v) => v.label === label))
+      .map(([label, value]) => `${label}: ${value}`)
+      .join(' · ');
+    const variantImage = product.variants.find((v) => picked[v.label] === v.value && v.image)?.image;
     add(
       {
         id: product.id,
         slug: product.slug,
         nameAr: name,
         price: product.price,
-        image: product.image,
+        image: variantImage || product.image,
+        variant: variantSummary || undefined,
       },
       qty
     );
@@ -286,12 +297,23 @@ export function ProductDetail({
                             type="button"
                             onClick={() => setPicked((p) => ({ ...p, [label]: v.value }))}
                             aria-pressed={on}
-                            className={`rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all ${
+                            className={`inline-flex items-center gap-1.5 rounded-full border py-1 text-xs font-bold transition-all ${
+                              v.image ? 'pl-1 pr-3.5' : 'px-3.5'
+                            } ${
                               on
                                 ? 'border-primary bg-primary text-primary-foreground shadow-sm'
                                 : 'border-primary/20 bg-secondary/60 text-primary hover:bg-secondary'
                             }`}
                           >
+                            {v.image ? (
+                              <img
+                                src={v.image}
+                                alt={v.value}
+                                aria-hidden
+                                className="h-7 w-7 rounded-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : null}
                             {v.value}
                           </button>
                         );

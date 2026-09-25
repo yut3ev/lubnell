@@ -11,6 +11,7 @@ interface IncomingItem {
   slug?: string;
   id?: string;
   qty: number;
+  variant?: string; // U85-VARIANTS — «الريحة: تفاح · اللون: أحمر»
 }
 
 /* SEC-AUDIT-3 — light in-memory spam throttle for order placement
@@ -88,6 +89,7 @@ export async function POST(req: NextRequest) {
         image: p.image,
         price: p.price,
         qty,
+        variant: String(it.variant || '').slice(0, 120) || null,
       });
     }
 
