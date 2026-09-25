@@ -364,7 +364,7 @@ export function CartView({ whatsapp }: { whatsapp?: string }) {
                     size="icon"
                     aria-label={ar ? `حذف ${i.nameAr}` : `Remove ${i.nameAr}`}
                     className="h-11 w-11 shrink-0 text-muted-foreground hover:text-destructive"
-                    onClick={() => remove(i.id)}
+                    onClick={() => remove(i.key || i.id)}
                   >
                     <Trash2 className="h-4.5 w-4.5" />
                   </Button>
@@ -378,11 +378,11 @@ export function CartView({ whatsapp }: { whatsapp?: string }) {
                   )}
                 </span>
                 <div className="mt-auto flex w-fit items-center rounded-full border border-border bg-background">
-                  <Button variant="ghost" size="icon" aria-label="+" className="h-11 w-11 rounded-full" onClick={() => setQty(i.id, i.qty + 1)} disabled={i.qty >= 20}>
+                  <Button variant="ghost" size="icon" aria-label="+" className="h-11 w-11 rounded-full" onClick={() => setQty(i.key || i.id, i.qty + 1)} disabled={i.qty >= 20}>
                     <Plus className="h-4 w-4" />
                   </Button>
                   <span className="w-8 text-center text-sm font-bold">{i.qty}</span>
-                  <Button variant="ghost" size="icon" aria-label="-" className="h-11 w-11 rounded-full" onClick={() => setQty(i.id, i.qty - 1)}>
+                  <Button variant="ghost" size="icon" aria-label="-" className="h-11 w-11 rounded-full" onClick={() => setQty(i.key || i.id, i.qty - 1)}>
                     <Minus className="h-4 w-4" />
                   </Button>
                 </div>
