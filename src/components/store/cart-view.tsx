@@ -353,7 +353,7 @@ export function CartView({ whatsapp }: { whatsapp?: string }) {
               </Link>
               <div className="flex flex-1 flex-col">
                 <div className="flex items-start justify-between gap-3">
-                  <Link href={`/p/${i.slug}`} className="font-bold leading-snug transition-colors hover:text-primary">
+                  <Link href={`/p/${i.slug}`} className="min-w-0 flex-1 font-bold leading-snug transition-colors hover:text-primary">
                     {i.nameAr}
                   </Link>
                   {i.variant ? (
