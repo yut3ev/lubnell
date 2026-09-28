@@ -356,9 +356,6 @@ export function CartView({ whatsapp }: { whatsapp?: string }) {
                   <Link href={`/p/${i.slug}`} className="min-w-0 flex-1 font-bold leading-snug transition-colors hover:text-primary">
                     {i.nameAr}
                   </Link>
-                  {i.variant ? (
-                    <span className="rounded-full bg-secondary/70 px-2.5 py-0.5 text-[11px] font-bold text-foreground/80">{i.variant}</span>
-                  ) : null}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -369,6 +366,9 @@ export function CartView({ whatsapp }: { whatsapp?: string }) {
                     <Trash2 className="h-4.5 w-4.5" />
                   </Button>
                 </div>
+                {i.variant ? (
+                  <span className="mt-1.5 w-fit rounded-full bg-secondary/70 px-2.5 py-0.5 text-[11px] font-bold text-foreground/80">{i.variant}</span>
+                ) : null}
                 <span className="mt-1 text-sm font-bold text-primary">
                   {money(i.price)}
                   {i.qty > 1 && (
