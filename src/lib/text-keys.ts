@@ -133,7 +133,7 @@ export const TEXT_META: Record<string, { label: string; group: TextGroupId }> = 
   // U57-TEXTS-COMPLETE — every remaining storefront string joins the
   // registry so the owner can edit literally any visible text.
   // menus — القوائم والروابط
-  navSets: { label: 'قائمة المتجر — المجموعات', group: 'menus' },
+  navBrides: { label: 'قائمة المتجر — بوكسات العرايس', group: 'menus' },
   navMakeup: { label: 'قائمة المتجر — مكياج', group: 'menus' },
   navSkincare: { label: 'قائمة المتجر — عناية بالبشرة', group: 'menus' },
   navBodyCare: { label: 'قائمة المتجر — عناية بالجسم', group: 'menus' },

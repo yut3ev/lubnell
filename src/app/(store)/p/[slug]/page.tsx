@@ -141,7 +141,8 @@ export default async function ProductPage({
     '@type': 'Product',
     name: product.nameAr,
     alternateName: product.nameEn,
-    description: product.description.slice(0, 300),
+    // GEO — richer description signal (ingredients/usage/fit live in the copy)
+    description: product.description.slice(0, 1000),
     image: [`${base}${product.image}`],
     sku: product.slug,
     brand: { '@type': 'Brand', name: 'LUBNÉL' },

@@ -125,6 +125,18 @@ export const DEFAULT_FAQ_ITEMS: { qAr: string; aAr: string; qEn: string; aEn: st
     qEn: 'Do you offer coupons or deals?',
     aEn: 'Yes! A welcome coupon for your first order plus seasonal offers on our sets. Enter the code in the bag before checkout and the discount applies instantly.',
   },
+  {
+    qAr: 'هل التغليف هدايا مجاني؟',
+    aAr: 'نعم — كل طلب بيوصلك بتغليف لوبنيل الفاخر (علبة أنيقة + شريط) من غير أي رسوم إضافية، وتقدري تضيفي كارت إهداء برسالتك الشخصية — اكتبيها في ملاحظات الطلب وهنطبعلها لك مجانًا.',
+    qEn: 'Is gift wrapping free?',
+    aEn: 'Yes — every order arrives in LUBNÉL luxury wrapping (an elegant box + ribbon) at no extra charge, and you can add a gift card with your personal note — just write it in the order notes and we print it for free.',
+  },
+  {
+    qAr: 'إزاي أعرف العطر أو المنتج المناسب لي؟',
+    aAr: 'اختاري حسب العائلة العطرية: الفواكهية والانتعاش للصيف والاستخدام اليومي، والزهرية والدافئة للسهرات والشتاء. لوصف أعمق لكل منتج اقرئي تفاصيله في صفحته، أو اكتسلي لُو أو واتساب ورصتي (بشرتك، ذوقك، المناسبة) ونرشحلك الأنسب لك مجانًا.',
+    qEn: 'How do I pick the right scent or product for me?',
+    aEn: 'Choose by scent family: fruity and fresh for summer and daily wear, floral and warm for evenings and winter. Read each product page for full details, or message لُو or WhatsApp with your skin type, taste and occasion — we recommend the best fit for free.',
+  },
 ];
 
 /** AR/EN render-ready pairs for the shipped FAQ (used until the owner edits). */

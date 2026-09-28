@@ -18,7 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/blog`, changeFrequency: 'weekly', priority: 0.6 }, // U61-BLOG
     { url: `${base}/info/shipping`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${base}/info/returns`, changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${base}/info/faq`, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${base}/faq`, changeFrequency: 'monthly', priority: 0.6 }, // GEO — canonical FAQ + FAQPage schema
   ];
 
   try {

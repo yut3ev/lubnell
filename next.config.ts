@@ -36,6 +36,11 @@ const nextConfig: NextConfig = {
       fallback: [],
     };
   },
+  // GEO-FAQ — the FAQ moved to /faq (canonical, carries the FAQPage schema);
+  // old links consolidate there so the ranking signal stays in one URL.
+  async redirects() {
+    return [{ source: "/info/faq", destination: "/faq", permanent: true }];
+  },
   // SEC-AUDIT-1 — owner asked «هل الموقع آمن؟» (2026-09-20). Audit found the
   // app logic solid (scrypt+timingSafe auth, 5/15min lockout, guarded admin
   // APIs → live 401, uploads path-traversal guard) but ZERO security headers.

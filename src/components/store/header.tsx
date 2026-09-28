@@ -37,10 +37,13 @@ import { useT, useLang } from '@/lib/i18n';
 // U57-TEXTS-COMPLETE — every label is a DICT key: the owner edits these from
 // Studio → «كل النصوص» (group القوائم والروابط) and the change hits the site
 // on save. `k` is the dict key; no more hardcoded literals here.
-const NAV: { href: string; k: 'home' | 'allProducts' | 'navSets' | 'navMakeup' | 'navSkincare' | 'navBodyCare' }[] = [
+// GEO-NAV — «المجموعات» (/c/sets) pointed at a category that no longer
+// exists in the live catalog (404); replaced with the real bridal-boxes
+// category (slug read live from the DB).
+const NAV: { href: string; k: 'home' | 'allProducts' | 'navBrides' | 'navMakeup' | 'navSkincare' | 'navBodyCare' }[] = [
   { href: '/', k: 'home' },
   { href: '/c/all', k: 'allProducts' },
-  { href: '/c/sets', k: 'navSets' },
+  { href: '/c/bridal-boxes', k: 'navBrides' },
   { href: '/c/makeup', k: 'navMakeup' },
   { href: '/c/skincare', k: 'navSkincare' },
   { href: '/c/body-care', k: 'navBodyCare' },
@@ -53,7 +56,7 @@ const INFO: { href: string; k: 'navAbout' | 'navShipping' | 'navReturns' | 'navF
   { href: '/blog', k: 'navBlog', icon: BookOpen }, // U61-BLOG
   { href: '/info/shipping', k: 'navShipping', icon: Truck },
   { href: '/info/returns', k: 'navReturns', icon: RefreshCcw },
-  { href: '/info/faq', k: 'navFaq', icon: HelpCircle },
+  { href: '/faq', k: 'navFaq', icon: HelpCircle }, // GEO — canonical FAQ URL
   { href: '/info/contact', k: 'navContact', icon: MessageCircle },
 ];
 

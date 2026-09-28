@@ -8,6 +8,12 @@ export default function robots(): MetadataRoute.Robots {
   const base = siteUrl();
   return {
     rules: [
+      // GEO — explicit welcome for the AI answer engines so لوبنيل can be
+      // cited by ChatGPT Search, Perplexity and Claude (all public pages).
+      { userAgent: 'GPTBot', allow: '/' },
+      { userAgent: 'OAI-SearchBot', allow: '/' },
+      { userAgent: 'PerplexityBot', allow: '/' },
+      { userAgent: 'ClaudeBot', allow: '/' },
       {
         userAgent: '*',
         allow: '/',

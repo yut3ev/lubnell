@@ -38,7 +38,7 @@ export const DEFAULT_SITE_TEXTS: Required<Pick<SiteTexts, 'footerLinks'>> & Site
   footerBlurbEn: 'Your beauty ritual, reimagined in Cairo — luxury gift boxes, makeup, skincare and authentic fragrance.',
   footerLinks: [
     { href: '/#catalog', labelAr: 'كل المنتجات', labelEn: 'All products' },
-    { href: '/c/sets', labelAr: 'المجموعات', labelEn: 'Sets' },
+    { href: '/c/bridal-boxes', labelAr: 'بوكسات عرايس', labelEn: 'Bridal Boxes' },
     { href: '/c/makeup', labelAr: 'مكياج', labelEn: 'Makeup' },
     { href: '/c/skincare', labelAr: 'عناية بالبشرة', labelEn: 'Skincare' },
     { href: '/c/body-care', labelAr: 'عناية بالجسم', labelEn: 'Body care' },

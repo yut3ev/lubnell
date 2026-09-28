@@ -130,12 +130,9 @@ const RELATED: { slug: string; labelAr: string; labelEn: string; Icon: typeof Tr
   { slug: 'about', labelAr: 'عن لوبنيل', labelEn: 'About LUBNÉL', Icon: Sparkles },
 ];
 
-export default async function InfoPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
+/** GEO-FAQ — the shared page body, exported so /faq (the canonical FAQ URL)
+ * renders the exact same machinery; this route stays for backward links. */
+export async function InfoPageBody({ slug }: { slug: string }) {
   if (!isInfoSlug(slug)) notFound();
   const base = DEFAULT_INFO_PAGES[slug];
   const bag = await loadSettingsBag(slug);
@@ -240,4 +237,34 @@ export default async function InfoPage({
       </nav>
     </div>
   );
+}
+
+export default async function InfoPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  return <InfoPageBody slug={slug} />;
+}
+
+/** GEO-FAQ — resolve the FAQ Q/A pairs exactly as the body renders them
+ * (shipped defaults, or the owner's «سؤال\nجواب» override), for the
+ * FAQPage JSON-LD on /faq. */
+export async function loadFaqContent(): Promise<{
+  pairs: { q: string; a: string }[];
+}> {
+  try {
+    const row = await getSettingRow('pages');
+    const custom = parseStoredPages(row?.value).find(
+      (p) => p?.slug === 'faq' && Boolean(p.titleAr?.trim() || p.contentAr?.trim())
+    );
+    if (custom?.contentAr?.trim()) {
+      const parsed = faqPairsFromText(custom.contentAr);
+      if (parsed.length >= 2) return { pairs: parsed };
+    }
+  } catch {
+    /* shipped defaults are fine */
+  }
+  return { pairs: DEFAULT_FAQ_PAIRS_AR };
 }

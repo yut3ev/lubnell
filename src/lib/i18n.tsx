@@ -133,7 +133,7 @@ export const DICT = {
     // U57-TEXTS-COMPLETE — «اي نص وجود ف الموقع بالكامل»: the remaining
     // chrome strings (menus, search, review form, info/contact pages, 404,
     // bundle row) join the registry. Templates use {q}/{n}/{fee}/{threshold}.
-    navSets: 'المجموعات',
+    navBrides: 'بوكسات عرايس',
     navMakeup: 'مكياج',
     navSkincare: 'عناية بالبشرة',
     navBodyCare: 'عناية بالجسم',
@@ -333,7 +333,7 @@ export const DICT = {
     louCta: 'Ask Lou now',
     louSub: 'Free · replies in seconds',
     // U57-TEXTS-COMPLETE — see the Arabic block above.
-    navSets: 'Sets',
+    navBrides: 'Bridal Boxes',
     navMakeup: 'Makeup',
     navSkincare: 'Skincare',
     navBodyCare: 'Body care',

@@ -149,7 +149,7 @@ export function StoreFooter({
                 </Link>
               </li>
               <li>
-                <Link className="transition-colors hover:text-primary" href="/info/faq">
+                <Link className="transition-colors hover:text-primary" href="/faq">
                   {ar ? 'الأسئلة الشائعة' : 'FAQ'}
                 </Link>
               </li>
