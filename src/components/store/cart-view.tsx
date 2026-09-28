@@ -58,6 +58,15 @@ const EG_GOV = [
   'شمال سيناء', 'جنوب سيناء',
 ];
 
+// cart lines saved before the variant-group merge fix can carry the same
+// «النوع: قيمة» segment repeated once per duplicate group — collapse the
+// repeats wherever the line is displayed or sent
+function dedupeVariant(variant: string | undefined): string | undefined {
+  if (!variant) return variant;
+  const parts = variant.split('·').map((p) => p.trim()).filter(Boolean);
+  return [...new Set(parts)].join(' · ');
+}
+
 // proper Arabic plural for the bag count chip
 function itemCountLabel(items: { qty: number }[], ar: boolean) {
   const n = items.reduce((s, i) => s + i.qty, 0);
@@ -234,7 +243,7 @@ export function CartView({ whatsapp }: { whatsapp?: string }) {
         body: JSON.stringify({
           ...form,
           couponCode: applied?.code,
-          items: items.map((i) => ({ slug: i.slug, qty: i.qty, variant: i.variant })),
+          items: items.map((i) => ({ slug: i.slug, qty: i.qty, variant: dedupeVariant(i.variant) })),
         }),
       });
       const data = await res.json();
@@ -250,7 +259,7 @@ export function CartView({ whatsapp }: { whatsapp?: string }) {
       // real LUBNÉL flow: order saved → WhatsApp confirmation message
       const orderNumber = `LN-${data.order.id.slice(-6).toUpperCase()}`;
       const finalTotal = data.order.total ?? totalAfterCoupon;
-      const lines = items.map((i) => `- ${i.nameAr}${i.variant ? ` (${i.variant})` : ''} × ${i.qty} · ${money(i.price * i.qty)}`).join('\n');
+      const lines = items.map((i) => `- ${i.nameAr}${i.variant ? ` (${dedupeVariant(i.variant)})` : ''} × ${i.qty} · ${money(i.price * i.qty)}`).join('\n');
       // SETTINGS-HUB: greeting comes from Studio → «الشحن والدفع» when set
       const greeting = (ship.whatsappMessage || 'مرحبًا LUBNÉL 🌸').trim();
       const message = `${greeting}\nأريد تأكيد الطلب ${orderNumber}:\n\n${lines}\n\nالمجموع الفرعي: ${money(subtotal)}${applied ? `\nكود الخصم ${applied.code}: -${money(applied.discount)}` : ''}\nالشحن: ${shipping === 0 ? 'مجاني' : money(shipping)}\nالإجمالي: ${money(finalTotal)}\n\nبيانات التوصيل:\nالاسم: ${form.customerName}\nالهاتف: ${form.phone}\nالعنوان: ${form.city} — ${form.address}${form.notes ? `\nملاحظات: ${form.notes}` : ''}${(form as Record<string, unknown>).giftNote ? `\nبطاقة إهداء: ${(form as Record<string, unknown>).giftNote as string}` : ''}${ship.codEnabled ? `\n\nطريقة الدفع: الدفع عند الاستلام` : ''}`;
@@ -367,7 +376,7 @@ export function CartView({ whatsapp }: { whatsapp?: string }) {
                   </Button>
                 </div>
                 {i.variant ? (
-                  <span className="mt-1.5 w-fit rounded-full bg-secondary/70 px-2.5 py-0.5 text-[11px] font-bold text-foreground/80">{i.variant}</span>
+                  <span className="mt-1.5 w-fit rounded-full bg-secondary/70 px-2.5 py-0.5 text-[11px] font-bold text-foreground/80">{dedupeVariant(i.variant)}</span>
                 ) : null}
                 <span className="mt-1 text-sm font-bold text-primary">
                   {money(i.price)}

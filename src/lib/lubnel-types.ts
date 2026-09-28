@@ -11,6 +11,22 @@ export type ProductVariants = VariantGroup[];
 
 /** Parses the stored variants JSON — supports the legacy row array, the V2
  * single-group object, and the V3 groups array. Returns [] when empty. */
+// duplicate group names (e.g. four «النوع» groups after a legacy conversion)
+// render as stacked full-width sections — merge them into ONE group so the
+// options sit side-by-side in a single row; same-value options are deduped
+function mergeGroupsByName(groups: VariantGroup[]): VariantGroup[] {
+  const out: VariantGroup[] = [];
+  for (const g of groups) {
+    const hit = out.find((x) => x.name === g.name);
+    if (hit) {
+      for (const o of g.options) if (!hit.options.some((h) => h.value === o.value)) hit.options.push(o);
+    } else {
+      out.push({ ...g, options: [...g.options] });
+    }
+  }
+  return out;
+}
+
 export function parseVariants(json: string | null | undefined): VariantGroup[] {
   if (!json) return [];
   try {
@@ -20,14 +36,16 @@ export function parseVariants(json: string | null | undefined): VariantGroup[] {
     if (typeof parsed === 'string') parsed = JSON.parse(parsed) as unknown;
     if (Array.isArray(parsed) && parsed.length && typeof parsed[0] === 'object' && 'name' in (parsed[0] as object)) {
       // V3 groups array
-      return (parsed as VariantGroup[]).filter((g) => g && String(g.name || '').trim() && Array.isArray(g.options) && g.options.some((o) => String(o.value || '').trim()));
+      return mergeGroupsByName((parsed as VariantGroup[]).filter((g) => g && String(g.name || '').trim() && Array.isArray(g.options) && g.options.some((o) => String(o.value || '').trim())));
     }
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
       const obj = parsed as { groups?: unknown; group?: unknown; options?: unknown };
       // U85-V3 — the groups array: [{name, options[…]}]
       if (Array.isArray(obj.groups) && obj.groups.length) {
-        return (obj.groups as VariantGroup[]).filter(
-          (g) => g && String(g.name || '').trim() && Array.isArray(g.options) && g.options.some((o) => String(o.value || '').trim())
+        return mergeGroupsByName(
+          (obj.groups as VariantGroup[]).filter(
+            (g) => g && String(g.name || '').trim() && Array.isArray(g.options) && g.options.some((o) => String(o.value || '').trim())
+          )
         );
       }
       // V2-single group object
