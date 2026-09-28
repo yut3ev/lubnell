@@ -98,15 +98,8 @@ export default function ProductsSection() {
     } catch {
       setGallery([]);
     }
-    // U85-V2 — restore the option group + options (handles both formats)
-    const v2 = parseVariants(p.variants);
-    if (v2) {
-      setVariantGroup(v2.group);
-      setVariantOptions(v2.options.map((o) => ({ value: o.value, image: o.image, color: o.color })));
-    } else {
-      setVariantGroup('النوع');
-      setVariantOptions([]);
-    }
+    // U85-V3 — restore the option groups (handles every stored format)
+    setVariantGroups(parseVariants(p.variants));
     setModal(p);
   }
 
