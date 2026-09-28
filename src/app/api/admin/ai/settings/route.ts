@@ -40,10 +40,13 @@ export async function POST(req: Request) {
       const key = body.geminiApiKey?.trim() || s.geminiApiKey || envKey;
       const model = body.geminiModel?.trim() || s.geminiModel || "gemini-2.0-flash";
       if (!key) return jsonOk({ ok: false, message: "لا يوجد مفتاح Gemini محفوظ — ألصقي المفتاح أولًا" });
+      if (!/^[a-z0-9._-]{1,64}$/i.test(model)) return jsonOk({ ok: false, message: "اسم الموديل غير صالح" });
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 20000);
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`, {
+        const geminiUrl = new URL(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`);
+        geminiUrl.searchParams.set("key", key);
+        const res = await fetch(geminiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: body.testMessage || "قل جملة: LUBNÉL جاهزة ✦" }] }], generationConfig: { maxOutputTokens: 60 } }),

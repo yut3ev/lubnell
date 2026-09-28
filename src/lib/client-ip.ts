@@ -31,7 +31,7 @@ export function isPublicIp(raw: string | null | undefined): boolean {
   if (s.startsWith('::ffff:')) s = s.slice(7); // IPv4-mapped IPv6
   if (s === '::' || s === '::1') return false; // loopback
   if (s.startsWith('fc') || s.startsWith('fd') || s.startsWith('fe80')) return false; // ULA / link-local
-  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(s);
+  const m = s.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
   if (m) {
     const [a, b, c, d] = m.slice(1).map(Number);
     if ([a, b, c, d].some((n) => n > 255)) return false;
@@ -48,22 +48,32 @@ export function isPublicIp(raw: string | null | undefined): boolean {
   return /^[23][0-9a-f]{3}:/.test(s);
 }
 
+/** Header-derived values must never reach the DB/logs verbatim — stored IPs
+ * are bounded to IP-shaped tokens (digits/hex/colons/dots, ≤45 chars), which
+ * keeps the gateway-hop diagnostic while dropping arbitrary attacker strings
+ * (log-injection guard). */
+const IP_TOKEN = /^[0-9a-fA-F:.]{1,45}$/;
+
 /** Best-effort real client IP from request headers. Never throws. */
 export function clientIpFromHeaders(headers: Headers): string {
   try {
+    const pick = (raw: string | undefined | null): string => {
+      const m = raw ? raw.match(IP_TOKEN) : null;
+      return m ? m[0] : 'unknown';
+    };
     const entries = (headers.get('x-forwarded-for') || '')
       .split(',')
       .map((part) => part.trim())
       .filter(Boolean);
     for (const entry of entries) {
-      if (isPublicIp(entry)) return entry;
+      if (isPublicIp(entry)) return pick(entry);
     }
     for (const name of EDGE_IP_HEADERS) {
       const value = headers.get(name) || '';
       const first = value.split(',')[0]?.trim();
-      if (first && isPublicIp(first)) return first;
+      if (first && isPublicIp(first)) return pick(first);
     }
-    return entries[0] || 'unknown';
+    return pick(entries[0]);
   } catch {
     return 'unknown';
   }

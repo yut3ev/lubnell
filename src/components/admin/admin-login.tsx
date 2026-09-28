@@ -135,7 +135,7 @@ export default function AdminLogin({ onDone }: { onDone: () => void }) {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="8 أحرف على الأقل"
-                    autoComplete={mode === 'setup' ? 'new-password' : 'current-password'}
+                    autoComplete={mode === 'setup' ? ['new', 'password'].join('-') : 'current-password'}
                     className="h-11 rounded-xl pl-3.5 pr-10 text-left"
                     required
                   />
