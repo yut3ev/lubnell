@@ -14,7 +14,10 @@ export type ProductVariants = VariantGroup[];
 export function parseVariants(json: string | null | undefined): VariantGroup[] {
   if (!json) return [];
   try {
-    const parsed = JSON.parse(json) as unknown;
+    let parsed = JSON.parse(json) as unknown;
+    // self-heal a historic double-encode (the dashboard saved serializeGroups'
+    // string and the API re-stringified it → JSON-of-JSON): unwrap one level
+    if (typeof parsed === 'string') parsed = JSON.parse(parsed) as unknown;
     if (Array.isArray(parsed) && parsed.length && typeof parsed[0] === 'object' && 'name' in (parsed[0] as object)) {
       // V3 groups array
       return (parsed as VariantGroup[]).filter((g) => g && String(g.name || '').trim() && Array.isArray(g.options) && g.options.some((o) => String(o.value || '').trim()));

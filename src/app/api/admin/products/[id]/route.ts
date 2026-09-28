@@ -25,7 +25,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (b.stock !== undefined) data.stock = Math.max(0, Math.floor(Number(b.stock) || 0));
     if (b.featured !== undefined) data.featured = !!b.featured;
     if (b.published !== undefined) data.published = !!b.published;
-    if (b.variants !== undefined) data.variants = b.variants ? JSON.stringify(b.variants) : null;
+    // variants may arrive as an object or a pre-serialized JSON string (the
+    // dashboard sends serializeGroups' string) — store exactly ONE JSON level
+    if (b.variants !== undefined) {
+      const v = b.variants;
+      data.variants = v ? (typeof v === 'string' ? v : JSON.stringify(v)) : null;
+    }
     if (b.gallery !== undefined) {
       // gallery: array of image URLs/paths (strings) — stored as JSON string
       data.gallery = Array.isArray(b.gallery)

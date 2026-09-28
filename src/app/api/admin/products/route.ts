@@ -58,7 +58,8 @@ export async function POST(req: NextRequest) {
         categoryId,
         badgeAr: b.badgeAr ? String(b.badgeAr) : null,
         badgeEn: b.badgeEn ? String(b.badgeEn) : null,
-        variants: b.variants ? JSON.stringify(b.variants) : null,
+        // one JSON level regardless of object vs pre-serialized string input
+        variants: b.variants ? (typeof b.variants === 'string' ? b.variants : JSON.stringify(b.variants)) : null,
         stock: Number.isFinite(Number(b.stock)) ? Math.max(0, Math.floor(Number(b.stock))) : 20,
         featured: !!b.featured,
       },
