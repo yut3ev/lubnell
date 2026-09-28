@@ -23,15 +23,19 @@ function r2Client(): AwsClient {
   });
 }
 
-/** Media keys derive from uploaded filenames (user-influenced), so only
- * URL-inert keys may enter a signed request: reject separators, controls and
- * traversal — any other unicode (Arabic names, spaces) keeps working. */
-const MEDIA_KEY_SAFE = /^[^\\/?#%@&+'"<>|`^[\]{}$\x00-\x1f]{1,300}$/;
+/** Media keys derive from uploaded filenames (user-influenced) and carry
+ * folder prefixes (`uploads/…`), so validation is PER SEGMENT: URL-structural
+ * characters are rejected inside each segment, along with traversal (`..`),
+ * dot segments and empty segments; every other unicode (Arabic names, spaces,
+ * parentheses) keeps working. */
+const MEDIA_SEG_SAFE = /^[^\\?#%@&+'"<>|`^[\]{}$\x00-\x1f]{1,150}$/;
 
 const R2_HOST = '.r2.cloudflarestorage.com';
 
 const r2ObjectUrl = (key: string): URL => {
-  if (key.includes('..') || !MEDIA_KEY_SAFE.test(key)) throw new Error('invalid media key');
+  const segs = key.split('/');
+  if (segs.some((s) => !s || s === '.' || s === '..' || !MEDIA_SEG_SAFE.test(s)))
+    throw new Error('invalid media key');
   // Cloudflare account ids are 32-hex and buckets follow S3 naming — a
   // hostname assembled only from validated parts can never be redirected.
   const acct = process.env.R2_ACCOUNT_ID ?? '';
