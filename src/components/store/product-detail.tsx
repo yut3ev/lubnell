@@ -135,7 +135,11 @@ export function ProductDetail({
 
       <div className="grid gap-8 md:grid-cols-2">
         {/* gallery — U14 thumbs + hover zoom (desktop) — U58 swipe/arrows/counter/dots/lightbox */}
-        <div>
+        {/* min-w-0 — the grid item must be allowed to shrink below the gallery
+            image's natural width, otherwise the phone's layout viewport blows
+            out to the image width and the whole page renders zoomed-out
+            (MOBILE-DISPLAY-2026-09: box products with tall R2 images) */}
+        <div className="min-w-0">
           <div
             className="group relative touch-pan-y select-none overflow-hidden rounded-3xl border border-border/60 bg-secondary/30 shadow-lg shadow-primary/5"
             onMouseEnter={() => setZoomed(true)}
@@ -245,7 +249,7 @@ export function ProductDetail({
         </div>
 
         {/* info */}
-        <div className="flex flex-col">
+        <div className="flex min-w-0 flex-col">
           <div className="flex items-center gap-1.5 text-sm">
             <span className="flex items-center gap-0.5" aria-hidden>
               {Array.from({ length: 5 }).map((_, i) => (
