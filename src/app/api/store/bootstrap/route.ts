@@ -20,7 +20,7 @@ export const dynamic = 'force-dynamic';
 const DEFAULTS = {
   storeName: 'LUBNÉL',
   shippingFee: 60,
-  freeShippingThreshold: 900,
+  freeShippingThreshold: 1000,
   whatsappNumber: '201000000000',
   whatsappMessage: 'مرحبًا، أريد تأكيد طلبي من LUBNÉL.',
   codEnabled: true,

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { askAssistant, type ChatMessage } from '@/lib/ai-agent';
 
 export const dynamic = 'force-dynamic';
+// Gemini full-generation replies can take >10s — raise the serverless budget
+// so the real model answer survives (Hobby allows up to 60s).
+export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
   try {

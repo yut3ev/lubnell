@@ -32,7 +32,7 @@ export const useLang = create<LangState>()(
 // shipped defaults next to the owner's overrides.
 export const DICT = {
   ar: {
-    announcement: 'شحن مجاني للطلبات فوق 900 ج.م · توصيل لكل مصر',
+    announcement: 'شحن مجاني للطلبات فوق 1000 ج.م · توصيل لكل مصر',
     home: 'الرئيسية',
     bag: 'الحقيبة',
     cart: 'السلة',
@@ -80,7 +80,7 @@ export const DICT = {
     details: 'التفاصيل',
     shipReturns: 'الشحن والإرجاع',
     shipReturnsBody:
-      'توصيل خلال 2–5 أيام عمل لجميع محافظات مصر. رسوم الشحن 60 ج.م، ومجاني للطلبات فوق 900 ج.م. إرجاع المنتجات غير المفتوحة خلال 14 يومًا.',
+      'توصيل خلال 2–5 أيام عمل لجميع محافظات مصر. رسوم الشحن 60 ج.م، ومجاني للطلبات فوق 1000 ج.م. إرجاع المنتجات غير المفتوحة خلال 14 يومًا.',
     products: 'منتجًا متاحًا',
     noProducts: 'لا توجد منتجات في هذه الفئة حاليًا — عودي قريبًا 🌸',
     // U58-GALLERY — professional gallery strings
@@ -235,7 +235,7 @@ export const DICT = {
     blogAllSub: 'نصايح ومقالات من لوبنيل في العناية والجمال والعطور',
   },
   en: {
-    announcement: 'Complimentary delivery over 900 EGP · Nationwide shipping',
+    announcement: 'Complimentary delivery over 1000 EGP · Nationwide shipping',
     home: 'Home',
     bag: 'Bag',
     cart: 'Bag',
@@ -283,7 +283,7 @@ export const DICT = {
     details: 'Details',
     shipReturns: 'Shipping & returns',
     shipReturnsBody:
-      'Delivery in 2–5 business days across Egypt. Shipping fee 60 EGP, free over 900 EGP. Unopened products can be returned within 14 days.',
+      'Delivery in 2–5 business days across Egypt. Shipping fee 60 EGP, free over 1000 EGP. Unopened products can be returned within 14 days.',
     products: 'products available',
     noProducts: 'No products in this category yet — check back soon 🌸',
     // U58-GALLERY — professional gallery strings

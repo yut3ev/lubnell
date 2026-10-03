@@ -39,6 +39,10 @@ const BASE_SYSTEM_PROMPT = `أنتِ "لُو" — مساعدة متجر LUBNÉL 
 - لا تخترعي منتجات أو أسعارًا غير موجودة. لو مش متأكدة، اعترفي بلطف وحوّلي العميل لخدمة العملاء.`;
 
 const PROVIDER_TIMEOUT_MS = 12_000;
+// Gemini generates the FULL reply before the response arrives (non-streaming) —
+// real gift-advice answers regularly exceed the 12s provider budget from
+// Vercel serverless, which silently degraded لُو to the canned fallback.
+const GEMINI_TIMEOUT_MS = 25_000;
 const MAX_ATTEMPTS = 2;
 
 /** U21-AI — structured live grounding shared by the prompt and the fallback. */
@@ -229,7 +233,7 @@ export async function askAssistant(
             }),
           }
         ),
-        PROVIDER_TIMEOUT_MS
+        GEMINI_TIMEOUT_MS
       );
       if (res.ok) {
         const j = await res.json();

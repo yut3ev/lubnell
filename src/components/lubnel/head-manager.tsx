@@ -32,8 +32,8 @@ const VIEW_META: Record<string, ViewMeta> = {
   cart: {
     title: [`حقيبتكِ — ${BRAND}`, `Your bag — ${BRAND}`],
     desc: [
-      "راجعي طلبكِ واطلبي مباشرة عبر واتساب — شحن مجاني للطلبات فوق 900 ج.م.",
-      "Review your order and check out directly via WhatsApp — free delivery over 900 EGP.",
+      "راجعي طلبكِ واطلبي مباشرة عبر واتساب — شحن مجاني للطلبات فوق 1000 ج.م.",
+      "Review your order and check out directly via WhatsApp — free delivery over 1000 EGP.",
     ],
   },
   wishlist: {
@@ -83,8 +83,8 @@ const VIEW_META: Record<string, ViewMeta> = {
   "static:shipping": {
     title: [`الشحن والتوصيل — ${BRAND}`, `Shipping — ${BRAND}`],
     desc: [
-      "توصيل لكل مصر خلال 2–5 أيام عمل — مجانًا للطلبات فوق 900 ج.م و60 ج.م لما دونها.",
-      "Nationwide delivery in 2–5 business days — free over 900 EGP, 60 EGP below that.",
+      "توصيل لكل مصر خلال 2–5 أيام عمل — مجانًا للطلبات فوق 1000 ج.م و60 ج.م لما دونها.",
+      "Nationwide delivery in 2–5 business days — free over 1000 EGP, 60 EGP below that.",
     ],
   },
   "static:returns": {

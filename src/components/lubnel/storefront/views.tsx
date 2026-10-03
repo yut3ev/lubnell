@@ -1920,7 +1920,7 @@ export function StaticView({ lang, type }: { lang: "ar" | "en"; type: string }) 
     about: { ar: ["قصتنا", "جمال يشبه الحياة الحقيقية.", "بدأت LUBNÉL من ملاحظة بسيطة: أن أجمل طقوسنا هي تلك التي لا تحتاج أن نشرحها لأحد. من القاهرة، نصنع مساحة للجمال اليومي — ناعمة، واثقة، ومصرية بطريقتها الخاصة."], en: ["Our story", "Beauty for real life.", "LUBNÉL began with a simple observation: our most beautiful rituals are the ones we never need to explain. From Cairo, we make space for everyday beauty — soft, confident, and distinctly our own."] },
     contact: { ar: ["تواصلي معنا", "نحن هنا لأجلكِ.", "لأي سؤال عن المنتجات أو الطلبات، اتركي لنا رسالة وسنعود إليكِ خلال ساعات العمل. يمكنكِ أيضًا مراسلتنا مباشرة على واتساب."], en: ["Contact", "We're here for you.", "For questions about products or orders, leave us a message and we'll get back to you during working hours. You can also reach us directly on WhatsApp."] },
     faq: { ar: ["الأسئلة الشائعة", "كل ما تريدين معرفته.", "التوصيل متاح إلى جميع محافظات مصر خلال 2 إلى 5 أيام عمل. الدفع عند الاستلام متاح على جميع الطلبات. المنتجات المفتوحة غير قابلة للإرجاع حفاظًا على سلامتكِ."], en: ["FAQ", "Everything you need to know.", "We deliver across Egypt in 2–5 business days. Cash on delivery is available on all orders. Opened products cannot be returned for your safety."] },
-    shipping: { ar: ["الشحن والتوصيل", "من القاهرة إلى بابكِ.", "تصل طلباتكِ خلال 2 إلى 5 أيام عمل. الشحن مجاني للطلبات فوق 900 ج.م، ورسوم الشحن 60 ج.م للطلبات الأقل."], en: ["Shipping", "From Cairo to your door.", "Orders arrive within 2–5 business days. Delivery is complimentary on orders over 900 EGP, and 60 EGP below that."] },
+    shipping: { ar: ["الشحن والتوصيل", "من القاهرة إلى بابكِ.", "تصل طلباتكِ خلال 2 إلى 5 أيام عمل. الشحن مجاني للطلبات فوق 1000 ج.م، ورسوم الشحن 60 ج.م للطلبات الأقل."], en: ["Shipping", "From Cairo to your door.", "Orders arrive within 2–5 business days. Delivery is complimentary on orders over 1000 EGP, and 60 EGP below that."] },
     returns: { ar: ["الاستبدال والإرجاع", "مساحتكِ الآمنة.", "يمكن إرجاع المنتجات غير المفتوحة خلال 14 يومًا من الاستلام. تواصلي معنا عبر واتساب لنساعدكِ خطوة بخطوة."], en: ["Returns", "A safe space to change your mind.", "Unopened products can be returned within 14 days of delivery. Contact us on WhatsApp and we'll help you through it."] },
     account: { ar: ["حسابي", "أهلًا بكِ في LUBNÉL.", "يمكنكِ متابعة طلباتكِ والتواصل معنا مباشرة عبر واتساب. سنساعدكِ في كل خطوة من اختيار المنتجات حتى وصولها."], en: ["Account", "Welcome to LUBNÉL.", "Follow your orders and reach us directly on WhatsApp. We'll be with you from discovery to delivery."] },
   };
@@ -1943,7 +1943,7 @@ export function StaticView({ lang, type }: { lang: "ar" | "en"; type: string }) 
                   ))}
                 </tbody>
               </table>
-              <p className="ship-note"><Truck size={15} />{ar ? "رسوم الشحن ٦٠ ج.م، ومجاني للطلبات فوق ٩٠٠ ج.م — على كل المناطق." : "Shipping is 60 EGP, free on orders over 900 EGP — across all zones."}</p>
+              <p className="ship-note"><Truck size={15} />{ar ? "رسوم الشحن ٦٠ ج.م، ومجاني للطلبات فوق ١٠٠٠ ج.م — على كل المناطق." : "Shipping is 60 EGP, free on orders over 1000 EGP — across all zones."}</p>
             </div>
           )}
           {type === "returns" && (

@@ -76,7 +76,7 @@ export function HomeSections({
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-7">
           <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-3 sm:gap-4">
             {[
-              { vid: '/icons/truck.webm', vh: 'h-12 sm:h-14', t: s ? (ar ? s.trust1TitleAr : s.trust1TitleEn) : ar ? 'شحن مجاني' : 'Free shipping', s: s ? (ar ? s.trust1SubAr : s.trust1SubEn) : ar ? 'للطلبات فوق 900 ج.م' : 'over 900 EGP' },
+              { vid: '/icons/truck.webm', vh: 'h-12 sm:h-14', t: s ? (ar ? s.trust1TitleAr : s.trust1TitleEn) : ar ? 'شحن مجاني' : 'Free shipping', s: s ? (ar ? s.trust1SubAr : s.trust1SubEn) : ar ? 'للطلبات فوق 1000 ج.م' : 'over 1000 EGP' },
               { vid: '/icons/badge-check.webm', vh: 'h-14 sm:h-16', t: s ? (ar ? s.trust2TitleAr : s.trust2TitleEn) : ar ? 'منتجات أصلية' : 'Authentic products', s: s ? (ar ? s.trust2SubAr : s.trust2SubEn) : ar ? 'مصادر موثوقة 100%' : '100% trusted sources' },
               { vid: '/icons/gift-box.webm', vh: 'h-14 sm:h-16', t: s ? (ar ? s.trust3TitleAr : s.trust3TitleEn) : ar ? 'بوكسات جاهزة للإهداء' : 'Gift-ready boxes', s: s ? (ar ? s.trust3SubAr : s.trust3SubEn) : ar ? 'تغليف أنيق لكل طلب' : 'elegant packaging' },
             ].map(({ vid, vh, t: title, s }, i) => (
