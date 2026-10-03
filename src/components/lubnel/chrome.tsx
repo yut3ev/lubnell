@@ -47,7 +47,7 @@ export function Header({ lang, setLang, cartCount, wishCount, onSearch, announce
     <>
       <div className="announcement">
         <span>{announcement ? (ar ? announcement.ar : announcement.en) : (ar ? "شحن مجاني للطلبات فوق 1000 ج.م · توصيل لكل مصر" : "Complimentary delivery over 1000 EGP · Nationwide shipping")}</span>
-        <a href="#/track" className="announcement-track">{ar ? "تتبعي طلبكِ" : "Track order"}</a>
+        <a href="/track" className="announcement-track">{ar ? "تتبعي طلبكِ" : "Track order"}</a>
       </div>
       <header className="site-header">
         <div className="header-inner">

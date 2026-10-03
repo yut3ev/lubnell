@@ -41,6 +41,9 @@ const EMPTY = {
   description: '', image: '', badgeAr: '', categoryId: '', featured: false, published: true,
 };
 
+// RESTOCK-ALERTS — one row per «أعلمني لما يتوفر» request from the storefront
+type RestockAlertRow = { slug: string; productName: string; phone: string; at: string; done: boolean };
+
 export default function ProductsSection() {
   const [products, setProducts] = useState<Product[] | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -54,6 +57,23 @@ export default function ProductsSection() {
   const [variantGroups, setVariantGroups] = useState<VariantGroup[]>([]);
   const [variantUploading, setVariantUploading] = useState<string | null>(null);
   const { toast } = useToast();
+  // RESTOCK-ALERTS — the «أعلمني لما يتوفر» queue from the storefront
+  const [restockAlerts, setRestockAlerts] = useState<RestockAlertRow[]>([]);
+  const [showRestock, setShowRestock] = useState(false);
+
+  async function saveRestockAlerts(next: RestockAlertRow[], msg: string) {
+    const r = await apiJson('/api/admin/settings', { method: 'POST', body: JSON.stringify({ key: 'restock_alerts', alerts: next }) });
+    if (r.ok) {
+      setRestockAlerts(next);
+      toast({ title: msg });
+    } else toast({ title: 'تعذر الحفظ', variant: 'destructive' });
+  }
+
+  function waLink(phone: string, productName: string) {
+    const digits = phone.replace(/[^0-9]/g, '');
+    const intl = digits.startsWith('0') ? '2' + digits : digits;
+    return `https://wa.me/${intl}?text=${encodeURIComponent(`مرحبًا 🌸 من LUBNÉL — المنتج اللي طلبتي إشعار عنه بقى متوفر: ${productName} 🎉 تقدري تطلبيه من: https://lubnel.vercel.app`)}`;
+  }
 
   const load = useCallback(async () => {
     const [p, c] = await Promise.all([
@@ -63,6 +83,10 @@ export default function ProductsSection() {
     if (p.ok && p.data?.ok) setProducts(p.data.products);
     else setProducts([]);
     if (c.ok && c.data?.ok) setCategories(c.data.categories);
+    // RESTOCK-ALERTS — pending notify-me queue for the sold-out products
+    const ra = await apiJson<{ ok: boolean; settings?: { alerts?: RestockAlertRow[] } } | null>('/api/admin/settings?key=restock_alerts').catch(() => null);
+    const list = ra?.ok && Array.isArray(ra.settings?.alerts) ? ra.settings!.alerts : [];
+    setRestockAlerts(list.filter((a) => a && typeof a === 'object'));
   }, []);
 
   useEffect(() => {
@@ -191,6 +215,59 @@ export default function ProductsSection() {
 
   return (
     <div className="space-y-4">
+      {/* RESTOCK-ALERTS — pending «أعلمني لما يتوفر» queue */}
+      {restockAlerts.filter((a) => !a.done).length > 0 && (
+        <div className="rounded-2xl border border-amber-300/60 bg-amber-50/60 p-4">
+          <button
+            onClick={() => setShowRestock((s) => !s)}
+            className="flex w-full items-center justify-between text-sm font-black text-amber-900"
+            aria-expanded={showRestock}
+          >
+            <span>🔔 تنبيهات «أعلمني لما يتوفر» — {restockAlerts.filter((a) => !a.done).length} طلب</span>
+            <span className="text-xs font-bold">{showRestock ? 'إخفاء' : 'عرض'}</span>
+          </button>
+          {showRestock && (
+            <ul className="mt-3 space-y-2">
+              {restockAlerts.filter((a) => !a.done).map((a, i) => (
+                <li key={`${a.slug}-${a.phone}-${i}`} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-card px-3 py-2 text-sm">
+                  <span>
+                    <strong>{a.productName}</strong>
+                    <span className="mx-2 text-muted-foreground" dir="ltr">{a.phone}</span>
+                    <span className="text-[11px] text-muted-foreground">{new Date(a.at).toLocaleDateString('ar-EG')}</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <a
+                      href={waLink(a.phone, a.productName)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white"
+                    >
+                      واتساب العميل
+                    </a>
+                    <button
+                      onClick={() => saveRestockAlerts(restockAlerts.map((x) => (x === a ? { ...x, done: true } : x)), 'تم التعليم كمُشعَر')}
+                      className="rounded-full border border-border px-3 py-1 text-[11px] font-bold"
+                    >
+                      تم الإشعار ✓
+                    </button>
+                    <button
+                      onClick={() => saveRestockAlerts(restockAlerts.filter((x) => x !== a), 'تم الحذف')}
+                      className="rounded-full px-2 py-1 text-[11px] font-bold text-muted-foreground hover:text-destructive"
+                      aria-label="حذف التنبيه"
+                    >
+                      حذف
+                    </button>
+                  </span>
+                </li>
+              ))}
+              <li className="text-[11px] text-muted-foreground">
+                رفعي المخزون من نموذج المنتج الأول، وبعدين اضغطي «واتساب العميل» لكل طلب — الرسالة جاهزة تلقائيًا.
+              </li>
+            </ul>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-2.5">
         <div className="relative min-w-52 flex-1 sm:max-w-xs">
           <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />

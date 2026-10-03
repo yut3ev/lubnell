@@ -53,6 +53,9 @@ export function SearchDialogV2({ open, onOpenChange }: { open: boolean; onOpenCh
   const searchedState = useState(false);
   const searched = searchedState[0];
   const setSearched = searchedState[1];
+  const catsState = useState<{ id: string; slug: string; nameAr: string; nameEn?: string }[]>([]);
+  const cats = catsState[0];
+  const setCats = catsState[1];
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -60,7 +63,16 @@ export function SearchDialogV2({ open, onOpenChange }: { open: boolean; onOpenCh
       setQ('');
       setHits([]);
       setSearched(false);
+      return;
     }
+    // SEARCH-FUZZY — live categories for the empty-results suggestions
+    fetch('/api/store/bootstrap')
+      .then((r) => r.json())
+      .then((d) => {
+        const list = d?.categories || d?.data?.categories || [];
+        setCats(Array.isArray(list) ? list.slice(0, 8) : []);
+      })
+      .catch(() => {});
   }, [open, setHits, setQ, setSearched]);
 
   useEffect(() => {
@@ -163,10 +175,30 @@ export function SearchDialogV2({ open, onOpenChange }: { open: boolean; onOpenCh
           )}
 
           {searched && !loading && hits.length === 0 && (
-            <p className="flex flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
-              <SearchX className="h-6 w-6 text-muted-foreground/50" aria-hidden />
-              {t.searchNoResults.split('{q}').join(q.trim())}
-            </p>
+            <div className="flex flex-col items-center gap-4 py-8 text-center">
+              <p className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
+                <SearchX className="h-6 w-6 text-muted-foreground/50" aria-hidden />
+                {t.searchNoResults.split('{q}').join(q.trim())}
+              </p>
+              {/* SEARCH-FUZZY — empty results offer the live categories instead
+                  of a dead end (the categories come from the same bootstrap the
+                  storefront already caches) */}
+              {cats.length > 0 && (
+                <div className="flex max-w-sm flex-wrap items-center justify-center gap-2">
+                  <span className="text-xs font-bold text-muted-foreground">{ar ? 'تصفحي التصنيفات:' : 'Browse categories:'}</span>
+                  {cats.slice(0, 6).map((c) => (
+                    <Link
+                      key={c.id}
+                      href={`/c/${c.slug}`}
+                      onClick={() => onOpenChange(false)}
+                      className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-bold text-foreground/75 transition-colors hover:border-primary/40 hover:text-primary"
+                    >
+                      {ar ? c.nameAr : c.nameEn || c.nameAr}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           {!searched && (

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from '@/lib/constants';
 import { incrementCouponUsage, validateCoupon } from '@/lib/coupons';
+import { sendOrderConfirmationEmail } from '@/lib/order-emails';
 import { requestMeta } from '@/lib/admin-auth';
 import { clientIpFromHeaders } from '@/lib/client-ip';
 
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
       );
     }
     const body = await req.json();
-    const { customerName, phone, city, address, notes, items, couponCode } = body as {
+    const { customerName, phone, city, address, notes, items, couponCode, email } = body as {
       customerName?: string;
       phone?: string;
       city?: string;
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest) {
       notes?: string;
       items?: IncomingItem[];
       couponCode?: string;
+      email?: string; // ORDER-NOTIFY — transient confirmation email (not stored)
     };
 
     if (!customerName?.trim() || !phone?.trim() || !city?.trim() || !address?.trim()) {
@@ -101,7 +103,38 @@ export async function POST(req: NextRequest) {
     }
 
     const subtotal = orderItems.reduce((s, i) => s + i.price * i.qty, 0);
-    const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
+
+    // SHIP-ZONES-2026-10 — server-side shipping now mirrors the client cart:
+    // settings bag (fee / free-shipping threshold / per-governorate zones)
+    // with the baked constants only as fallbacks. Lines format:
+    // «المحافظة | الشحن | مدة التوصيل»
+    let threshold = FREE_SHIPPING_THRESHOLD;
+    let baseFee = SHIPPING_FEE;
+    let zonesText = '';
+    try {
+      const storeRow = await db.storeSettings.findUnique({ where: { key: 'store' } });
+      const bag = JSON.parse(storeRow?.value || '{}') as Record<string, unknown>;
+      const t = Number(bag.freeShippingThreshold);
+      const f = Number(bag.shippingFee);
+      if (Number.isFinite(t) && t >= 0) threshold = t;
+      if (Number.isFinite(f) && f >= 0) baseFee = f;
+      if (typeof bag.shippingZonesText === 'string') zonesText = bag.shippingZonesText;
+    } catch {
+      // settings hiccup → baked constants
+    }
+    const zone = (() => {
+      if (!zonesText.trim()) return null;
+      const cityNorm = (city || '').trim();
+      for (const line of zonesText.split('\n')) {
+        const parts = line.split('|').map((p) => p.trim());
+        if (parts.length >= 2 && parts[0] && parts[0] === cityNorm) {
+          const fee = Number(parts[1]);
+          return { fee: Number.isFinite(fee) && fee >= 0 ? fee : baseFee, days: parts[2] || '' };
+        }
+      }
+      return null;
+    })();
+    const shipping = subtotal >= threshold ? 0 : zone ? zone.fee : baseFee;
 
     // coupon: always re-validated server-side against the real subtotal
     let discount = 0;
@@ -144,6 +177,20 @@ export async function POST(req: NextRequest) {
 
     if (appliedCoupon) await incrementCouponUsage(appliedCoupon);
 
+    // ORDER-NOTIFY — optional confirmation email; never blocks/fails the order
+    let emailSent = false;
+    if (email?.trim()) {
+      emailSent = await sendOrderConfirmationEmail(email, {
+        orderNumber: order.orderNumber,
+        customerName: order.customerName,
+        city: order.city,
+        subtotal: order.subtotal,
+        shipping: order.shipping,
+        total: order.total,
+        items: order.items.map((i) => ({ nameAr: i.nameAr, qty: i.qty, price: i.price, variant: i.variant })),
+      });
+    }
+
     return NextResponse.json({
       ok: true,
       order: {
@@ -154,6 +201,7 @@ export async function POST(req: NextRequest) {
         couponCode: order.couponCode,
         itemCount: order.items.length,
       },
+      emailSent,
     });
   } catch (err) {
     console.error('[orders]', err);

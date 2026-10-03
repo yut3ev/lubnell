@@ -109,6 +109,10 @@ export async function GET() {
     const deliveryTime = typeof bag.deliveryTime === 'string' ? bag.deliveryTime.trim() : '';
     const minOrderTotal = num(bag.minOrderTotal, 0);
     const storeName = str(bag.storeName, DEFAULTS.storeName);
+    // ANALYTICS-2026-10 — Meta Pixel / GA4 ids from the Studio store card
+    // (empty = disabled; the storefront loader injects nothing when empty)
+    const metaPixelId = typeof bag.metaPixelId === 'string' ? bag.metaPixelId.trim() : '';
+    const ga4Id = typeof bag.ga4Id === 'string' ? bag.ga4Id.trim() : '';
 
     return NextResponse.json(
       {
@@ -131,6 +135,9 @@ export async function GET() {
         currency,
         deliveryTime,
         minOrderTotal,
+        metaPixelId,
+        ga4Id,
+        shippingZonesText: typeof bag.shippingZonesText === 'string' ? bag.shippingZonesText : '',
       },
       // U60-CACHE-FLASH — never let any HTTP cache (browser/proxy) serve a
       // stale bootstrap payload; consumers already fetch with no-store, this

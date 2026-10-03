@@ -4,12 +4,30 @@ import { confirmDialog } from '@/components/ui/confirm-service';
 
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Download, Loader2, Trash2 } from 'lucide-react';
+import { ChevronDown, Download, Loader2, MessageCircle, Trash2 } from 'lucide-react';
 import { apiJson, EGP, fmtDate, ORDER_STATUSES, orderNo, STATUS_CLASS, STATUS_LABEL } from '../helpers';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
 type OrderItem = { nameAr: string; qty: number; price: number };
+
+// ORDER-NOTIFY — wa.me deep link with a pre-filled status message for the
+// customer (phone stored as local 01xxx → international 201xxx for wa.me)
+function waStatusHref(o: { phone: string; customerName: string; orderNumber: string | null; id: string; status: string }): string {
+  const digits = o.phone.replace(/[^0-9]/g, '');
+  const intl = digits.startsWith('0') ? '2' + digits : digits;
+  const no = o.orderNumber || orderNo(o.id);
+  const base = `مرحبًا ${o.customerName} 🌸 من LUBNÉL — بخصوص طلبكِ ${no}: `;
+  let msg = base;
+  switch (o.status) {
+    case 'confirmed': msg += 'تم تأكيد طلبكِ وبدأنا تجهيزه فورًا 🌟'; break;
+    case 'shipped': msg += 'تم شحن طلبكِ وهو في الطريق إليكِ 🚚 تقدري تتابعيه من: https://lubnel.vercel.app/track'; break;
+    case 'delivered': msg += 'تم تسليم طلبكِ 🌸 نرجو أن يكون سعدتي به — رأيكِ يهمنا جدًا!'; break;
+    case 'cancelled': msg += 'تم إلغاء الطلب — لو ده مش قراركِ راسلينا ونظبطها فورًا.'; break;
+    default: msg += 'استلمنا طلبكِ وقيد المراجعة.';
+  }
+  return `https://wa.me/${intl}?text=${encodeURIComponent(msg)}`;
+}
 type Order = {
   id: string;
   orderNumber: string | null;
@@ -164,6 +182,18 @@ export default function OrdersSection() {
                           <option key={s} value={s}>{STATUS_LABEL[s]}</option>
                         ))}
                       </select>
+                      {/* ORDER-NOTIFY — one-tap WhatsApp status update to the customer
+                          (wa.me is click-to-send; a fully-automatic send needs a
+                          WhatsApp Business API provider) */}
+                      <a
+                        href={waStatusHref(o)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-1.5 flex items-center justify-center gap-1 rounded-full border border-emerald-600/30 bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-700 transition-colors hover:bg-emerald-100"
+                        title="فتح واتساب برسالة تحديث الحالة جاهزة للعميل"
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" /> واتساب العميل
+                      </a>
                     </td>
                     <td className="px-4 py-3">
                       <button

@@ -13,7 +13,7 @@ import { db } from "@/lib/db"; // U56-HOTFIX — bare `db` ReferenceError'd at r
 
 export const dynamic = "force-dynamic";
 
-const KEYS = ["store", "texts", "theme", "brand", "seo", "smtp", "maintenance"] as const;
+const KEYS = ["store", "texts", "theme", "brand", "seo", "smtp", "maintenance", "restock_alerts"] as const;
 type SettingsKey = (typeof KEYS)[number];
 
 function resolveKey(raw: unknown): SettingsKey {

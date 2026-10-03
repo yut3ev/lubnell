@@ -35,6 +35,9 @@ type StoreSettings = {
   deliveryTime?: string;
   codEnabled?: boolean;
   whatsappMessage?: string;
+  metaPixelId?: string;
+  ga4Id?: string;
+  shippingZonesText?: string;
   instagramUrl?: string;
   facebookUrl?: string;
   storeDescriptionAr?: string;
@@ -595,6 +598,14 @@ function StoreTab() {
             <Input dir="ltr" className="text-left" value={sForm.whatsappNumber || ''} onChange={(e) => setS({ whatsappNumber: e.target.value })} placeholder="201000000000" />
           </div>
           <div className={field}>
+            <Label>Meta Pixel ID (اختياري)</Label>
+            <Input dir="ltr" className="text-left" value={sForm.metaPixelId || ''} onChange={(e) => setS({ metaPixelId: e.target.value })} placeholder="1234567890123456" />
+          </div>
+          <div className={field}>
+            <Label>Google Analytics 4 ID (اختياري)</Label>
+            <Input dir="ltr" className="text-left" value={sForm.ga4Id || ''} onChange={(e) => setS({ ga4Id: e.target.value })} placeholder="G-XXXXXXXXXX" />
+          </div>
+          <div className={field}>
             <Label>العملة</Label>
             <select
               value={CURRENCY_OPTIONS.some((o) => o.value === (sForm.currency || '')) ? sForm.currency || '' : 'OTHER'}
@@ -829,6 +840,21 @@ function ShippingTab() {
             <Label>مدة التوصيل المتوقعة</Label>
             <Input value={form.deliveryTime || ''} onChange={(e) => set({ deliveryTime: e.target.value })} placeholder="2–5 أيام" />
             <p className="text-[11px] text-muted-foreground">تظهر في صفحة المنتج وفي السلة — مثال: «2–5 أيام».</p>
+          </div>
+          <div className={field + ' sm:col-span-2'}>
+            <Label>شحن حسب المحافظة (اختياري)</Label>
+            <textarea
+              dir="rtl"
+              value={form.shippingZonesText || ''}
+              onChange={(e) => set({ shippingZonesText: e.target.value })}
+              rows={5}
+              placeholder={'القاهرة | 60 | 2-3\nالجيزة | 60 | 2-4\nأسوان | 90 | 5-7'}
+              className="w-full rounded-xl border border-border bg-background p-3 text-sm leading-relaxed outline-none focus:border-primary"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              سطر لكل محافظة بالشكل: <span dir="ltr">المحافظة | سعر الشحن | مدة التوصيل</span> — المحافظة لازم تطابق الاسم اللي بتتكتب في السلة.
+              اللي مكتوبش له سطر بياخد سعر الشحن الثابت اللي فوق، والشحن المجاني بيفوق عليه لما الطلب يوصل حد الحد الأدنى.
+            </p>
           </div>
         </div>
         <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-border/50 bg-secondary/20 px-3.5 py-3 text-sm font-bold">

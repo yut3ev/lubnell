@@ -1,6 +1,7 @@
 import { StoreHeader } from "@/components/store/header";
 import { StoreFooter } from "@/components/store/footer";
 import { AssistantWidget } from "@/components/store/assistant";
+import { AnalyticsScripts } from "@/components/store/analytics-scripts";
 import { BottomNav } from "@/components/store/bottom-nav";
 import { MaintenanceScreen } from "@/components/store/maintenance-screen";
 import VisitTracker from "@/components/store/visit-tracker";
@@ -155,6 +156,7 @@ export default async function StoreLayout({
       <AssistantWidget />
       <BottomNav />
       <VisitTracker />
+      <AnalyticsScripts />
       </TextsProvider>
     </div>
   );

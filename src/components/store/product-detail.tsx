@@ -13,7 +13,7 @@ import {
   MessageCircle,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, CheckCircle2, ZoomIn } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useCart, WHATSAPP_NUMBER } from '@/lib/cart-store';
 import type { ProductVariants } from '@/lib/lubnel-types';
@@ -60,6 +60,11 @@ export function ProductDetail({
   useEffect(() => { void useStorePrefs.getState().ensure(); }, []);
   const add = useCart((s) => s.add);
   const [qty, setQty] = useState(1);
+  // RESTOCK-ALERTS — notify-me state for sold-out products
+  const [notifyPhone, setNotifyPhone] = useState('');
+  const [notifyBusy, setNotifyBusy] = useState(false);
+  const [notifyDone, setNotifyDone] = useState(false);
+  const [notifyError, setNotifyError] = useState('');
   // U14 — gallery selector + hover zoom + selectable variants + sticky mobile ATC
   // U58-GALLERY — professional gallery: swipe + arrows + counter + dots + lightbox
   // Selected image is stored as URL (not index) so switching products
@@ -419,6 +424,67 @@ export function ProductDetail({
               {t.buyNow}
             </Button>
           </div>
+
+          {/* RESTOCK-ALERTS-2026-10 — sold-out products offer a phone-capture
+              notify form; the Studio products screen turns the queue into
+              one-tap WhatsApp messages once the stock is back. */}
+          {product.stock <= 0 && (
+            <div className="rounded-2xl border border-border/70 bg-card p-4">
+              {notifyDone ? (
+                <p className="flex items-center gap-2 text-sm font-bold text-emerald-700">
+                  <CheckCircle2 className="h-4.5 w-4.5" /> {ar ? 'تم تسجيل رقمكِ — هنكلمك أول ما المنتج يتوفر 🌸' : 'Phone saved — we will call you once it is back 🌸'}
+                </p>
+              ) : (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (notifyBusy || !notifyPhone.trim()) return;
+                    setNotifyBusy(true);
+                    setNotifyError('');
+                    try {
+                      const res = await fetch('/api/restock-alerts', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ slug: product.slug, phone: notifyPhone.trim() }),
+                      });
+                      const data = await res.json().catch(() => null);
+                      if (res.ok && data?.ok) {
+                        setNotifyDone(true);
+                      } else {
+                        setNotifyError(data?.error || (ar ? 'تعذر التسجيل — جربي تاني' : 'Could not save — try again'));
+                      }
+                    } catch {
+                      setNotifyError(ar ? 'تعذر الاتصال — جربي تاني' : 'Connection error — try again');
+                    } finally {
+                      setNotifyBusy(false);
+                    }
+                  }}
+                  className="flex flex-col gap-2"
+                >
+                  <p className="text-sm font-bold">{ar ? 'نفدت الكمية — أعلمني لما تتوفر تاني' : 'Sold out — notify me when it is back'}</p>
+                  <div className="flex gap-2">
+                    <input
+                      value={notifyPhone}
+                      onChange={(e) => setNotifyPhone(e.target.value)}
+                      dir="ltr"
+                      inputMode="tel"
+                      placeholder={ar ? 'رقم موبايلك' : 'Your phone'}
+                      aria-label={ar ? 'رقم الموبايل للتنبيه عند التوفر' : 'Phone for restock alert'}
+                      className="h-11 flex-1 rounded-full border border-border bg-background px-4 text-left text-sm outline-none focus:border-primary"
+                    />
+                    <button
+                      type="submit"
+                      disabled={notifyBusy}
+                      className="h-11 shrink-0 rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-60"
+                    >
+                      {notifyBusy ? '…' : ar ? 'أعلمني' : 'Notify me'}
+                    </button>
+                  </div>
+                  {notifyError && <p className="text-xs font-bold text-destructive">{notifyError}</p>}
+                </form>
+              )}
+            </div>
+          )}
 
           {/* whatsapp direct order — number from Studio settings when set */}
           <a

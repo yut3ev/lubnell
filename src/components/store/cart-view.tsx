@@ -88,6 +88,7 @@ let shippingSettingsCache: Promise<{
   codEnabled: boolean;
   currency?: string;
   minOrderTotal: number;
+  shippingZonesText: string;
 }> | null = null;
 
 function loadShippingSettings() {
@@ -108,6 +109,7 @@ function loadShippingSettings() {
         codEnabled: d?.codEnabled !== false,
         currency: typeof d?.currency === 'string' && d.currency.trim() ? d.currency.trim() : undefined,
         minOrderTotal: Number.isFinite(min) && min > 0 ? min : 0,
+        shippingZonesText: typeof d?.shippingZonesText === 'string' ? d.shippingZonesText : '',
       };
     })
     .catch(() => ({
@@ -115,6 +117,7 @@ function loadShippingSettings() {
       freeShippingThreshold: FREE_SHIPPING_THRESHOLD,
       codEnabled: true,
       minOrderTotal: 0,
+      shippingZonesText: '',
     }));
   return shippingSettingsCache;
 }
@@ -135,11 +138,13 @@ export function CartView({ whatsapp }: { whatsapp?: string }) {
     codEnabled: boolean;
     currency?: string;
     minOrderTotal: number;
+    shippingZonesText: string;
   }>({
     shippingFee: SHIPPING_FEE,
     freeShippingThreshold: FREE_SHIPPING_THRESHOLD,
     codEnabled: true,
     minOrderTotal: 0,
+    shippingZonesText: '',
   });
   useEffect(() => {
     let dead = false;
@@ -151,16 +156,33 @@ export function CartView({ whatsapp }: { whatsapp?: string }) {
     };
   }, []);
 
-  const { subtotal, shipping } = cartTotals(items, ship);
+  const { subtotal, shipping: baseShipping } = cartTotals(items, ship);
   // U19-SETTINGS — the currency label she sets in Studio → بيانات المتجر
   const money = (v: number) => `${v.toLocaleString('en-US')} ${ship.currency || t.egp}`;
   // U19-SETTINGS — minimum order total enforcement
   const belowMin = ship.minOrderTotal > 0 && subtotal < ship.minOrderTotal;
 
-  const [form, setForm] = useState({ customerName: '', phone: '', city: '', address: '', notes: '' });
+  const [form, setForm] = useState({ customerName: '', phone: '', email: '', city: '', address: '', notes: '' });
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
+
+  // SHIP-ZONES — per-governorate fee/eta from the Studio zones table
+  // («المحافظة | الشحن | مدة التوصيل» per line). Falls back to the flat fee.
+  const zone = (() => {
+    const city = (form.city || '').trim();
+    if (!city || !ship.shippingZonesText) return null;
+    for (const line of ship.shippingZonesText.split('\n')) {
+      const parts = line.split('|').map((p) => p.trim());
+      if (parts.length >= 2 && parts[0] && parts[0] === city) {
+        const fee = Number(parts[1]);
+        return { fee: Number.isFinite(fee) && fee >= 0 ? fee : baseShipping, days: parts[2] || '' };
+      }
+    }
+    return null;
+  })();
+  const freeShipping = subtotal >= ship.freeShippingThreshold;
+  const shipping = freeShipping ? 0 : zone ? zone.fee : baseShipping;
   // U23-CHECKOUT-MOBILE — phones collapse the summary to one row; sm+ stays open
   const [summaryOpen, setSummaryOpen] = useState(false);
 
@@ -265,6 +287,9 @@ export function CartView({ whatsapp }: { whatsapp?: string }) {
       const message = `${greeting}\nأريد تأكيد الطلب ${orderNumber}:\n\n${lines}\n\nالمجموع الفرعي: ${money(subtotal)}${applied ? `\nكود الخصم ${applied.code}: -${money(applied.discount)}` : ''}\nالشحن: ${shipping === 0 ? 'مجاني' : money(shipping)}\nالإجمالي: ${money(finalTotal)}\n\nبيانات التوصيل:\nالاسم: ${form.customerName}\nالهاتف: ${form.phone}\nالعنوان: ${form.city} — ${form.address}${form.notes ? `\nملاحظات: ${form.notes}` : ''}${(form as Record<string, unknown>).giftNote ? `\nبطاقة إهداء: ${(form as Record<string, unknown>).giftNote as string}` : ''}${ship.codEnabled ? `\n\nطريقة الدفع: الدفع عند الاستلام` : ''}`;
       window.open(`https://wa.me/${(whatsapp || WHATSAPP_NUMBER).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
 
+      if (data.emailSent) {
+        toast({ title: ar ? 'بعتنا تأكيد الطلب على إيميلكِ ✓' : 'Confirmation email sent ✓' });
+      }
       setOrderId(data.order.id);
       trackVisit('order_placed', data.order.id);
       clear();
@@ -536,6 +561,22 @@ export function CartView({ whatsapp }: { whatsapp?: string }) {
                 <p id="phone-error" className="text-xs font-bold text-destructive">{errors.phone}</p>
               )}
             </div>
+            {/* ORDER-NOTIFY — optional email for the automatic confirmation email */}
+            <div className="grid gap-1.5">
+              <Label htmlFor="customerEmail">
+                {ar ? 'الإيميل (اختياري)' : 'Email (optional)'}
+                <span className="ms-1 text-xs font-normal text-muted-foreground">— {ar ? 'لتصلك تأكيدات الطلب' : 'for order confirmations'}</span>
+              </Label>
+              <Input
+                id="customerEmail"
+                dir="ltr"
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="you@example.com"
+                className="h-12 bg-background text-left text-base"
+              />
+            </div>
             <div className="grid gap-1.5">
               <Label htmlFor="city">{t.city}</Label>
               <Input
@@ -558,6 +599,11 @@ export function CartView({ whatsapp }: { whatsapp?: string }) {
               )}
               {touched.city && errors.city && (
                 <p id="city-error" className="text-xs font-bold text-destructive">{errors.city}</p>
+              )}
+              {zone && !freeShipping && (
+                <p className="text-xs font-bold text-emerald-700">
+                  الشحن إلى {form.city.trim()}: {money(zone.fee)}{zone.days ? ` — التوصيل خلال ${zone.days}` : ''}
+                </p>
               )}
             </div>
             <div className="grid gap-1.5">
