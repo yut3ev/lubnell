@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { PackageSearch } from 'lucide-react';
-import { AiStylistBanner } from '@/components/store/ai-stylist-banner';
+import { LuAssistantCard } from '@/components/store/lu-assistant-card'; // LU-ASSISTANT-2026-10
 import { FilterableProductGrid } from '@/components/store/catalog-filters';
 import { type ProductCardData } from '@/components/store/product-card';
 import { useT } from '@/lib/i18n';
@@ -48,7 +48,9 @@ export function CatalogPageView({
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
-      <AiStylistBanner />
+      {/* LU-ASSISTANT-2026-10 — the new reference «اسألي لُو» card replaced the
+          old wine AI-stylist banner here (owner: شيل البانر القديم وحط الجديد). */}
+      <LuAssistantCard />
 
       {/* heading */}
       <div className="mt-10 flex flex-wrap items-end justify-between gap-3">

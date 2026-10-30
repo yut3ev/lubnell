@@ -47,6 +47,24 @@ export function AssistantWidget() {
     return () => window.removeEventListener('open-lou', openLou);
   }, []);
 
+  // LU-ASSISTANT-2026-10 — the «اسألي لُو» gift card fires a cancelable
+  // lu:open with {occasion, budget, item}; we ARE the chat window, so cancel
+  // the navigation and open here with the context prefilled for her to send.
+  useEffect(() => {
+    const onLuOpen = (e: Event) => {
+      e.preventDefault();
+      const d = (e as CustomEvent<{ occasion?: string; budget?: number; item?: string }>).detail || {};
+      const parts: string[] = [];
+      if (d.occasion) parts.push(`بدور على هدية لـ${d.occasion}`);
+      if (d.budget) parts.push(`ميزانيتي حتى ${d.budget} جنيه`);
+      if (d.item) parts.push(`شفت «${d.item}» وحابة رأيك`);
+      setOpen(true);
+      if (parts.length) setInput(`${parts.join('، ')} — تقترحيلي إيه؟`);
+    };
+    window.addEventListener('lu:open', onLuOpen);
+    return () => window.removeEventListener('lu:open', onLuOpen);
+  }, []);
+
   async function send(text: string) {
     const content = text.trim();
     if (!content || busy) return;

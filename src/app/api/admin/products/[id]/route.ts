@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { invalidateCatalog } from '@/lib/settings-cache'; // U54-PERF-ROBUST
 import { requireAdmin, writeAudit } from '@/lib/admin-auth';
+import { notifyRestockSubscribers } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,6 +38,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         ? JSON.stringify(b.gallery.map((g: unknown) => String(g)).filter(Boolean).slice(0, 12))
         : null;
     }
+    const prev = await db.product.findUnique({ where: { id }, select: { stock: true, slug: true, nameAr: true } });
     const product = await db.product.update({ where: { id }, data });
     await writeAudit({
       actor: admin.username,
@@ -46,7 +48,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       meta: { ip: req.headers.get('x-forwarded-for') || undefined },
     });
     invalidateCatalog(); // U54-PERF-ROBUST
-    return NextResponse.json({ ok: true, product });
+
+    // PUSH×RESTOCK — restocking a sold-out product automatically notifies the
+    // push subscribers + closes the pending «أعلمني لما يتوفر» queue
+    let restockPushed = 0;
+    try {
+      if ((prev?.stock ?? 0) <= 0 && product.stock > 0) {
+        restockPushed = await notifyRestockSubscribers(product.slug, product.nameAr);
+      }
+    } catch {
+      restockPushed = 0; // never fail the product save over a push hiccup
+    }
+    return NextResponse.json({ ok: true, product, restockPushed });
   } catch {
     return NextResponse.json({ ok: false, error: 'تعذر تحديث المنتج' }, { status: 400 });
   }

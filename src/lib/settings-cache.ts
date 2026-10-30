@@ -12,6 +12,7 @@
 // after a successful save, so the owner's edits appear on the very next
 // request. Worst case without a hook is TTL_MS (10s).
 import { db } from '@/lib/db';
+import { invalidateCatalogData } from '@/lib/catalog-cache';
 
 export type SettingsRow = { key: string; value: string };
 
@@ -83,6 +84,8 @@ export async function getSettingRow(key: string): Promise<SettingsRow | null> {
  * catalog cache (categories + featured + counts). Admin product/category
  * writes call invalidateCatalog() so the storefront reflects the owner's
  * changes on the very next request instead of waiting out the TTL.
+ * PERF-2026-11 — the storefront page snapshot (catalog-cache) is zeroed too,
+ * so /, /c/[slug] pick up owner edits on the request right after a save.
  */
 export function invalidateCatalog(): void {
   const g2 = globalThis as unknown as { __lubnelCatalog?: { data?: unknown; refresh?: unknown; at?: number } };
@@ -90,4 +93,5 @@ export function invalidateCatalog(): void {
   if (c) {
     c.at = 0; // force the next request to refetch (in-flight refresh still lands)
   }
+  invalidateCatalogData();
 }

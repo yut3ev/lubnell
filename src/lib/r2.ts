@@ -57,9 +57,15 @@ export function r2PublicUrl(key: string): string | null {
 }
 
 /** Sign with aws4fetch, send with global fetch — the same two steps the
- * library's own client.fetch() performs internally. */
+ * library's own client.fetch() performs internally. SSRF guard: the signed
+ * target must ALWAYS be the R2 API host (the URL is assembled only from
+ * validated env parts + a fixed host suffix — asserted here, not assumed). */
 async function r2Send(req: Request): Promise<Response> {
   const signed = await r2Client().sign(req);
+  const host = new URL(signed.url).hostname;
+  if (!host.endsWith('.r2.cloudflarestorage.com')) {
+    throw new Error('blocked: R2 request target left the Cloudflare API host');
+  }
   return fetch(signed);
 }
 

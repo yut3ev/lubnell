@@ -2,11 +2,11 @@
 
 import { useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, MessageCircleHeart } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { TrustVideo } from '@/components/store/animated-icon-video';
 import { EditorialCard } from '@/components/store/editorial-card';
 import { Reveal } from '@/components/store/reveal';
-import { AiStylistBanner } from '@/components/store/ai-stylist-banner';
+import { LuAssistantCard } from '@/components/store/lu-assistant-card'; // LU-ASSISTANT-2026-10
 import { useT } from '@/lib/i18n';
 import type { SectionTexts } from '@/lib/section-texts';
 import type { ProductCardData } from '@/components/store/product-card';
@@ -268,34 +268,14 @@ export function HomeSections({
       </section>
       )}
 
-      {/* CTA banner — U17: big banner or compact strip template, hideable.
-          U22-OWNER-ARTWORK — the big template now renders the owner's exact
-          reference artwork (the terracotta AI STYLIST banner with the white
-          «اسألي لُو الآن» pill) instead of the plain primary gradient box;
-          the strip keeps Studio copy but its pill opens Lou, not WhatsApp. */}
+      {/* CTA banner — LU-ASSISTANT-2026-10: the owner replaced the old
+          AI-stylist banner (both the big artwork and the compact strip) with
+          the reference «اسألي لُو» card (lu-assistant.html design), wired to
+          the same lu:open channel. Hideable from the home editor as before. */}
       {ctaL.visible && (
-      <section className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
         <Reveal>
-        {ctaL.template === 'strip' ? (
-          <div className="flex flex-col items-center justify-between gap-4 rounded-2xl border border-border/60 bg-card px-5 py-5 shadow-sm sm:flex-row sm:px-7">
-            <div className="text-center sm:text-right">
-              <h2 className="text-base font-extrabold">{s ? (ar ? s.ctaTitleAr : s.ctaTitleEn) : t.askLou}</h2>
-              <p className="mt-0.5 text-xs text-muted-foreground">{s ? (ar ? s.ctaSubAr : s.ctaSubEn) : t.askLouSub}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => window.dispatchEvent(new CustomEvent('open-lou'))}
-              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-primary px-6 text-sm font-bold text-primary-foreground shadow-md transition-transform hover:scale-[1.03] active:scale-[0.97]"
-            >
-              <MessageCircleHeart className="h-4 w-4" aria-hidden />
-              {t.louCta}
-            </button>
-          </div>
-        ) : (
-          <AiStylistBanner media={{ image: ctaL.bannerImage, video: ctaL.bannerVideo }} />
-        )}
+          <LuAssistantCard />
         </Reveal>
-      </section>
       )}
     </>
   );

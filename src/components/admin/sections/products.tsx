@@ -85,7 +85,7 @@ export default function ProductsSection() {
     if (c.ok && c.data?.ok) setCategories(c.data.categories);
     // RESTOCK-ALERTS — pending notify-me queue for the sold-out products
     const ra = await apiJson<{ ok: boolean; settings?: { alerts?: RestockAlertRow[] } } | null>('/api/admin/settings?key=restock_alerts').catch(() => null);
-    const list = ra?.ok && Array.isArray(ra.settings?.alerts) ? ra.settings!.alerts : [];
+    const list = ra?.ok && Array.isArray(ra.data?.settings?.alerts) ? ra.data!.settings!.alerts! : [];
     setRestockAlerts(list.filter((a) => a && typeof a === 'object'));
   }, []);
 
@@ -151,14 +151,19 @@ export default function ProductsSection() {
       ),
     };
     const { ok, data } = editing
-      ? await apiJson(`/api/admin/products/${(modal as Product).id}`, { method: 'PATCH', body: JSON.stringify(body) })
-      : await apiJson('/api/admin/products', { method: 'POST', body: JSON.stringify(body) });
+      ? await apiJson<{ ok: boolean; error?: string; restockPushed?: number }>(`/api/admin/products/${(modal as Product).id}`, { method: 'PATCH', body: JSON.stringify(body) })
+      : await apiJson<{ ok: boolean; error?: string; restockPushed?: number }>('/api/admin/products', { method: 'POST', body: JSON.stringify(body) });
     setSaving(false);
     if (!ok || !data?.ok) {
       toast({ title: editing ? 'تعذر تحديث المنتج' : 'تعذر إنشاء المنتج', description: data?.error, variant: 'destructive' });
       return;
     }
-    toast({ title: editing ? 'تم تحديث المنتج ✓' : 'تمت إضافة المنتج ✓' });
+    toast({
+      title: editing ? 'تم تحديث المنتج ✓' : 'تمت إضافة المنتج ✓',
+      description: data.restockPushed
+        ? `المنتج رجع متوفر — بعتّنا إشعار لـ ${data.restockPushed} مشترك اشترك في «أعلمني لما يتوفر» 🔔`
+        : undefined,
+    });
     setModal(null);
     load();
   }

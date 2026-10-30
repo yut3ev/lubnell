@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   Activity,
   BarChart3,
+  Bell,
   ChevronLeft,
   Eye,
   FileText,
@@ -60,6 +61,7 @@ import ReviewsSection from './sections/reviews';
 import { SectionsEditor } from './sections/sections-editor';
 import { TextEverything } from './sections/text-everything';
 import { NewsletterAdminSection } from './sections/newsletter'; // U71-NEWSLETTER-ADMIN
+import { PushAdminSection } from './sections/push'; // PUSH-2026-10
 import { Button } from '@/components/ui/button';
 
 type Stats = {
@@ -92,6 +94,7 @@ const NAV: { id: string; label: string; icon: React.ComponentType<{ className?: 
   { id: 'reviews', label: 'التقييمات', icon: Star, perm: 'reviews.read' },
   { id: 'customers', label: 'العملاء', icon: Users, perm: 'customers.read' },
   { id: 'newsletter', label: 'النشرة البريدية', icon: MailPlus, perm: 'customers.read' }, // U71-NEWSLETTER-ADMIN
+  { id: 'push', label: 'الإشعارات', icon: Bell, perm: 'products.write' }, // PUSH-2026-10 — same gate as /api/admin/push
   { id: 'visits', label: 'سجل الزيارات', icon: Activity, perm: 'visits.read' },
   { id: 'media', label: 'الوسائط', icon: ImageIcon, perm: 'media.read' },
   { id: 'homepage', label: 'الصفحة الرئيسية', icon: Home, perm: 'homepage.read' },
@@ -236,6 +239,7 @@ export default function AdminDashboard({ admin, onLogout }: { admin: AdminInfo; 
           {section === 'reviews' && <ReviewsSection />}
           {section === 'customers' && <CustomersSection />}
           {section === 'newsletter' && <NewsletterAdminSection />}
+          {section === 'push' && <PushAdminSection />}
           {section === 'visits' && <VisitsSection />}
           {section === 'media' && <MediaSection />}
           {section === 'homepage' && <HomepageSection />}

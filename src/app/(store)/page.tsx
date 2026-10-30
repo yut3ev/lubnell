@@ -1,11 +1,12 @@
 import { db } from '@/lib/db';
+import { getCatalog } from '@/lib/catalog-cache'; // PERF-2026-11
 import type { Metadata } from 'next';
 import { HeroSlider } from '@/components/store/hero-slider';
 import { HomeSections } from '@/components/store/home-sections';
 import { OffersSection } from '@/components/store/offers-section';
 import { CatalogSection } from '@/components/store/catalog-section';
 import { ReviewsSection } from '@/components/store/reviews-section';
-import { NewsletterSection } from '@/components/store/newsletter-section';
+import { LuInviteSection } from '@/components/store/lu-invite-section'; // NV-INVITE-2026-10
 import { resolveSectionTexts } from '@/lib/section-texts';
 import { resolveHomeSections } from '@/lib/home-sections-config';
 import { siteUrl } from '@/lib/site-url'; // U61-JSONLD
@@ -21,12 +22,11 @@ export const metadata: Metadata = {
 
 export default async function Home() {
   const base = siteUrl();
-  const [categories, products, reviews, sectionRows, homeSectionRows, reviewStats, heroSlideRows] = await Promise.all([
-    db.category.findMany({ orderBy: { sortOrder: 'asc' } }),
-    db.product.findMany({
-      where: { published: true },
-      orderBy: [{ featured: 'desc' }, { rating: 'desc' }, { createdAt: 'asc' }],
-    }),
+  // PERF-2026-11 — categories + products come from the process snapshot
+  // (10s TTL + stale-while-error, invalidated on admin saves) instead of two
+  // Turso round trips per pageview.
+  const { categories, products } = await getCatalog();
+  const [reviews, sectionRows, homeSectionRows, reviewStats, heroSlideRows] = await Promise.all([
     db.review.findMany({
       where: { approved: true },
       orderBy: { createdAt: 'desc' },
@@ -63,15 +63,11 @@ export default async function Home() {
   }
   const sectionTexts = resolveSectionTexts(storedSections);
 
-  // U22 — newsletter copy from Studio → النصوص والفوتر (نص النشرة البريدية)
-  let newsletterCopy: { ar?: string; en?: string } = {};
   // U61-JSONLD — real social profiles for the Organization sameAs block
   const socialUrls: string[] = [];
   try {
     const textRows = await db.storeSettings.findMany({ where: { key: 'texts' } });
     const t = JSON.parse(textRows[0]?.value ?? '{}') as Record<string, unknown>;
-    if (typeof t.newsletterAr === 'string' && t.newsletterAr.trim()) newsletterCopy.ar = t.newsletterAr.trim();
-    if (typeof t.newsletterEn === 'string' && t.newsletterEn.trim()) newsletterCopy.en = t.newsletterEn.trim();
     for (const key of ['instagramUrl', 'facebookUrl', 'tiktokUrl', 'whatsappChannelUrl', 'youtubeUrl']) {
       const v = t[key];
       if (typeof v === 'string' && v.trim()) socialUrls.push(v.trim());
@@ -220,6 +216,9 @@ export default async function Home() {
         }))}
       />
       )}
+      {/* LU-ASSISTANT-2026-10 → the «اسألي لُو» card now lives in the home
+          editor's CTA slot (HomeSections, where the old AI-stylist banner
+          was) — see U91; no duplicate render here anymore. */}
       {reviews.length > 0 && (
         <ReviewsSection
           reviews={reviews.map((r) => {
@@ -235,7 +234,9 @@ export default async function Home() {
           })}
         />
       )}
-      <NewsletterSection copy={newsletterCopy} />
+      {/* NV-INVITE-2026-10 — «انضمي إلى نادي لوبنيل» per the official reference
+          lubnel-invite.html (envelope variant), wired to /api/store/subscribe. */}
+      <LuInviteSection />
     </div>
   );
 }

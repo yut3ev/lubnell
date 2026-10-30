@@ -63,3 +63,4 @@ tool-results/
 dev.log.bak*
 *.bak-*
 .mimosa/
+.v2c/

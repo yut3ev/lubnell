@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { db } from '@/lib/db';
+import { getCatalog } from '@/lib/catalog-cache'; // PERF-2026-11
 import { ProductCard } from '@/components/store/product-card';
 import { CategoryGrid } from '@/components/store/category-grid';
 import { CatalogPageView } from '@/components/store/catalog-page';
@@ -12,18 +12,15 @@ export default async function CategoryPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  // PERF-2026-11 — one cached snapshot serves both branches (no Turso
+  // round trips per pageview; invalidated on admin saves)
+  const snap = await getCatalog();
 
   // U10-CATALOG-PAGE — /c/all renders the standalone «كل المنتجات» catalog
-  // (AI stylist banner + count pills + filter toolbar) exactly like the
-  // owner-approved screenshots.
+  // (Lou card + count pills + filter toolbar + 2-row desktop carousel).
   if (slug === 'all') {
-    const [categories, products] = await Promise.all([
-      db.category.findMany({ orderBy: { sortOrder: 'asc' } }),
-      db.product.findMany({
-        where: { published: true },
-        orderBy: [{ featured: 'desc' }, { rating: 'desc' }, { createdAt: 'asc' }],
-      }),
-    ]);
+    const categories = snap.categories;
+    const products = snap.products;
     const catById = new Map(categories.map((c) => [c.id, c.slug]));
 
     return (
@@ -52,7 +49,7 @@ export default async function CategoryPage({
     );
   }
 
-  const category = await db.category.findUnique({ where: { slug } });
+  const category = snap.categories.find((c) => c.slug === slug);
   if (!category) notFound();
 
   // U58-GALLERY — صور القسم الإضافية (JSON string array → string[])
@@ -63,10 +60,14 @@ export default async function CategoryPage({
     catGallery = [];
   }
 
-  const products = await db.product.findMany({
-    where: { categoryId: category.id, published: true },
-    orderBy: [{ featured: 'desc' }, { createdAt: 'asc' }],
-  });
+  // نفس ترتيب الاستعلام القديم (featured desc, createdAt asc) — من السنابشوت
+  const products = snap.products
+    .filter((p) => p.categoryId === category.id)
+    .sort(
+      (a, b) =>
+        Number(b.featured) - Number(a.featured) ||
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
 
   return (
     <CategoryGrid

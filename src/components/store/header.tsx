@@ -7,25 +7,10 @@ import {
   ShoppingBag,
   Menu,
   Search,
-  X,
-  ChevronLeft,
-  Info,
-  Truck,
-  RefreshCcw,
-  HelpCircle,
-  MessageCircle,
-  BookOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Sheet,
-  SheetContent,
-  SheetClose,
-  SheetTrigger,
-  SheetTitle,
-} from '@/components/ui/sheet';
 import { SearchDialogV2 } from '@/components/store/search-dialog-v2';
-import { WhatsAppGlyph } from '@/components/store/brand-icons';
+import { MenuGarden } from '@/components/store/menu-garden'; // MG-MENU-2026-10
 import { WHATSAPP_NUMBER } from '@/lib/lubnel-types';
 import { useCart } from '@/lib/cart-store';
 // U22-LANG-FIX — useLang is imported for the header's language toggle button.
@@ -49,15 +34,17 @@ const NAV: { href: string; k: 'home' | 'allProducts' | 'navBrides' | 'navMakeup'
   { href: '/c/body-care', k: 'navBodyCare' },
 ];
 
-// U21-MENU — the mobile sheet gets a proper information section instead of
+// U21-MENU — the mobile menu gets a proper information section instead of
 // dead empty space under the category links.
-const INFO: { href: string; k: 'navAbout' | 'navShipping' | 'navReturns' | 'navFaq' | 'navContact' | 'navBlog'; icon: typeof Info }[] = [
-  { href: '/info/about', k: 'navAbout', icon: Info },
-  { href: '/blog', k: 'navBlog', icon: BookOpen }, // U61-BLOG
-  { href: '/info/shipping', k: 'navShipping', icon: Truck },
-  { href: '/info/returns', k: 'navReturns', icon: RefreshCcw },
-  { href: '/faq', k: 'navFaq', icon: HelpCircle }, // GEO — canonical FAQ URL
-  { href: '/info/contact', k: 'navContact', icon: MessageCircle },
+// MG-MENU-2026-10 — icons dropped from the list shape: the reference design
+// marks every info link with a pink dot instead of a lucide glyph.
+const INFO: { href: string; k: 'navAbout' | 'navShipping' | 'navReturns' | 'navFaq' | 'navContact' | 'navBlog' }[] = [
+  { href: '/info/about', k: 'navAbout' },
+  { href: '/blog', k: 'navBlog' }, // U61-BLOG
+  { href: '/info/shipping', k: 'navShipping' },
+  { href: '/info/returns', k: 'navReturns' },
+  { href: '/faq', k: 'navFaq' }, // GEO — canonical FAQ URL
+  { href: '/info/contact', k: 'navContact' },
 ];
 
 export function StoreHeader({
@@ -149,124 +136,27 @@ export function StoreHeader({
         style={{ background: 'var(--color-header, color-mix(in srgb, var(--background) 85%, transparent))' }}
       >
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
-          {/* mobile menu */}
-          <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
-              {/* U33-HYDRA — suppressHydrationWarning on this exact button:
-                  Radix derives aria-controls from useId, whose value is tied
-                  to the server PROCESS that rendered the HTML. A tab reloaded
-                  across a dev restart/recompile pairs fresh HTML with cached
-                  client JS and the two useId values differ — the ONLY element
-                  in the storefront that ever diffs first (grep-verified: it's
-                  the single aria-controls consumer in the shop shell). The
-                  attr is Radix-internal (re-rendered from client state on
-                  open), so suppressing the warning changes nothing visible or
-                  functional; it just stops the scary overlay on raced reloads.
-                  Fresh loads stay byte-identical (verified via curl + browser). */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden"
-                aria-label={t.menuAria}
-                suppressHydrationWarning
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            {/* U21-MENU — rebuilt mobile sheet: logo + close on one row (the
-                built-in absolute ✕ collided with the logo in RTL), compact
-                labeled sections, info links, WhatsApp CTA, safe-area bottom. */}
-            <SheetContent
-              side="right"
-              className="w-[min(20rem,85vw)] gap-0 p-0 [&>button]:hidden"
-            >
-              <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
-                <SheetTitle asChild>
-                  <span className="block">
-                    <img
-                      src={brandLogo}
-                      alt="LUBNÉL"
-                      className="h-8 w-auto object-contain"
-                      draggable={false}
-                    />
-                  </span>
-                </SheetTitle>
-                <SheetClose
-                  className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-primary focus:outline-none focus:ring-2 focus:ring-ring"
-                  aria-label={t.menuCloseAria}
-                >
-                  <X className="h-5 w-5" />
-                </SheetClose>
-              </div>
-
-              <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4" aria-label={t.menuMobileAria}>
-                <p className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                  {t.menuShopLabel}
-                </p>
-                {NAV.map((n) => {
-                  const active = pathname === n.href;
-                  return (
-                    <Link
-                      key={n.href}
-                      href={n.href}
-                      onClick={() => setOpen(false)}
-                      aria-current={active ? 'page' : undefined}
-                      className={`group flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[15px] transition-colors ${
-                        active
-                          ? 'bg-secondary font-bold text-primary'
-                          : 'font-semibold text-foreground/85 hover:bg-secondary/60'
-                      }`}
-                    >
-                      {active && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />}
-                      <span className="flex-1">{t[n.k]}</span>
-                      <ChevronLeft
-                        className="h-4 w-4 text-muted-foreground/40 transition-transform group-hover:-translate-x-0.5"
-                        aria-hidden
-                      />
-                    </Link>
-                  );
-                })}
-
-                <p className="px-3 pb-1.5 pt-5 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                  {t.menuInfoLabel}
-                </p>
-                {INFO.map((n) => {
-                  const active = pathname === n.href;
-                  return (
-                    <Link
-                      key={n.href}
-                      href={n.href}
-                      onClick={() => setOpen(false)}
-                      aria-current={active ? 'page' : undefined}
-                      className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[14px] transition-colors ${
-                        active
-                          ? 'bg-secondary font-bold text-primary'
-                          : 'font-semibold text-foreground/85 hover:bg-secondary/60'
-                      }`}
-                    >
-                      <n.icon className="h-4.5 w-4.5 shrink-0 text-primary/70" aria-hidden />
-                      <span className="flex-1">{t[n.k]}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
-
-              <div className="border-t border-border/60 px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4">
-                <a
-                  href={`https://wa.me/${waDigits}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex h-11 items-center justify-center gap-2 rounded-full bg-[#25D366] text-sm font-bold text-white shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98] [-webkit-tap-highlight-color:transparent]"
-                >
-                  <WhatsAppGlyph className="h-4.5 w-4.5" aria-hidden />
-                  {t.orderViaWa}
-                </a>
-                <p className="pt-3 text-center text-[11px] font-semibold text-muted-foreground">
-                  {t.navMoreTagline}
-                </p>
-              </div>
-            </SheetContent>
-          </Sheet>
+          {/* mobile menu — MG-MENU-2026-10: the hamburger stays exactly where
+              it was, but now opens the reference «حديقة» drawer
+              (menu-garden.tsx). The old Radix Sheet drawer (logo row, the
+              تسوّقي/معلومات lists, the pill WhatsApp button) was removed
+              wholesale. */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            aria-label={t.menuAria}
+            onClick={() => setOpen(true)}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          <MenuGarden
+            open={open}
+            onClose={() => setOpen(false)}
+            shop={NAV.map((n) => ({ href: n.href, label: t[n.k] }))}
+            info={INFO.map((n) => ({ href: n.href, label: t[n.k] }))}
+            waHref={`https://wa.me/${waDigits}`}
+          />
 
           {/* brand — U16-BRAND: owner's LUBNÉL wordmark + L-ring badge */}
           <Link href="/" className="flex items-center transition-opacity hover:opacity-80" aria-label={`LUBNÉL — ${t.home}`}>
