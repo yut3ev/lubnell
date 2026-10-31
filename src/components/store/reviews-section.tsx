@@ -1,15 +1,17 @@
 'use client';
 
-// RW-WALL-2026-10 — «آراء عميلاتنا» live reviews wall.
+// RW-WALL-2026-10 — «آراء عميلاتنا» live horizontal reviews carousel.
 //
-// DESIGN SOURCE: the official reference lubnel-reviews-wall.html.
-// Palette (#8a3a46 / #5a2230 / #e9a9ae / #fbeee9 / #3a2226 / #8a6d70),
+// DESIGN SOURCE: the official reference lubnel-reviews-wall.html + mobile horizontal swipe.
+// Horizontal swipe track (overflow-x: auto; scroll-snap-type: x mandatory),
+// auto-scrolls to the next card every 2 seconds, user can freely swipe/drag sideways,
 // note card tilts and tape styling, Aref Ruqaa title + drawn underline path,
 // deterministic colors based on ID hash, sticker card for short text (<20 chars),
-// gap-free 3/2/1 column distribution, live diff updates (drop in / fade out),
-// 60s background polling + visibilitychange immediate check, and instant SSE sync.
+// live diff updates (drop in / fade out), 60s background polling + visibilitychange,
+// and instant SSE sync.
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Aref_Ruqaa } from 'next/font/google';
 
 const ruqaa = Aref_Ruqaa({
@@ -84,7 +86,7 @@ const RW_CSS = `
 .rw{--w:#8a3a46;--wd:#5a2230;--rose:#e9a9ae;--bl:#fbeee9;--ink:#3a2226;--mut:#8a6d70;--ease:cubic-bezier(.2,.8,.2,1);--spring:cubic-bezier(.34,1.56,.64,1);--hand:var(--font-rw-ruqaa,'Aref Ruqaa'),'Noto Naskh Arabic',serif;--font-sans:var(--font-cairo,Cairo),system-ui,sans-serif;font-family:var(--font-sans);color:var(--ink);direction:rtl}
 .rw .sec{position:relative;overflow:hidden;padding:56px 0 64px;background:var(--bl)}
 .rw .in{position:relative;z-index:2;max-width:1160px;margin:0 auto;padding:0 20px}
-.rw .hd{text-align:center;margin-bottom:38px}
+.rw .hd{text-align:center;margin-bottom:34px}
 .rw .hd h2{margin:0;font:700 2.6rem/1.3 var(--hand);color:var(--wd);display:inline-block;position:relative}
 .rw .hd h2 svg{position:absolute;inset-inline:-6px;bottom:-8px;width:calc(100% + 12px);height:14px;fill:none;stroke:var(--rose);stroke-width:3;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;animation:rw-dr 1.4s .3s var(--ease) forwards}
 @keyframes rw-dr{to{stroke-dashoffset:0}}
@@ -92,9 +94,14 @@ const RW_CSS = `
 .rw .hd p b{color:var(--w)}
 .rw .dc{position:absolute;pointer-events:none;color:var(--rose);fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;opacity:.35;z-index:1;filter:url(#rw-rf);animation:rw-fl 11s ease-in-out infinite alternate}
 @keyframes rw-fl{from{transform:translateY(-6px) rotate(var(--r,0deg))}to{transform:translateY(8px) rotate(calc(var(--r,0deg) + 6deg))}}
-.rw .wl{display:grid;grid-template-columns:repeat(var(--n,3),1fr);gap:20px;align-items:start}
-.rw .cl{display:grid;gap:22px;align-content:start}
-.rw .nt{width:100%;position:relative;padding:34px 22px 20px;background:var(--c);border-radius:8px 14px 10px 16px;box-shadow:0 18px 24px -20px #5a2230aa;transform:rotate(var(--r));transition:transform .45s var(--spring),box-shadow .3s;box-sizing:border-box}
+
+/* Horizontal swipe track */
+.rw .wl{display:flex;overflow-x:auto;overflow-y:visible;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;gap:20px;padding:26px 20px 34px;margin:0 -20px;scrollbar-width:none;touch-action:pan-x pan-y;scroll-behavior:smooth;cursor:grab;align-items:stretch}
+.rw .wl:active{cursor:grabbing}
+.rw .wl::-webkit-scrollbar{display:none}
+
+.rw .nt{flex:0 0 auto;width:min(85vw,320px);scroll-snap-align:center;position:relative;padding:34px 22px 20px;background:var(--c);border-radius:8px 14px 10px 16px;box-shadow:0 18px 24px -20px #5a2230aa;transform:rotate(var(--r));transition:transform .45s var(--spring),box-shadow .3s;box-sizing:border-box;user-select:none}
+@media(min-width:768px){.rw .nt{width:340px}}
 .rw .nt.new{animation:rw-drop .9s var(--spring) both}
 @keyframes rw-drop{from{opacity:0;transform:translateY(-40px) rotate(calc(var(--r)*4)) scale(.9)}to{opacity:1;transform:rotate(var(--r))}}
 .rw .nt.st{opacity:0;animation:rw-pop .8s var(--spring) forwards;animation-delay:calc(var(--i)*.08s)}
@@ -113,6 +120,18 @@ const RW_CSS = `
 .rw .tgp{display:inline-block;font-size:.76rem;font-weight:700;color:var(--w);background:#fff9;padding:3px 10px;border-radius:99px;border:1px dashed #d9a98f;margin-top:2px}
 .rw .vf{display:inline-flex;align-items:center;gap:5px;font-size:.76rem;color:#5d7a52;font-weight:700}
 .rw .vf svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+
+/* Carousel navigation & dots */
+.rw .nav-bar{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:20px}
+.rw .nav-btn{width:36px;height:36px;border-radius:50%;background:#ffffffdd;border:1px solid #e9a9ae88;color:var(--w);display:grid;place-items:center;box-shadow:0 4px 12px -4px #5a223022;cursor:pointer;transition:all .2s var(--ease);padding:0}
+.rw .nav-btn:hover{background:#ffffff;transform:scale(1.06)}
+.rw .nav-btn:active{transform:scale(.94)}
+.rw .dots{display:flex;align-items:center;gap:6px}
+.rw .dot{height:7px;border-radius:9999px;border:none;padding:0;background:#8a3a4633;cursor:pointer;transition:all .3s var(--ease)}
+.rw .dot.act{width:22px;background:var(--w)}
+.rw .dot:not(.act){width:7px}
+.rw .dot:not(.act):hover{background:#8a3a4666}
+
 .rw .emp{text-align:center;color:var(--mut);padding:30px 0;font-size:1.05rem}
 @media(max-width:600px){.rw .hd h2{font-size:2rem}.rw .sec{padding:40px 0 48px}}
 @media(prefers-reduced-motion:reduce){.rw .nt,.rw .dc{animation:none!important;opacity:1}}
@@ -124,43 +143,32 @@ export function ReviewsSection({ reviews: initialReviews = [] }: ReviewsSectionP
   const cardsRef = useRef<Record<string, HTMLElement>>({});
   const orderRef = useRef<string[]>([]);
   const firstRef = useRef<boolean>(true);
-  const colsRef = useRef<number>(0);
   const busyRef = useRef<boolean>(false);
   const [totalCount, setTotalCount] = useState<number>(initialReviews.length);
+  const [activeIndex, setActiveIndex] = useState<number>(0);
+  const activeIdxRef = useRef<number>(0);
 
-  // Compute number of columns based on window width
-  const getColsCount = (): number => {
-    if (typeof window === 'undefined') return 3;
-    const w = window.innerWidth;
-    if (w <= 600) return 1;
-    if (w <= 900) return 2;
-    return 3;
-  };
+  // Interaction tracking for autoplay pause & resume
+  const isInteractingRef = useRef<boolean>(false);
+  const resumeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Re-layout cards into columns without vertical gaps
-  const updateLayout = () => {
+  // Mouse drag on desktop
+  const isDraggingRef = useRef<boolean>(false);
+  const dragStartXRef = useRef<number>(0);
+  const dragStartScrollLeftRef = useRef<number>(0);
+
+  // Re-layout cards horizontally in DOM order
+  const updateLayout = useCallback(() => {
     const wl = wallRef.current;
     if (!wl) return;
-    const n = getColsCount();
-    wl.style.setProperty('--n', String(n));
-
-    const columns: HTMLElement[] = [];
     wl.innerHTML = '';
-    for (let k = 0; k < n; k++) {
-      const c = document.createElement('div');
-      c.className = 'cl';
-      wl.appendChild(c);
-      columns.push(c);
-    }
-    colsRef.current = n;
-
-    orderRef.current.forEach((id, i) => {
+    orderRef.current.forEach((id) => {
       const card = cardsRef.current[id];
-      if (card && columns[i % n]) {
-        columns[i % n].appendChild(card);
+      if (card) {
+        wl.appendChild(card);
       }
     });
-  };
+  }, []);
 
   // Create card DOM element strictly using textContent (XSS immune)
   const makeCardElement = (r: CleanReview): HTMLElement => {
@@ -239,7 +247,7 @@ export function ReviewsSection({ reviews: initialReviews = [] }: ReviewsSectionP
   };
 
   // Apply diff between current rendered cards and new list
-  const applyList = (list: CleanReview[]) => {
+  const applyList = useCallback((list: CleanReview[]) => {
     const ids = list.map((r) => String(r.id));
     const prev = orderRef.current.slice();
     const added = list.filter((r) => !cardsRef.current[r.id]);
@@ -309,7 +317,7 @@ export function ReviewsSection({ reviews: initialReviews = [] }: ReviewsSectionP
     const activeCount = orderRef.current.filter((k) => !cardsRef.current[k]?.classList.contains('out')).length;
     setTotalCount(activeCount);
     firstRef.current = false;
-  };
+  }, [updateLayout]);
 
   // Convert raw review to CleanReview
   const cleanReviews = (rawList: any[], max: number, mapFn?: (r: any) => CleanReview): CleanReview[] => {
@@ -335,6 +343,122 @@ export function ReviewsSection({ reviews: initialReviews = [] }: ReviewsSectionP
       .sort((a, b) => b.createdAt - a.createdAt)
       .slice(0, max);
   };
+
+  // Scroll to a specific card index
+  const scrollToIndex = useCallback((index: number) => {
+    const wl = wallRef.current;
+    if (!wl) return;
+    const cards = Array.from(wl.querySelectorAll<HTMLElement>('.nt'));
+    if (!cards.length) return;
+    const targetIdx = Math.max(0, Math.min(cards.length - 1, index));
+    activeIdxRef.current = targetIdx;
+    setActiveIndex(targetIdx);
+    cards[targetIdx]?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'center',
+    });
+  }, []);
+
+  const goToPrev = () => {
+    pauseAutoPlayTemporarily();
+    const total = orderRef.current.length;
+    if (total <= 1) return;
+    const prev = (activeIdxRef.current - 1 + total) % total;
+    scrollToIndex(prev);
+  };
+
+  const goToNext = () => {
+    pauseAutoPlayTemporarily();
+    const total = orderRef.current.length;
+    if (total <= 1) return;
+    const next = (activeIdxRef.current + 1) % total;
+    scrollToIndex(next);
+  };
+
+  const pauseAutoPlayTemporarily = () => {
+    isInteractingRef.current = true;
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    resumeTimerRef.current = setTimeout(() => {
+      isInteractingRef.current = false;
+    }, 3200);
+  };
+
+  // Detect which card is currently centered while user scrolls/swipes
+  const handleScroll = () => {
+    const wl = wallRef.current;
+    if (!wl) return;
+    const cards = Array.from(wl.querySelectorAll<HTMLElement>('.nt'));
+    if (!cards.length) return;
+
+    const wlRect = wl.getBoundingClientRect();
+    const wlCenter = wlRect.left + wlRect.width / 2;
+    let minDiff = Infinity;
+    let closestIdx = 0;
+
+    cards.forEach((card, idx) => {
+      const cardRect = card.getBoundingClientRect();
+      const cardCenter = cardRect.left + cardRect.width / 2;
+      const diff = Math.abs(cardCenter - wlCenter);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = idx;
+      }
+    });
+
+    activeIdxRef.current = closestIdx;
+    setActiveIndex(closestIdx);
+    pauseAutoPlayTemporarily();
+  };
+
+  // Desktop mouse drag handlers
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'touch') return;
+    const wl = wallRef.current;
+    if (!wl) return;
+    isDraggingRef.current = true;
+    dragStartXRef.current = e.clientX;
+    dragStartScrollLeftRef.current = wl.scrollLeft;
+    pauseAutoPlayTemporarily();
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    const wl = wallRef.current;
+    if (!wl) return;
+    const dx = e.clientX - dragStartXRef.current;
+    wl.scrollLeft = dragStartScrollLeftRef.current - dx;
+    pauseAutoPlayTemporarily();
+  };
+
+  const handlePointerUp = () => {
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false;
+      pauseAutoPlayTemporarily();
+    }
+  };
+
+  // Autoplay timer effect: advance every 2000ms (~2s)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (isInteractingRef.current || document.hidden) return;
+      const wl = wallRef.current;
+      if (!wl) return;
+      const cards = Array.from(wl.querySelectorAll<HTMLElement>('.nt'));
+      if (cards.length <= 1) return;
+
+      const next = (activeIdxRef.current + 1) % cards.length;
+      activeIdxRef.current = next;
+      setActiveIndex(next);
+      cards[next]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Client fetch and live update
   useEffect(() => {
@@ -379,17 +503,14 @@ export function ReviewsSection({ reviews: initialReviews = [] }: ReviewsSectionP
       }
     };
 
-    // If no initial reviews were passed from SSR, fetch immediately
     if (initialReviews.length === 0) {
       fetchLatest();
     }
 
-    // Expose refresh to window
     window.LubnelReviews = {
       refresh: fetchLatest,
     };
 
-    // Polling setup: every pollMs, paused when tab is hidden
     let timer: NodeJS.Timeout | null = null;
     if (cfg.pollMs > 0) {
       timer = setInterval(() => {
@@ -399,7 +520,6 @@ export function ReviewsSection({ reviews: initialReviews = [] }: ReviewsSectionP
       }, cfg.pollMs);
     }
 
-    // Visibility change handler: check immediately when user refocuses tab
     const onVisibilityChange = () => {
       if (!document.hidden) {
         fetchLatest();
@@ -407,15 +527,6 @@ export function ReviewsSection({ reviews: initialReviews = [] }: ReviewsSectionP
     };
     document.addEventListener('visibilitychange', onVisibilityChange);
 
-    // Resize handler to update column count
-    const onResize = () => {
-      if (getColsCount() !== colsRef.current) {
-        updateLayout();
-      }
-    };
-    window.addEventListener('resize', onResize);
-
-    // Real-time Server-Sent Events (SSE) listener for instant moderation/review updates
     let es: EventSource | null = null;
     if (typeof EventSource !== 'undefined') {
       try {
@@ -423,18 +534,15 @@ export function ReviewsSection({ reviews: initialReviews = [] }: ReviewsSectionP
         es.onmessage = () => {
           fetchLatest();
         };
-      } catch {
-        // non-fatal, polling handles fallback
-      }
+      } catch {}
     }
 
     return () => {
       if (timer) clearInterval(timer);
       document.removeEventListener('visibilitychange', onVisibilityChange);
-      window.removeEventListener('resize', onResize);
       if (es) es.close();
     };
-  }, []);
+  }, [applyList, initialReviews]);
 
   return (
     <div className={`rw ${ruqaa.variable}`} ref={containerRef}>
@@ -449,7 +557,7 @@ export function ReviewsSection({ reviews: initialReviews = [] }: ReviewsSectionP
       </svg>
 
       <section className="sec" id="reviews" aria-labelledby="reviews-title">
-        {/* Floating floral graphic from reference */}
+        {/* Floating floral graphic */}
         <svg
           className="dc"
           viewBox="0 0 64 64"
@@ -477,8 +585,58 @@ export function ReviewsSection({ reviews: initialReviews = [] }: ReviewsSectionP
             </p>
           </div>
 
-          {/* Cards Wall */}
-          <div className="wl" id="wl" ref={wallRef} aria-live="polite" />
+          {/* Horizontal Carousel Track */}
+          <div
+            className="wl"
+            id="wl"
+            ref={wallRef}
+            aria-live="polite"
+            onScroll={handleScroll}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            onMouseEnter={() => { isInteractingRef.current = true; }}
+            onMouseLeave={() => { isInteractingRef.current = false; }}
+          />
+
+          {/* Carousel controls & pagination dots */}
+          {totalCount > 1 && (
+            <div className="nav-bar">
+              <button
+                type="button"
+                onClick={goToPrev}
+                className="nav-btn"
+                aria-label="التقييم السابق"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+
+              <div className="dots" aria-hidden="true">
+                {Array.from({ length: Math.min(totalCount, 12) }).map((_, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      pauseAutoPlayTemporarily();
+                      scrollToIndex(idx);
+                    }}
+                    className={`dot ${activeIndex === idx ? 'act' : ''}`}
+                    aria-label={`الانتقال إلى التقييم ${idx + 1}`}
+                  />
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={goToNext}
+                className="nav-btn"
+                aria-label="التقييم التالي"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+            </div>
+          )}
 
           {/* Empty state */}
           {totalCount === 0 && (
