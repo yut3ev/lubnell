@@ -112,7 +112,10 @@ export async function broadcastPush(payload: PushPayload): Promise<{ sent: numbe
       try {
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: sub.keys },
-          JSON.stringify({ ...payload, icon: '/brand/logo-dark.png', badge: '/brand/logo-dark.png' })
+          // PUSH-2026-11 — dedicated notification icon (white wordmark on the
+          // brand wine) — the old logo-dark.png was invisible on Android's
+          // dark notification drawer. badge = same file (system silhouettes).
+          JSON.stringify({ ...payload, icon: '/brand/push-icon.png', badge: '/brand/push-icon.png' })
         );
         sent += 1;
       } catch (err) {

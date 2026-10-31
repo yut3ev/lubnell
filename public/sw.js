@@ -21,8 +21,12 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'LUBNÉL';
   const options = {
     body: data.body || '',
-    icon: data.icon || '/brand/logo-dark.png',
-    badge: data.badge || '/brand/logo-dark.png',
+    // PERF/PUSH-2026-11 — purpose-built icon: white LUBNÉL wordmark on the
+    // brand wine, full-bleed 512 (visible on dark AND light notification
+    // surfaces — the old logo-dark.png vanished on Android's dark drawer).
+    // Badge = same file; Android silhouettes it white in the status bar.
+    icon: data.icon || '/brand/push-icon.png',
+    badge: data.badge || '/brand/push-icon.png',
     dir: 'rtl',
     lang: 'ar',
     tag: data.tag || 'lubnel-push', // replaces older duplicates instead of stacking
