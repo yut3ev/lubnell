@@ -30,9 +30,8 @@ export default async function Home() {
     db.review.findMany({
       where: { approved: true },
       orderBy: { createdAt: 'desc' },
-      // U23-REVIEWS-SWIPE — the carousel costs no vertical height, so let
-      // more real customer reviews flow in as they accumulate
-      take: 12,
+      // RW-WALL-2026-10 — wall displays up to 24 approved reviews
+      take: 24,
     }),
     // SUP-9 — Studio → «أقسام الموقع» copy; a missing row falls back to defaults
     db.storeSettings.findMany({ where: { key: 'sections' } }).catch(() => []),
@@ -219,21 +218,21 @@ export default async function Home() {
       {/* LU-ASSISTANT-2026-10 → the «اسألي لُو» card now lives in the home
           editor's CTA slot (HomeSections, where the old AI-stylist banner
           was) — see U91; no duplicate render here anymore. */}
-      {reviews.length > 0 && (
-        <ReviewsSection
-          reviews={reviews.map((r) => {
-            const product = productBySlug.get(r.productId);
-            return {
-              id: r.id,
-              name: r.name,
-              text: r.text,
-              rating: r.rating,
-              productNameAr: product?.nameAr ?? null,
-              productNameEn: product?.nameEn ?? null,
-            };
-          })}
-        />
-      )}
+      {/* RW-WALL-2026-10 — «آراء عميلاتنا» live reviews wall per lubnel-reviews-wall.html */}
+      <ReviewsSection
+        reviews={reviews.map((r) => {
+          const product = productBySlug.get(r.productId);
+          return {
+            id: r.id,
+            name: r.name,
+            text: r.text,
+            rating: r.rating,
+            productNameAr: product?.nameAr ?? null,
+            productNameEn: product?.nameEn ?? null,
+            createdAt: r.createdAt.toISOString(),
+          };
+        })}
+      />
       {/* NV-INVITE-2026-10 — «انضمي إلى نادي لوبنيل» per the official reference
           lubnel-invite.html (envelope variant), wired to /api/store/subscribe. */}
       <LuInviteSection />

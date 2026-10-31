@@ -1,12 +1,9 @@
-// Legacy store reviews endpoint (kept for compatibility).
-// U18-REVIEWS — rewritten against the REAL Prisma models: the old version
-// queried db.storeProduct / db.reviewVote which don't exist in the schema, so
-// every GET failed silently into an empty array. Reviews are now auto-published
-// (real) on POST, with product aggregates re-synced.
+// Storefront reviews endpoint
 import { db } from "@/lib/db";
 import { jsonOk, jsonError, parseBody } from "@/lib/api-helpers";
 import { emitLive } from "@/lib/live";
 import { syncProductReviewStats } from "@/lib/review-aggregates";
+import { notifyReviewsChanged } from "@/lib/reviews-events";
 
 export const dynamic = "force-dynamic";
 
@@ -45,23 +42,63 @@ export async function GET(req: Request) {
     }
   }
 
-  if (!productId) return jsonOk([]);
+  // Product reviews for specific product detail page
+  if (productId) {
+    try {
+      const reviews = await db.review.findMany({
+        where: { productId, approved: true },
+        orderBy: [{ createdAt: "desc" }],
+        take: 30,
+      });
+      return jsonOk(reviews.map(r => ({
+        id: r.id,
+        productId: r.productId,
+        name: r.name,
+        text: r.text,
+        rating: r.rating,
+        image: r.image,
+        helpfulCount: r.helpfulCount,
+        createdAt: r.createdAt.toISOString(),
+      })));
+    } catch {
+      return jsonOk([]);
+    }
+  }
+
+  // RW-WALL-2026-10: Storefront wall of customer reviews (approved only, newest first, max 24)
   try {
+    const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit")) || 24));
     const reviews = await db.review.findMany({
-      where: { productId, approved: true },
-      orderBy: [{ createdAt: "desc" }],
-      take: 30,
+      where: { approved: true },
+      orderBy: { createdAt: "desc" },
+      take: limit,
     });
-    return jsonOk(reviews.map(r => ({
+
+    const slugs = Array.from(new Set(reviews.map((r) => r.productId)));
+    const products = await db.product.findMany({
+      where: { slug: { in: slugs } },
+      select: { slug: true, nameAr: true, nameEn: true },
+    });
+    const bySlug = new Map(products.map((p) => [p.slug, p.nameAr || p.nameEn || ""]));
+
+    const items = reviews.map((r) => ({
       id: r.id,
-      productId: r.productId,
       name: r.name,
       text: r.text,
-      rating: r.rating,
-      image: r.image,
-      helpfulCount: r.helpfulCount,
+      product: bySlug.get(r.productId) || "",
+      verified: true,
       createdAt: r.createdAt.toISOString(),
-    })));
+    }));
+
+    const etag = `W/"${items.map((i) => i.id).join("-")}:${items.length}"`;
+    if (req.headers.get("if-none-match") === etag) {
+      return new Response(null, { status: 304 });
+    }
+
+    const response = jsonOk(items);
+    response.headers.set("Cache-Control", "public, max-age=30, stale-while-revalidate=60");
+    response.headers.set("ETag", etag);
+    return response;
   } catch {
     return jsonOk([]);
   }
@@ -90,6 +127,7 @@ export async function POST(req: Request) {
       productTitle = product?.nameAr || product?.nameEn || "";
     } catch { /* non-fatal */ }
     await emitLive("review:new", { productTitle, rating, name: review.name }).catch(() => undefined);
+    notifyReviewsChanged();
     return jsonOk({ success: true, published: true, summary, review });
   } catch {
     return jsonError("تعذر حفظ التقييم", 500);

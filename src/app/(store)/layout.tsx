@@ -13,6 +13,7 @@ import path from "path";
 import { db } from "@/lib/db";
 import { ADMIN_SESSION_COOKIE, getAdminFromToken } from "@/lib/admin-auth";
 import { getMaintenanceState } from "@/lib/maintenance"; // U77-MAINTENANCE-MODE
+import { getCatalog } from "@/lib/catalog-cache";
 import { getSettingsRows } from "@/lib/settings-cache"; // U54-PERF-ROBUST — hot settings reads served from the TTL cache
 import { resolveSiteTexts, type SiteTexts } from "@/lib/site-texts";
 import { sanitizeTextBag, type TextOverrideBag } from "@/lib/text-keys";
@@ -89,27 +90,36 @@ export default async function StoreLayout({
     // DB unavailable → ship defaults, never block the storefront
   }
 
+  // U94-MORE-SHEET & U77-MAINTENANCE-MODE — verify admin session server-side:
+  let isAdmin = false;
+  try {
+    const token = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
+    isAdmin = Boolean(await getAdminFromToken(token));
+  } catch {
+    isAdmin = false;
+  }
+
   // U77-MAINTENANCE-MODE — when the owner closes the store, visitors see ONLY
   // the branded maintenance screen (no header/footer/products at all). A
   // signed-in admin still browses the real storefront — with a wine ribbon
   // reminding her the site is closed — so she can QA her own store and
   // re-open it from Studio without losing access.
   const maintenance = await getMaintenanceState();
-  let maintenanceAdmin = false;
-  if (maintenance.enabled) {
-    try {
-      const token = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
-      maintenanceAdmin = Boolean(await getAdminFromToken(token));
-    } catch {
-      maintenanceAdmin = false;
-    }
-    if (!maintenanceAdmin) {
-      // U78 — emblem video: her Studio pick wins; otherwise a drop-in file at
-      // public/brand/maintenance.webm is used automatically; else the CSS gear.
-      const dropIn = path.join(process.cwd(), "public", "brand", "maintenance.webm");
-      const emblemVideo = maintenance.video || (existsSync(dropIn) ? "/brand/maintenance.webm" : "");
-      return <MaintenanceScreen message={maintenance.message} logoDark={logoDark} video={emblemVideo} />;
-    }
+  if (maintenance.enabled && !isAdmin) {
+    // U78 — emblem video: her Studio pick wins; otherwise a drop-in file at
+    // public/brand/maintenance.webm is used automatically; else the CSS gear.
+    const dropIn = path.join(process.cwd(), "public", "brand", "maintenance.webm");
+    const emblemVideo = maintenance.video || (existsSync(dropIn) ? "/brand/maintenance.webm" : "");
+    return <MaintenanceScreen message={maintenance.message} logoDark={logoDark} video={emblemVideo} />;
+  }
+
+  // U94-MORE-SHEET — detect if today's offers banner should display
+  let hasOffers = true;
+  try {
+    const { products } = await getCatalog();
+    hasOffers = products.some((p) => Boolean(p.compareAt && p.compareAt > p.price));
+  } catch {
+    hasOffers = true;
   }
 
   // U29 — when a v2 theme is active it owns ALL color tokens; the legacy
@@ -140,7 +150,7 @@ export default async function StoreLayout({
       {brandFont && <link rel="stylesheet" href={googleFontsHref([brandFont])} precedence="default" />}
       {/* U77 — while maintenance is ON the admin still browses the store,
           with this ribbon making the closed state impossible to miss. */}
-      {maintenance.enabled && maintenanceAdmin ? (
+      {maintenance.enabled && isAdmin ? (
         <div className="sticky top-0 z-[60] flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-[#7a2e3b] px-3 py-2 text-center text-[11px] font-bold text-[#fdf4f5] sm:text-xs">
           <span>🔒 وضع الصيانة مُفعّل — الزوار شايفين صفحة الصيانة بس، وإنتِ بتشوفي المتجر عادي كمديرة</span>
           <Link href="/admin" className="rounded-full bg-white/15 px-3 py-0.5 underline-offset-4 transition hover:bg-white/25 hover:underline">
@@ -155,7 +165,7 @@ export default async function StoreLayout({
       <main className="flex-1">{children}</main>
       <StoreFooter texts={texts} whatsapp={whatsapp} logoDark={logoDark} />
       <AssistantWidget />
-      <BottomNav />
+      <BottomNav isAdmin={isAdmin} hasOffers={hasOffers} />
       <VisitTracker />
       <AnalyticsScripts />
       <PushPrompt />

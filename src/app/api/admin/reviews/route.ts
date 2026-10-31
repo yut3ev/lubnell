@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { jsonOk, jsonError, parseBody, requireAdmin, audit } from "@/lib/api-helpers";
 import { emitLive } from "@/lib/live";
 import { syncProductReviewStats } from "@/lib/review-aggregates";
+import { notifyReviewsChanged } from "@/lib/reviews-events";
 
 export const dynamic = "force-dynamic";
 
@@ -90,6 +91,7 @@ export async function POST(req: Request) {
     await syncProductReviewStats(review.productId);
     await audit(ctx, "review.deleted", "review", id, { productId: review.productId, name: review.name });
     await emitLive("review:moderated", { action: "deleted", by: ctx.admin.displayName, productId: review.productId });
+    notifyReviewsChanged();
     return jsonOk({ success: true, deleted: true });
   }
 
@@ -104,6 +106,7 @@ export async function POST(req: Request) {
       rating: review.rating,
     });
     await emitLive("review:moderated", { action: featured ? "featured" : "unfeatured", by: ctx.admin.displayName, productId: review.productId });
+    notifyReviewsChanged();
     return jsonOk({ success: true, review: updated });
   }
 
@@ -116,5 +119,6 @@ export async function POST(req: Request) {
     rating: review.rating,
   });
   await emitLive("review:moderated", { action: approved ? "approved" : "unpublished", by: ctx.admin.displayName, productId: review.productId });
+  notifyReviewsChanged();
   return jsonOk({ success: true, review: updated });
 }

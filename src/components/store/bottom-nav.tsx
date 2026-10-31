@@ -9,37 +9,25 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import {
-  Flame,
   Home,
-  Info,
   LayoutGrid,
-  LayoutDashboard,
-  MessageCircle,
-  Package,
   Search,
   ShoppingBag,
   Menu,
 } from 'lucide-react';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useCart } from '@/lib/cart-store';
 import { useT } from '@/lib/i18n';
+import { MoreSheet } from '@/components/store/more-sheet';
 
-
-// U57-TEXTS-COMPLETE — labels are DICT keys (Studio → كل النصوص → القوائم والروابط).
-const MORE_LINKS: { href: string; k: 'navOffers' | 'allProducts' | 'navAbout' | 'navShipping' | 'navReturns' | 'navFaq' | 'navContact' | 'navAdmin'; icon: typeof Flame }[] = [
-  { href: '/#offers', k: 'navOffers', icon: Flame },
-  { href: '/c/all', k: 'allProducts', icon: Package },
-  { href: '/info/about', k: 'navAbout', icon: Info },
-  { href: '/info/shipping', k: 'navShipping', icon: Package },
-  { href: '/info/returns', k: 'navReturns', icon: Package },
-  { href: '/info/faq', k: 'navFaq', icon: Info },
-  { href: '/info/contact', k: 'navContact', icon: MessageCircle },
-  { href: '/admin', k: 'navAdmin', icon: LayoutDashboard },
-];
-
-export function BottomNav() {
+export function BottomNav({
+  isAdmin = false,
+  hasOffers = true,
+}: {
+  isAdmin?: boolean;
+  hasOffers?: boolean;
+}) {
   const pathname = usePathname();
-  const { ar, t } = useT(); // U51-GLOBAL-TEXTS — nav labels are owner-editable
+  const { t } = useT(); // U51-GLOBAL-TEXTS — nav labels are owner-editable
   const items = useCart((s) => s.items);
   const count = items.reduce((s, i) => s + i.qty, 0);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -98,36 +86,27 @@ export function BottomNav() {
             <span className={labelClass(isActive('cart'))}>{t.cart}</span>
           </Link>
 
-          <button type="button" onClick={() => setMoreOpen(true)} className={tabClass(false)} aria-haspopup="dialog" aria-expanded={moreOpen}>
+          <button
+            type="button"
+            id="more-nav-button"
+            onClick={() => setMoreOpen(true)}
+            className={tabClass(false)}
+            aria-haspopup="dialog"
+            aria-expanded={moreOpen}
+            aria-controls="lubnel-more-sheet"
+          >
             <Menu className="h-[22px] w-[22px]" strokeWidth={1.9} />
             <span className={labelClass(false)}>{t.navMore}</span>
           </button>
         </div>
       </nav>
 
-      <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
-        <SheetContent side="bottom" className="rounded-t-3xl px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-2">
-          <SheetTitle className="sr-only">{t.navMore}</SheetTitle>
-          <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-border" aria-hidden />
-          <p className="px-2 pb-2 text-sm font-bold">{t.navMoreTitle}</p>
-          <div className="grid max-h-[60vh] grid-cols-2 gap-2 overflow-y-auto">
-            {MORE_LINKS.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                onClick={() => setMoreOpen(false)}
-                className="flex items-center gap-2.5 rounded-2xl border border-border/60 bg-secondary/40 px-3.5 py-3 text-[13px] font-bold text-foreground/85 transition-colors hover:border-primary/40 hover:text-primary"
-              >
-                <l.icon className="h-4.5 w-4.5 shrink-0 text-primary" aria-hidden />
-                <span className="line-clamp-1">{t[l.k]}</span>
-              </Link>
-            ))}
-          </div>
-          <p className="pt-3 text-center text-[11px] font-semibold text-muted-foreground">
-            {t.navMoreTagline}
-          </p>
-        </SheetContent>
-      </Sheet>
+      <MoreSheet
+        open={moreOpen}
+        onClose={() => setMoreOpen(false)}
+        isAdmin={isAdmin}
+        hasOffers={hasOffers}
+      />
     </>
   );
 }

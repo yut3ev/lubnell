@@ -1665,3 +1665,19 @@ Work Log:
 
 Stage Summary:
 - خطأ الهيدريشن من إضافة Bing في المتصفح اتحل (الدرع بيصطاد الخصائص الجديدة)، وأيقونة إشعارات الموبايل بقت نبيتي بالاسم الأبيض — واضحة على أندرويد أخيرًا. جيتهوب (yut3ev/lubnell) متزامن لآخر commit. Re-publish on lubnel.space-z.ai still pending (U36→U93).
+
+---
+Task ID: U94-MORE-SHEET-AND-REVIEWS-WALL
+Agent: Antigravity
+Task: (1) استبدال قائمة "المزيد من LUBNÉL" على الموبايل بالتصميم المعتمد في lubnel-more.html. (2) استبدال قسم "آراء عميلاتنا" بجدار الملاحظات الحي والتحديث التلقائي per lubnel-reviews-wall.html.
+
+Work Log:
+- MORE-SHEET: Built src/components/store/more-sheet.tsx based 1:1 on lubnel-more.html reference. Includes Aref Ruqaa titles + Cairo body, hand-drawn filtered SVG icons (feTurbulence+feDisplacementMap), shine sweep on daily offers, flame animation, sticker tilts, ripple effects on touch, typing dots on contact card, drag handle swipe-to-dismiss (>90px / v>0.6), focus trap + Escape key + scroll lock, safe-area aware.
+- ADMIN BAR & SECURITY: Server-verified session check in (store)/layout.tsx using ADMIN_SESSION_COOKIE and getAdminFromToken; dark admin bar with golden lock renders ONLY for verified staff/admin and is completely omitted from DOM for regular visitors; /admin route protected server-side.
+- BOTTOM-NAV: Removed old Radix Sheet + MORE_LINKS from bottom-nav.tsx, wired to MoreSheet with aria-controls and aria-expanded.
+- REVIEWS-WALL: Built src/components/store/reviews-section.tsx per lubnel-reviews-wall.html. Note cards with white tape, deterministic colors and tilts derived from ID hash (COL[h%6]), short text (<20 chars) sticker styling, gap-free column layout (3 cols desktop, 2 cols tablet, 1 col mobile), dynamic count in Arabic numerals, empty state placeholder.
+- LIVE AUTO-UPDATE: 60s background polling, visibilitychange instant re-check, animated diff (drop for new cards, bye for removed cards, in-place updates for edited text), ETag/304 caching on /api/store/reviews (max 24 items, approved only, no PII), and instant SSE updates via src/app/api/store/reviews/events/route.ts + src/lib/reviews-events.ts.
+- E2E VERIFICATION: Full test suites in headless Chrome across 360, 390, 768, 1280 screen sizes; guest vs admin verified; live add/delete/hide verified; network error resilience verified; XSS immunity verified (textContent only). All lint and type checks pass.
+
+Stage Summary:
+- تم استبدال شيت المزيد المكتبي القديم بشيت المزيد الجديد بالكامل وتحديث قسم آراء العميلات بجدار الملاحظات الحي والتحديث التلقائي اللحظي ومزامنة جميع التعديلات.
