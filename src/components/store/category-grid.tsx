@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { EditorialCard } from '@/components/store/editorial-card';
 import { Reveal } from '@/components/store/reveal';
 import { ImageLightbox } from '@/components/store/image-lightbox'; // U58-GALLERY
 import type { ProductCardData } from '@/components/store/product-card';
 import { useT } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
 
 export function CategoryGrid({
   category,
@@ -32,6 +34,46 @@ export function CategoryGrid({
   // U58-GALLERY — lightbox state (null = closed)
   const [lb, setLb] = useState<number | null>(null);
   const gallery = category.gallery ?? [];
+
+  // ترقيم الصفحات — 12 منتجًا لكل صفحة للتوافق التام مع شبكة العرض (2 عمود موبايل، 3 تابلت، 4 ديسكتوب)
+  const PAGE_SIZE = 12;
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.ceil(products.length / PAGE_SIZE);
+
+  // إعادة الترقيم للصفحة الأولى عند تغيير القسم
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [category.slug]);
+
+  const pagedProducts = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return products.slice(start, start + PAGE_SIZE);
+  }, [products, currentPage]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages || newPage === currentPage) return;
+    setCurrentPage(newPage);
+    if (typeof window !== 'undefined') {
+      const gridEl = document.getElementById('category-products-grid');
+      if (gridEl) {
+        const top = gridEl.getBoundingClientRect().top + window.scrollY - 100;
+        window.scrollTo({ top, behavior: 'smooth' });
+      }
+    }
+  };
+
+  const getPageNumbers = () => {
+    if (totalPages <= 6) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (currentPage <= 3) {
+      return [1, 2, 3, 4, '...', totalPages];
+    }
+    if (currentPage >= totalPages - 2) {
+      return [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+  };
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
@@ -111,14 +153,96 @@ export function CategoryGrid({
         </section>
       )}
 
-      {/* grid — U28: editorial cards + staggered reveal cascade */}
+      {/* grid — U28: editorial cards + staggered reveal cascade with pagination */}
       {products.length > 0 ? (
-        <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {products.map((p, i) => (
-            <Reveal key={p.id} delay={Math.min(i * 60, 300)}>
-              <EditorialCard product={p} />
-            </Reveal>
-          ))}
+        <div id="category-products-grid" className="scroll-mt-24">
+          {/* عدّاد وتفاصيل الصفحة الحالية */}
+          {totalPages > 1 && (
+            <div className="mt-8 flex items-center justify-between text-xs font-bold text-muted-foreground">
+              <span>
+                {ar
+                  ? `عرض ${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(currentPage * PAGE_SIZE, products.length)} من أصل ${products.length} منتج`
+                  : `Showing ${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(currentPage * PAGE_SIZE, products.length)} of ${products.length} products`}
+              </span>
+              <span className="rounded-full bg-secondary/80 px-2.5 py-1 text-primary">
+                {ar ? `صفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
+              </span>
+            </div>
+          )}
+
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {pagedProducts.map((p, i) => (
+              <Reveal key={`${currentPage}-${p.id}`} delay={Math.min(i * 45, 250)}>
+                <EditorialCard product={p} />
+              </Reveal>
+            ))}
+          </div>
+
+          {/* ترقيم الصفحات (Pagination Controls) */}
+          {totalPages > 1 && (
+            <nav
+              role="navigation"
+              aria-label={ar ? 'ترقيم الصفحات' : 'Pagination'}
+              className="mt-10 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2"
+            >
+              {/* زر السابق */}
+              <button
+                type="button"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                aria-label={ar ? 'الصفحة السابقة' : 'Previous page'}
+                className="inline-flex h-10 items-center gap-1 rounded-full border border-border bg-card px-3.5 text-xs font-bold text-foreground transition-all hover:border-primary hover:text-primary active:scale-95 disabled:pointer-events-none disabled:opacity-30 shadow-sm"
+              >
+                <ChevronRight className="h-4 w-4 rtl:rotate-0 ltr:rotate-180" />
+                <span>{ar ? 'السابق' : 'Prev'}</span>
+              </button>
+
+              {/* أرقام الصفحات */}
+              {getPageNumbers().map((item, idx) => {
+                if (item === '...') {
+                  return (
+                    <span
+                      key={`dots-${idx}`}
+                      className="grid h-10 w-8 place-items-center text-xs font-bold text-muted-foreground select-none"
+                    >
+                      …
+                    </span>
+                  );
+                }
+                const pageNum = item as number;
+                const isAct = pageNum === currentPage;
+                return (
+                  <button
+                    key={`page-${pageNum}`}
+                    type="button"
+                    onClick={() => handlePageChange(pageNum)}
+                    aria-current={isAct ? 'page' : undefined}
+                    aria-label={`${ar ? 'صفحة' : 'Page'} ${pageNum}`}
+                    className={cn(
+                      'grid h-10 w-10 place-items-center rounded-full text-xs font-extrabold transition-all duration-200 active:scale-95 shadow-sm',
+                      isAct
+                        ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25 ring-2 ring-primary/20'
+                        : 'border border-border bg-card text-foreground/80 hover:border-primary/50 hover:bg-secondary/40 hover:text-primary'
+                    )}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              {/* زر التالي */}
+              <button
+                type="button"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                aria-label={ar ? 'الصفحة التالية' : 'Next page'}
+                className="inline-flex h-10 items-center gap-1 rounded-full border border-border bg-card px-3.5 text-xs font-bold text-foreground transition-all hover:border-primary hover:text-primary active:scale-95 disabled:pointer-events-none disabled:opacity-30 shadow-sm"
+              >
+                <span>{ar ? 'التالي' : 'Next'}</span>
+                <ChevronLeft className="h-4 w-4 rtl:rotate-0 ltr:rotate-180" />
+              </button>
+            </nav>
+          )}
         </div>
       ) : (
         <p className="mt-10 rounded-2xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">
