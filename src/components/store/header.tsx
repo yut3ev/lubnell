@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { SearchDialogV2 } from '@/components/store/search-dialog-v2';
 import { MenuGarden } from '@/components/store/menu-garden'; // MG-MENU-2026-10
+import { AnnouncementBar } from '@/components/store/announcement-bar';
 import { WHATSAPP_NUMBER } from '@/lib/lubnel-types';
 import { useCart } from '@/lib/cart-store';
 // U22-LANG-FIX — useLang is imported for the header's language toggle button.
@@ -68,28 +69,6 @@ export function StoreHeader({
   const items = useCart((s) => s.items);
   const count = items.reduce((s, i) => s + i.qty, 0);
   const [open, setOpen] = useState(false);
-  // U46-ANNOUNCE-ROTATE — the top bar is now a mini news-ticker: the owner's
-  // configured message, a welcome line and an authenticity line take turns
-  // every 4.2s with a professional push-up transition (outgoing text slides
-  // up + fades, incoming rises from below). Grid-stacked cells mean the bar
-  // height always fits the tallest message (no jump between rotations),
-  // rotation pauses while the tab is hidden, and motion-reduce keeps a plain
-  // opacity swap.
-  const [announce, setAnnounce] = useState({ cur: 0, prev: 0 });
-  const announceMsgs = [
-    (ar ? announcementAr : announcementEn) || t.announcement,
-    // U51-GLOBAL-TEXTS — rotation messages 2 & 3 are now owner-editable
-    // (Studio → كل النصوص → شريط الإعلان) instead of hardcoded.
-    t.announceWelcome,
-    t.announceAuthentic,
-  ];
-  useEffect(() => {
-    const id = setInterval(() => {
-      if (document.hidden) return;
-      setAnnounce((s) => ({ cur: (s.cur + 1) % announceMsgs.length, prev: s.cur }));
-    }, 4200);
-    return () => clearInterval(id);
-  }, [announceMsgs.length]);
   const waDigits = (whatsapp || '').replace(/[^0-9]/g, '') || WHATSAPP_NUMBER;
   // U14 — live search typeahead (بحث سريع مع اقتراحات أثناء الكتابة)
   const searchState = useState(false);
@@ -108,26 +87,8 @@ export function StoreHeader({
 
   return (
     <header className="sticky top-0 z-40 w-full">
-      {/* announcement bar — U46-ANNOUNCE-ROTATE: rotating messages (owner
-          copy first, then a welcome line + an authenticity line). Inactive
-          messages stay aria-hidden; the bar keeps its brand surface. */}
-      <div className="grid bg-primary text-center text-xs font-bold text-primary-foreground" aria-live="off">
-        {announceMsgs.map((m, i) => (
-          <span
-            key={i}
-            aria-hidden={i !== announce.cur}
-            className={`col-start-1 row-start-1 flex items-center justify-center px-4 py-2 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
-              i === announce.cur
-                ? 'translate-y-0 opacity-100'
-                : i === announce.prev
-                  ? 'pointer-events-none -translate-y-1.5 opacity-0'
-                  : 'pointer-events-none translate-y-1.5 opacity-0'
-            }`}
-          >
-            {m}
-          </span>
-        ))}
-      </div>
+      {/* Dynamic Announcement Bar — managed via Admin → شريط الإعلانات */}
+      <AnnouncementBar />
 
       {/* U29-THEME-STUDIO — the header surface follows --color-header from
           Studio → هوية الموقع; factory fallback mimics bg-background/85. */}

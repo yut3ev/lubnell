@@ -19,6 +19,7 @@ import {
   Loader2,
   Languages,
   MailPlus,
+  Megaphone,
   Menu,
   Minus,
   Newspaper,
@@ -62,6 +63,7 @@ import { SectionsEditor } from './sections/sections-editor';
 import { TextEverything } from './sections/text-everything';
 import { NewsletterAdminSection } from './sections/newsletter'; // U71-NEWSLETTER-ADMIN
 import { PushAdminSection } from './sections/push'; // PUSH-2026-10
+import AnnounceSection from './sections/announce';
 import { Button } from '@/components/ui/button';
 
 type Stats = {
@@ -108,6 +110,7 @@ const NAV: { id: string; label: string; icon: React.ComponentType<{ className?: 
   { id: 'sectionstexts', label: 'نصوص الأقسام', icon: Heading1, perm: 'sections.read' },
   { id: 'alltexts', label: 'كل النصوص', icon: Languages, perm: 'sections.read' },
   { id: 'content', label: 'النصوص والفوتر', icon: Type, perm: 'content.read' },
+  { id: 'announce', label: 'شريط الإعلانات', icon: Megaphone, perm: 'settings.write' },
   { id: 'theme', label: 'الثيم والألوان', icon: Palette, perm: 'theme.read' },
   { id: 'assistant', label: 'المساعد', icon: Sparkles, perm: 'ai.use' },
   { id: 'analytics', label: 'التحليلات', icon: BarChart3, perm: 'analytics.read' },
@@ -249,6 +252,7 @@ export default function AdminDashboard({ admin, onLogout }: { admin: AdminInfo; 
           {section === 'sectionstexts' && <SectionsEditor />}
           {section === 'alltexts' && <TextEverything />}
           {section === 'content' && <ContentSection />}
+          {section === 'announce' && <AnnounceSection />}
           {section === 'theme' && <ThemeSection />}
           {section === 'assistant' && <AssistantSection />}
           {section === 'analytics' && <AnalyticsSection onGo={setSection} />}
