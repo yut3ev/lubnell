@@ -425,6 +425,28 @@ export function ProductDetail({
             </Button>
           </div>
 
+          {/* 1-Click WhatsApp Quick Order (Feature 2) */}
+          {product.stock > 0 && (
+            <a
+              href={`https://wa.me/${(whatsapp || WHATSAPP_NUMBER).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                [
+                  'مرحبًا LUBNÉL 🌸',
+                  'أود طلب هذا المنتج عبر واتساب:',
+                  `• ${name}${Object.entries(picked).filter(([, v]) => Boolean(v)).length > 0 ? ` (${Object.entries(picked).filter(([, v]) => Boolean(v)).map(([k, v]) => `${k}: ${v}`).join(' · ')})` : ''}`,
+                  `• السعر: ${product.price.toLocaleString('en-US')} ${currency || t.egp}`,
+                  `• الكمية: ${qty}`,
+                  typeof window !== 'undefined' ? `• الرابط: ${window.location.href}` : '',
+                ].filter(Boolean).join('\n')
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2.5 flex h-12 w-full items-center justify-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-50/80 px-4 text-sm font-bold text-emerald-800 transition-all hover:bg-emerald-100 hover:shadow-sm dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
+            >
+              <MessageCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <span>طلب فوري عبر واتساب</span>
+            </a>
+          )}
+
           {/* RESTOCK-ALERTS-2026-10 — sold-out products offer a phone-capture
               notify form; the Studio products screen turns the queue into
               one-tap WhatsApp messages once the stock is back. */}
@@ -566,6 +588,27 @@ export function ProductDetail({
               ) : null}
             </p>
           </div>
+          {product.stock > 0 && (
+            <a
+              href={`https://wa.me/${(whatsapp || WHATSAPP_NUMBER).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                [
+                  'مرحبًا LUBNÉL 🌸',
+                  'أود طلب هذا المنتج عبر واتساب:',
+                  `• ${name}`,
+                  `• السعر: ${product.price.toLocaleString('en-US')} ${currency || t.egp}`,
+                  `• الكمية: ${qty}`,
+                  typeof window !== 'undefined' ? `• الرابط: ${window.location.href}` : '',
+                ].filter(Boolean).join('\n')
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="طلب فوري عبر واتساب"
+              title="طلب فوري عبر واتساب"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-emerald-500/50 bg-emerald-50 text-emerald-700 shadow-sm transition-transform active:scale-95 dark:bg-emerald-950 dark:text-emerald-300"
+            >
+              <MessageCircle className="h-5 w-5" />
+            </a>
+          )}
           <Button
             disabled={product.stock <= 0}
             onClick={() => addToCart()}

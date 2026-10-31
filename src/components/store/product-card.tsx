@@ -42,6 +42,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
   const quickState = useState(false);
   const quickOpen = quickState[0];
   const setQuickOpen = quickState[1];
+  const [imgLoaded, setImgLoaded] = useState(false);
   const soldOut = product.stock <= 0;
   const lowStock = !soldOut && product.stock <= 10;
   const discount =
@@ -58,12 +59,15 @@ export function ProductCard({ product }: { product: ProductCardData }) {
           collision-free placement; h-full lets rail/grid siblings stretch
           to a uniform height. */}
       <div className="relative">
-      <Link href={`/p/${product.slug}`} className="relative block aspect-square overflow-hidden bg-secondary/40">
+      <Link href={`/p/${product.slug}`} className="relative block aspect-square overflow-hidden bg-[#fbeee9]/40">
         <img
           src={product.image}
           alt={ar ? product.nameAr : product.nameEn}
           loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          onLoad={() => setImgLoaded(true)}
+          className={`h-full w-full object-cover transition-all duration-500 group-hover:scale-105 ${
+            imgLoaded ? 'opacity-100 blur-0' : 'opacity-40 blur-[2px]'
+          }`}
         />
         {product.badgeAr && (
           <Badge className="absolute top-3 right-3 rounded-full bg-primary font-bold text-primary-foreground">

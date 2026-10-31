@@ -1,11 +1,14 @@
 'use client';
 
-// Order tracking (MOBILE-TRACK-2026-10): order number + phone → live status
-// from the same Order rows the Studio dashboard manages. Reduces «طلبي فين؟»
-// support messages to a self-service lookup.
+// Order tracking (MOBILE-TRACK-2026-10 / Feature 4):
+// Interactive step-by-step order tracking with Lubnel rose aesthetics,
+// animated step indicator, accurate shipping status, and 1-tap WhatsApp support.
 
-import { useState } from 'react';
-import { Package, Truck, CheckCircle2, ClipboardList, Search, ArrowLeft } from 'lucide-react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { Package, Truck, CheckCircle2, ClipboardList, Search, ArrowRight, MessageCircle } from 'lucide-react';
+import { WHATSAPP_NUMBER } from '@/lib/cart-store';
 
 type TrackedItem = { name: string; qty: number; price: number; variant: string | null };
 type TrackedOrder = {
@@ -22,42 +25,74 @@ type TrackedOrder = {
 };
 
 const STEPS = [
-  { key: 'pending', label: 'قيد المراجعة', icon: ClipboardList },
-  { key: 'confirmed', label: 'قيد التجهيز', icon: Package },
-  { key: 'shipped', label: 'في الطريق', icon: Truck },
-  { key: 'delivered', label: 'تم التسليم', icon: CheckCircle2 },
+  { key: 'pending', label: 'قيد المراجعة', desc: 'استلمنا طلبكِ ونقوم بمراجعته 🌸', icon: ClipboardList },
+  { key: 'confirmed', label: 'قيد التجهيز', desc: 'يتم تحضير وتغليف طلبكِ بكل حب 🎁', icon: Package },
+  { key: 'shipped', label: 'في الطريق', desc: 'طلبكِ مع المندوب وفي الطريق إليكِ 🚚', icon: Truck },
+  { key: 'delivered', label: 'تم التسليم', desc: 'تم تسليم الطلب، نتمنى أن يسعدكِ! ✨', icon: CheckCircle2 },
 ];
 
 function egp(n: number) {
-  return `${n.toLocaleString('en-US')} ج.م`;
+  return `${Number(n).toLocaleString('en-US')} ج.م`;
 }
 
-export function TrackClient() {
+function TrackContent() {
+  const searchParams = useSearchParams();
   const [orderNo, setOrderNo] = useState('');
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [order, setOrder] = useState<TrackedOrder | null>(null);
 
+  const fetchTrack = useCallback(async (oNo: string, pNo: string) => {
+    if (!oNo.trim() || !pNo.trim()) return;
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/track?order=${encodeURIComponent(oNo.trim())}&phone=${encodeURIComponent(pNo.trim())}`);
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.ok) {
+        setOrder(data.order as TrackedOrder);
+      } else {
+        setError(data?.error || 'لم نتمكن من العثور على الطلب — تأكدي من رقم الطلب والموبايل.');
+      }
+    } catch {
+      setError('تعذر الاتصال — تأكدي من اتصالكِ بالإنترنت وجربي ثانية.');
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  // Pre-fill from URL params or localStorage profile
+  useEffect(() => {
+    const qOrder = searchParams.get('order');
+    const qPhone = searchParams.get('phone');
+
+    let initialPhone = qPhone || '';
+    if (!initialPhone) {
+      try {
+        const saved = localStorage.getItem('lubnel_customer_profile');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed?.phone) initialPhone = parsed.phone;
+        }
+      } catch {}
+    }
+
+    if (qOrder) setOrderNo(qOrder);
+    if (initialPhone) setPhone(initialPhone);
+
+    if (qOrder && initialPhone) {
+      fetchTrack(qOrder, initialPhone);
+    }
+  }, [searchParams, fetchTrack]);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
-    setOrder(null);
     if (!orderNo.trim() || !phone.trim()) {
       setError('اكتبي رقم الطلب ورقم الموبايل');
       return;
     }
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/track?order=${encodeURIComponent(orderNo.trim())}&phone=${encodeURIComponent(phone.trim())}`);
-      const data = await res.json().catch(() => null);
-      if (res.ok && data?.ok) setOrder(data.order as TrackedOrder);
-      else setError(data?.error || 'تعذر التتبع الآن — جربي بعد قليل');
-    } catch {
-      setError('تعذر الاتصال — تأكدي من الإنترنت وجربي تاني');
-    } finally {
-      setBusy(false);
-    }
+    fetchTrack(orderNo, phone);
   }
 
   const activeIdx = order
@@ -66,90 +101,212 @@ export function TrackClient() {
       : Math.max(0, STEPS.findIndex((s) => s.key === order.status))
     : -1;
 
-  return (
-    <div className="mx-auto w-full max-w-xl px-4 py-10">
-      <h1 className="text-center text-2xl font-extrabold">تتبعي طلبكِ</h1>
-      <p className="mt-2 text-center text-sm text-muted-foreground">
-        اكتبي رقم الطلب (يبدأ بـ LN-) ورقم الموبايل اللي طلبتِ بيه — الحالة تتحدث مباشرة من المتجر.
-      </p>
+  const progressPct = activeIdx < 0 ? 0 : (activeIdx / (STEPS.length - 1)) * 100;
 
-      <form onSubmit={submit} className="mt-6 space-y-3 rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
-        <div>
-          <label htmlFor="track-order" className="mb-1 block text-sm font-bold">رقم الطلب</label>
-          <input
-            id="track-order" value={orderNo} onChange={(e) => setOrderNo(e.target.value)}
-            placeholder="LN-..." dir="ltr" autoComplete="off"
-            className="h-11 w-full rounded-xl border border-border bg-background px-4 text-left text-sm outline-none focus:border-primary"
-          />
+  return (
+    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:py-12">
+      <div className="text-center">
+        <h1 className="font-serif text-3xl font-extrabold text-[#7a2e3b] sm:text-4xl">
+          تتبعي طلبكِ 🌸
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          اكتبي رقم الطلب (يبدأ بـ LN-) ورقم الموبايل المسجل لمتابعة مرحلة التجهيز والشحن لحظة بلحظة.
+        </p>
+      </div>
+
+      <form onSubmit={submit} className="mt-7 space-y-4 rounded-3xl border border-[#ebd8d0] bg-[#fffaf8] p-5 shadow-sm sm:p-7">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="track-order" className="mb-1.5 block text-xs font-bold text-[#5a2230]">
+              رقم الطلب
+            </label>
+            <input
+              id="track-order"
+              value={orderNo}
+              onChange={(e) => setOrderNo(e.target.value)}
+              placeholder="LN-XXXXXX"
+              dir="ltr"
+              autoComplete="off"
+              className="h-12 w-full rounded-2xl border border-[#ecd9d1] bg-white px-4 text-left font-mono text-sm font-bold text-[#3a2226] outline-none transition-colors focus:border-[#8a3a46]"
+            />
+          </div>
+          <div>
+            <label htmlFor="track-phone" className="mb-1.5 block text-xs font-bold text-[#5a2230]">
+              رقم الموبايل
+            </label>
+            <input
+              id="track-phone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="01012345678"
+              dir="ltr"
+              inputMode="tel"
+              autoComplete="tel"
+              className="h-12 w-full rounded-2xl border border-[#ecd9d1] bg-white px-4 text-left text-sm font-bold text-[#3a2226] outline-none transition-colors focus:border-[#8a3a46]"
+            />
+          </div>
         </div>
-        <div>
-          <label htmlFor="track-phone" className="mb-1 block text-sm font-bold">رقم الموبايل</label>
-          <input
-            id="track-phone" value={phone} onChange={(e) => setPhone(e.target.value)}
-            placeholder="01xxxxxxxxx" dir="ltr" inputMode="tel" autoComplete="tel"
-            className="h-11 w-full rounded-xl border border-border bg-background px-4 text-left text-sm outline-none focus:border-primary"
-          />
-        </div>
-        {error && <p className="text-sm font-bold text-destructive">{error}</p>}
+
+        {error && (
+          <p className="rounded-xl bg-red-50 p-3 text-xs font-bold text-red-600 dark:bg-red-950/40 dark:text-red-300">
+            {error}
+          </p>
+        )}
+
         <button
-          type="submit" disabled={busy}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-base font-bold text-primary-foreground shadow-md disabled:opacity-60"
+          type="submit"
+          disabled={busy}
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#8a3a46] text-sm font-bold text-white shadow-md transition-all hover:bg-[#5a2230] disabled:opacity-60"
         >
-          <Search size={18} /> {busy ? 'جارٍ البحث…' : 'تتبعي الطلب'}
+          <Search size={17} />
+          {busy ? 'جارٍ البحث عن الطلب…' : 'تتبعي حالة الطلب'}
         </button>
       </form>
 
       {order && (
-        <div className="mt-6 rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <strong dir="ltr" className="text-sm">{order.orderNumber}</strong>
-            <span className={`rounded-full px-3 py-1 text-xs font-bold ${order.cancelled ? 'bg-destructive/10 text-destructive' : 'bg-secondary text-foreground'}`}>
+        <div className="mt-8 overflow-hidden rounded-3xl border border-[#ebd8d0] bg-white p-5 shadow-sm sm:p-7">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#ecd9d1] pb-4">
+            <div>
+              <span className="text-xs text-muted-foreground">رقم الطلب:</span>
+              <strong dir="ltr" className="ms-2 font-mono text-base font-extrabold text-[#7a2e3b]">
+                {order.orderNumber}
+              </strong>
+            </div>
+            <span
+              className={`rounded-full px-3.5 py-1 text-xs font-bold ${
+                order.cancelled
+                  ? 'bg-red-100 text-red-700'
+                  : 'bg-[#fbeee9] text-[#7a2e3b]'
+              }`}
+            >
               {order.statusLabel}
             </span>
           </div>
 
           {!order.cancelled && (
-            <ol className="mt-5 flex items-start justify-between gap-1" aria-label="مراحل الطلب">
-              {STEPS.map((s, i) => {
-                const done = i <= activeIdx;
-                const Icon = s.icon;
-                return (
-                  <li key={s.key} className="flex flex-1 flex-col items-center gap-1 text-center">
-                    <span className={`grid h-10 w-10 place-items-center rounded-full border-2 ${done ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-muted-foreground'}`}>
-                      <Icon size={17} />
-                    </span>
-                    <span className={`text-[11px] font-bold leading-tight ${done ? 'text-primary' : 'text-muted-foreground'}`}>{s.label}</span>
-                  </li>
-                );
-              })}
-            </ol>
+            <div className="mt-7">
+              {/* Animated Step Progress Bar */}
+              <div className="relative mb-8 px-2">
+                <div className="h-2 w-full rounded-full bg-[#fbeee9]">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-[#e9a9ae] to-[#8a3a46] transition-all duration-700 ease-out"
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
+              </div>
+
+              <ol className="grid grid-cols-2 gap-4 sm:grid-cols-4" aria-label="مراحل الطلب">
+                {STEPS.map((s, i) => {
+                  const done = i <= activeIdx;
+                  const current = i === activeIdx;
+                  const Icon = s.icon;
+                  return (
+                    <li
+                      key={s.key}
+                      className={`flex flex-col items-center rounded-2xl p-3 text-center transition-all ${
+                        current
+                          ? 'border border-[#e9a9ae] bg-[#fffaf8] shadow-sm'
+                          : done
+                          ? 'bg-[#fdf8f6]'
+                          : 'opacity-50'
+                      }`}
+                    >
+                      <span
+                        className={`grid h-11 w-11 place-items-center rounded-full transition-transform ${
+                          done
+                            ? 'bg-[#8a3a46] text-white'
+                            : 'border-2 border-[#ecd9d1] bg-white text-muted-foreground'
+                        } ${current ? 'scale-110 shadow-md ring-4 ring-[#e9a9ae]/40' : ''}`}
+                      >
+                        <Icon size={19} />
+                      </span>
+                      <span className={`mt-2.5 text-xs font-extrabold ${done ? 'text-[#5a2230]' : 'text-muted-foreground'}`}>
+                        {s.label}
+                      </span>
+                      <span className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                        {s.desc}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
           )}
 
-          <ul className="mt-5 space-y-2 border-t border-border/60 pt-4 text-sm">
-            {order.items.map((it, idx) => (
-              <li key={idx} className="flex items-start justify-between gap-3">
-                <span className="font-bold">
-                  {it.name}
-                  {it.variant ? <span className="ms-2 text-xs text-muted-foreground">{it.variant}</span> : null}
-                  <span className="ms-2 text-xs text-muted-foreground">× {it.qty}</span>
-                </span>
-                <span className="font-bold text-primary">{egp(it.price * it.qty)}</span>
-              </li>
-            ))}
-          </ul>
-          <dl className="mt-3 space-y-1 border-t border-border/60 pt-3 text-sm">
-            <div className="flex justify-between"><dt className="text-muted-foreground">المجموع</dt><dd className="font-bold">{egp(order.subtotal)}</dd></div>
-            <div className="flex justify-between"><dt className="text-muted-foreground">الشحن</dt><dd className="font-bold">{order.shipping === 0 ? 'مجاني' : egp(order.shipping)}</dd></div>
-            <div className="flex justify-between text-base"><dt className="font-bold">الإجمالي</dt><dd className="font-bold text-primary">{egp(order.total)}</dd></div>
-          </dl>
-          <p className="mt-4 text-xs text-muted-foreground">
-            تم الطلب {new Date(order.placedAt).toLocaleDateString('ar-EG')} — التوصيل إلى {order.city}. لأي استفسار تواصلي معنا واتساب.
-          </p>
-          <a href="/#/" className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-primary underline-offset-4 hover:underline">
-            <ArrowLeft size={15} /> متابعة التسوق
-          </a>
+          {/* Items Summary */}
+          <div className="mt-7 border-t border-[#ecd9d1] pt-5">
+            <h3 className="text-xs font-bold text-[#5a2230]">محتويات الطلب:</h3>
+            <ul className="mt-3 space-y-2.5 text-sm">
+              {order.items.map((it, idx) => (
+                <li key={idx} className="flex items-start justify-between gap-3 rounded-xl bg-[#faf6f3] p-3">
+                  <div>
+                    <span className="font-bold text-[#3a2226]">{it.name}</span>
+                    {it.variant && (
+                      <span className="ms-2 text-xs text-muted-foreground">({it.variant})</span>
+                    )}
+                    <span className="ms-2 inline-block rounded-md bg-white px-2 py-0.5 text-xs font-bold text-[#8a3a46]">
+                      × {it.qty}
+                    </span>
+                  </div>
+                  <span className="font-extrabold text-[#7a2e3b]">{egp(it.price * it.qty)}</span>
+                </li>
+              ))}
+            </ul>
+
+            {/* Financials */}
+            <dl className="mt-4 space-y-1.5 border-t border-[#ecd9d1] pt-4 text-sm">
+              <div className="flex justify-between text-muted-foreground">
+                <dt>المجموع الفرعي</dt>
+                <dd className="font-bold text-[#3a2226]">{egp(order.subtotal)}</dd>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <dt>الشحن وطريقة التوصيل</dt>
+                <dd className="font-bold text-[#8a3a46]">
+                  {order.shipping === 0
+                    ? order.subtotal >= 1500
+                      ? 'مجاني (تجاوز 1,500 ج.م) 🌸'
+                      : 'يُحدد مع المسؤولة عبر واتساب'
+                    : egp(order.shipping)}
+                </dd>
+              </div>
+              <div className="flex justify-between border-t border-[#ecd9d1] pt-2 text-base">
+                <dt className="font-extrabold text-[#3a2226]">الإجمالي المطلوب</dt>
+                <dd className="font-extrabold text-[#7a2e3b]">{egp(order.total)}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
+            <a
+              href={`https://wa.me/${WHATSAPP_NUMBER.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                `مرحبًا LUBNÉL 🌸\nأود الاستفسار عن حالة طلبي:\n• رقم الطلب: ${order.orderNumber}\n• الاسم/الموبايل: ${phone}`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-50 px-4 text-xs font-bold text-emerald-800 transition-all hover:bg-emerald-100"
+            >
+              <MessageCircle size={16} className="text-emerald-600" />
+              <span>استفسار عبر واتساب بخصوص هذا الطلب</span>
+            </a>
+            <Link
+              href="/"
+              className="flex h-11 items-center justify-center gap-1.5 rounded-full border border-[#ecd9d1] bg-white px-5 text-xs font-bold text-[#7a2e3b] transition-all hover:bg-[#fbeee9]"
+            >
+              <span>متابعة التسوق</span>
+              <ArrowRight size={14} />
+            </Link>
+          </div>
         </div>
       )}
     </div>
   );
 }
+
+export function TrackClient() {
+  return (
+    <Suspense fallback={<div className="p-12 text-center text-sm text-muted-foreground">جارٍ التحميل…</div>}>
+      <TrackContent />
+    </Suspense>
+  );
+}
+

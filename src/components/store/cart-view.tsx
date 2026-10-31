@@ -272,6 +272,23 @@ const CHECKOUT_CSS = `
 @keyframes chk-fall{to{transform:translateY(520px) rotate(300deg)}}
 
 .chk-root .B .pg{padding-bottom:120px}
+
+/* Cart Upsell / Order Bump */
+.chk-root .ob{margin-top:16px;background:#fff8f6;border:1.5px dashed var(--rose);border-radius:18px;padding:14px 16px;box-shadow:0 4px 14px rgba(138,58,70,0.04)}
+.chk-root .ob-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.chk-root .ob-hd b{font-family:var(--hand);font-size:1.15rem;color:var(--wd);display:flex;align-items:center;gap:6px}
+.chk-root .ob-hd span{font-size:0.75rem;color:var(--wa);font-weight:700;background:rgba(47,168,102,0.1);padding:3px 8px;border-radius:99px}
+.chk-root .ob-ls{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:600px){.chk-root .ob-ls{grid-template-columns:1fr 1fr}}
+.chk-root .ob-it{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:8px 10px;transition:transform .2s ease,border-color .2s ease}
+.chk-root .ob-it:hover{transform:translateY(-1px);border-color:var(--rose)}
+.chk-root .ob-im{width:48px;height:48px;border-radius:10px;background:#fbeee9;background-size:cover;background-position:center;flex-shrink:0}
+.chk-root .ob-dt{flex:1;min-width:0}
+.chk-root .ob-nm{font-size:0.86rem;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chk-root .ob-pr{font-size:0.82rem;font-weight:800;color:var(--w);margin-top:2px}
+.chk-root .ob-btn{background:var(--w);color:#fff;border:none;border-radius:20px;padding:6px 12px;font-size:0.78rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .2s ease;flex-shrink:0}
+.chk-root .ob-btn:hover{background:var(--wd);transform:scale(1.03)}
+
 @media(max-width:900px){.chk-root .fg{grid-template-columns:1fr}.chk-root h1{font-size:2rem}.chk-root .st .s span{display:none}.chk-root .st .s.on span{display:inline}.chk-root .pg{padding:20px 14px 30px}}
 @media(max-width:520px){.chk-root .it{flex-wrap:wrap}.chk-root .it .im{width:72px;height:72px}.chk-root .B .card{padding:20px 16px}}
 @media(prefers-reduced-motion:reduce){.chk-root *{animation-duration:.01s!important;animation-iteration-count:1!important;transition-duration:.01s!important}.chk-root .pt{display:none}}
@@ -295,6 +312,7 @@ declare global {
 export function CartView({ initialSettings, whatsapp }: CartViewProps) {
   const router = useRouter();
   const rawItems = useCart((s) => s.items);
+  const addItem = useCart((s) => s.add);
   const setQty = useCart((s) => s.setQty);
   const removeItem = useCart((s) => s.remove);
   const clearCart = useCart((s) => s.clear);
@@ -335,6 +353,77 @@ export function CartView({ initialSettings, whatsapp }: CartViewProps) {
   const modalCloseBtnRef = useRef<HTMLButtonElement>(null);
   const lastActiveElementRef = useRef<HTMLElement | null>(null);
 
+  // Upsell items state (Feature 1: Cart Upsell / Order Bump)
+  const [upsellProducts, setUpsellProducts] = useState<{
+    id: string;
+    slug: string;
+    nameAr: string;
+    price: number;
+    image: string;
+  }[]>([]);
+
+  useEffect(() => {
+    fetch('/api/products?take=12')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.ok && Array.isArray(data.products)) {
+          setUpsellProducts(
+            data.products
+              .filter((p: { stock?: number }) => (p.stock == null || p.stock > 0))
+              .map((p: { id: string; slug: string; nameAr: string; price: number; image: string }) => ({
+                id: p.id,
+                slug: p.slug,
+                nameAr: p.nameAr,
+                price: p.price,
+                image: p.image,
+              }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Auto-fill delivery details from draft or saved customer profile (Feature 3)
+  useEffect(() => {
+    try {
+      const savedDraft = localStorage.getItem('lubnel_checkout_draft');
+      const savedProfile = localStorage.getItem('lubnel_customer_profile');
+      if (savedDraft) {
+        const parsed = JSON.parse(savedDraft);
+        if (parsed && typeof parsed === 'object') {
+          setVals((prev) => ({ ...prev, ...parsed }));
+          return;
+        }
+      }
+      if (savedProfile) {
+        const parsed = JSON.parse(savedProfile);
+        if (parsed && typeof parsed === 'object') {
+          setVals((prev) => ({
+            ...prev,
+            name: parsed.name || prev.name,
+            phone: parsed.phone || prev.phone,
+            city: parsed.city || prev.city,
+            addr: parsed.addr || prev.addr,
+            email: parsed.email || prev.email,
+          }));
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Persist draft changes
+  useEffect(() => {
+    if (vals.name || vals.phone || vals.city || vals.addr || vals.email || vals.note) {
+      try {
+        localStorage.setItem('lubnel_checkout_draft', JSON.stringify(vals));
+      } catch {
+        // ignore
+      }
+    }
+  }, [vals]);
+
   // Map cart items
   const items = rawItems.map((i) => {
     const key = i.key || i.id;
@@ -363,6 +452,11 @@ export function CartView({ initialSettings, whatsapp }: CartViewProps) {
   const totalQty = items.reduce((acc, i) => acc + i.qty, 0);
   const remainingForFree = Math.max(0, freeThreshold - subtotal);
   const freeProgressPct = Math.min(100, (subtotal / freeThreshold) * 100);
+  const availableUpsells = useMemo(() => {
+    return upsellProducts
+      .filter((p) => !items.some((it) => it.slug === p.slug || it.id === p.id))
+      .slice(0, 3);
+  }, [upsellProducts, items]);
 
   // Form validation
   const validateForm = useCallback(() => {
@@ -567,6 +661,23 @@ export function CartView({ initialSettings, whatsapp }: CartViewProps) {
       const realOrderId = data.order.orderNumber || `LN-${data.order.id.slice(-6).toUpperCase()}`;
       setDone(true);
       trackVisit('order_placed', data.order.id);
+
+      // Save customer profile for future visits & clear draft (Feature 3)
+      try {
+        localStorage.setItem(
+          'lubnel_customer_profile',
+          JSON.stringify({
+            name: vals.name,
+            phone: vals.phone,
+            email: vals.email,
+            city: vals.city,
+            addr: vals.addr,
+          })
+        );
+        localStorage.removeItem('lubnel_checkout_draft');
+      } catch {
+        // ignore
+      }
 
       const msgText = composeWhatsAppText(realOrderId);
       const waUrl = `https://wa.me/${storeWhatsapp}?text=${encodeURIComponent(msgText)}`;
@@ -792,6 +903,50 @@ export function CartView({ initialSettings, whatsapp }: CartViewProps) {
                 </>
               )}
             </div>
+
+            {/* Cart Upsell / Order Bump (Feature 1) */}
+            {items.length > 0 && availableUpsells.length > 0 && (
+              <div className="ob">
+                <div className="ob-hd">
+                  <b>
+                    <span dangerouslySetInnerHTML={{ __html: renderIcon('gift', 18) }} />
+                    أضيفي لطلبكِ بسعر خاص 🌸
+                  </b>
+                  <span>زيادة سريعة</span>
+                </div>
+                <div className="ob-ls">
+                  {availableUpsells.map((up) => (
+                    <div key={up.id} className="ob-it">
+                      <div
+                        className="ob-im"
+                        style={{
+                          backgroundImage: up.image ? `url(${up.image})` : undefined,
+                        }}
+                      />
+                      <div className="ob-dt">
+                        <div className="ob-nm" title={up.nameAr}>{up.nameAr}</div>
+                        <div className="ob-pr">{formatNumber(up.price)} {currency}</div>
+                      </div>
+                      <button
+                        type="button"
+                        className="ob-btn"
+                        onClick={() => {
+                          addItem({
+                            id: up.id,
+                            slug: up.slug,
+                            nameAr: up.nameAr,
+                            price: up.price,
+                            image: up.image,
+                          }, 1);
+                        }}
+                      >
+                        + أضيفي
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Panel 1 Navigation */}
             {items.length > 0 && (

@@ -13,6 +13,16 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    remotePatterns: [
+      { protocol: 'https', hostname: '**' },
+      { protocol: 'http', hostname: '**' },
+    ],
+    deviceSizes: [360, 430, 640, 750, 828, 1080, 1200],
+    imageSizes: [64, 96, 128, 256, 384],
+    minimumCacheTTL: 86400,
+  },
   // U54-PERF-ROBUST — stop advertising the framework version (X-Powered-By)
   // on every response: free hardening, zero behavior change.
   poweredByHeader: false,

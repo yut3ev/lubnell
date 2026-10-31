@@ -10,12 +10,14 @@
 // the session log) — a transport bug in the ops shell eats bracket-h
 // sequences, so the file avoids that pattern entirely.
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Loader2, SearchX } from 'lucide-react';
+import { Search, Loader2, SearchX, ShoppingBag, Check, History, X } from 'lucide-react';
 import Link from 'next/link';
 import { useT } from '@/lib/i18n';
 import { useStorePrefs } from '@/lib/store-prefs';
+import { useCart } from '@/lib/cart-store';
+import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -37,35 +39,60 @@ type Hit = {
 
 export function SearchDialogV2({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { ar, t } = useT();
-  // U19-SETTINGS — currency label from Studio
   const currency = useStorePrefs((s) => s.currency);
+  const addItem = useCart((s) => s.add);
   useEffect(() => { void useStorePrefs.getState().ensure(); }, []);
   const router = useRouter();
-  const qState = useState('');
-  const q = qState[0];
-  const setQ = qState[1];
-  const hitsState = useState<Hit[]>([]);
-  const hits = hitsState[0];
-  const setHits = hitsState[1];
-  const loadingState = useState(false);
-  const loading = loadingState[0];
-  const setLoading = loadingState[1];
-  const searchedState = useState(false);
-  const searched = searchedState[0];
-  const setSearched = searchedState[1];
-  const catsState = useState<{ id: string; slug: string; nameAr: string; nameEn?: string }[]>([]);
-  const cats = catsState[0];
-  const setCats = catsState[1];
+  const [q, setQ] = useState('');
+  const [hits, setHits] = useState<Hit[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+  const [cats, setCats] = useState<{ id: string; slug: string; nameAr: string; nameEn?: string }[]>([]);
+  const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load recent searches from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('lubnel_recent_searches');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setRecentSearches(parsed.slice(0, 5));
+      }
+    } catch {}
+  }, [open]);
+
+  const saveRecentSearch = (term: string) => {
+    const trimmed = term.trim();
+    if (!trimmed) return;
+    setRecentSearches((prev) => {
+      const updated = [trimmed, ...prev.filter((s) => s !== trimmed)].slice(0, 5);
+      try {
+        localStorage.setItem('lubnel_recent_searches', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const removeRecentSearch = (term: string) => {
+    setRecentSearches((prev) => {
+      const updated = prev.filter((s) => s !== term);
+      try {
+        localStorage.setItem('lubnel_recent_searches', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
 
   useEffect(() => {
     if (!open) {
       setQ('');
       setHits([]);
       setSearched(false);
+      setActiveFilter('all');
       return;
     }
-    // SEARCH-FUZZY — live categories for the empty-results suggestions
     fetch('/api/store/bootstrap')
       .then((r) => r.json())
       .then((d) => {
@@ -73,7 +100,7 @@ export function SearchDialogV2({ open, onOpenChange }: { open: boolean; onOpenCh
         setCats(Array.isArray(list) ? list.slice(0, 8) : []);
       })
       .catch(() => {});
-  }, [open, setHits, setQ, setSearched]);
+  }, [open]);
 
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current);
@@ -89,25 +116,42 @@ export function SearchDialogV2({ open, onOpenChange }: { open: boolean; onOpenCh
       try {
         const res = await fetch(`/api/products?q=${encodeURIComponent(term)}`);
         const data = await res.json();
-        setHits((data?.ok && Array.isArray(data.products) ? data.products : []).slice(0, 8));
+        setHits((data?.ok && Array.isArray(data.products) ? data.products : []).slice(0, 10));
       } catch {
         setHits([]);
       } finally {
         setLoading(false);
         setSearched(true);
       }
-    }, 250);
+    }, 220);
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [q, setHits, setLoading, setSearched]);
+  }, [q]);
 
-  function submitFullSearch() {
-    const term = q.trim();
+  function submitFullSearch(termOverride?: string) {
+    const term = (termOverride || q).trim();
     if (!term) return;
+    saveRecentSearch(term);
     onOpenChange(false);
     router.push(`/search?q=${encodeURIComponent(term)}`);
   }
+
+  // Quick filter items
+  const displayHits = useMemo(() => {
+    if (activeFilter === 'under150') return hits.filter((h) => h.price <= 150);
+    if (activeFilter === 'offers') {
+      return hits.filter(
+        (h) => h.category?.nameAr?.includes('عرض') || h.nameAr.includes('بوكس') || h.nameAr.includes('عرض')
+      );
+    }
+    if (activeFilter !== 'all') {
+      return hits.filter(
+        (h) => h.category?.nameAr === activeFilter || h.nameAr.includes(activeFilter)
+      );
+    }
+    return hits;
+  }, [hits, activeFilter]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -146,43 +190,133 @@ export function SearchDialogV2({ open, onOpenChange }: { open: boolean; onOpenCh
               </Button>
             )}
           </form>
+
+          {/* Quick Filter Chips (Feature 7) */}
+          <div className="mt-3 flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+            <button
+              type="button"
+              onClick={() => setActiveFilter('all')}
+              className={`rounded-full px-3 py-1 font-bold transition-all shrink-0 ${
+                activeFilter === 'all'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary/70 text-foreground hover:bg-secondary'
+              }`}
+            >
+              الكل
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveFilter('under150')}
+              className={`rounded-full px-3 py-1 font-bold transition-all shrink-0 ${
+                activeFilter === 'under150'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary/70 text-foreground hover:bg-secondary'
+              }`}
+            >
+              أقل من 150 ج.م
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveFilter('offers')}
+              className={`rounded-full px-3 py-1 font-bold transition-all shrink-0 ${
+                activeFilter === 'offers'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary/70 text-foreground hover:bg-secondary'
+              }`}
+            >
+              عروض وتخفيضات 🏷️
+            </button>
+            {cats.slice(0, 3).map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setActiveFilter(activeFilter === c.nameAr ? 'all' : c.nameAr)}
+                className={`rounded-full px-3 py-1 font-bold transition-all shrink-0 ${
+                  activeFilter === c.nameAr
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-secondary/70 text-foreground hover:bg-secondary'
+                }`}
+              >
+                {c.nameAr}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="max-h-[50vh] overflow-y-auto px-3 pb-4 pt-3">
-          {hits.length > 0 && (
-            <ul className="space-y-1">
-              {hits.map((h) => (
+        <div className="max-h-[52vh] overflow-y-auto px-3 pb-4 pt-2">
+          {displayHits.length > 0 && (
+            <ul className="space-y-1.5">
+              {displayHits.map((h) => (
                 <li key={h.id}>
-                  <Link
-                    href={`/p/${h.slug}`}
-                    onClick={() => onOpenChange(false)}
-                    className="flex items-center gap-3 rounded-2xl p-2.5 transition-colors hover:bg-secondary"
-                  >
-                    <img src={h.image} alt="" aria-hidden className="h-12 w-12 rounded-xl object-cover" loading="lazy" />
-                    <span className="flex-1">
-                      <span className="block text-sm font-bold leading-snug">{ar ? h.nameAr : h.nameEn}</span>
-                      {h.category?.nameAr && (
-                        <span className="block text-xs text-muted-foreground">{h.category.nameAr}</span>
-                      )}
-                    </span>
-                    <span className="text-sm font-bold text-primary">
-                      {h.price.toLocaleString('en-US')} <span className="text-[10px]">{currency || t.egp}</span>
-                    </span>
-                  </Link>
+                  <div className="group flex items-center justify-between gap-3 rounded-2xl p-2.5 transition-colors hover:bg-secondary">
+                    <Link
+                      href={`/p/${h.slug}`}
+                      onClick={() => {
+                        saveRecentSearch(h.nameAr);
+                        onOpenChange(false);
+                      }}
+                      className="flex flex-1 items-center gap-3 min-w-0"
+                    >
+                      <img
+                        src={h.image}
+                        alt=""
+                        aria-hidden
+                        className="h-12 w-12 rounded-xl object-cover border border-border/40 shrink-0"
+                        loading="lazy"
+                      />
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-sm font-bold leading-snug truncate">
+                          {ar ? h.nameAr : h.nameEn}
+                        </span>
+                        {h.category?.nameAr && (
+                          <span className="block text-xs text-muted-foreground truncate">
+                            {h.category.nameAr}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-sm font-bold text-primary shrink-0 px-2">
+                        {h.price.toLocaleString('en-US')} <span className="text-[10px]">{currency || t.egp}</span>
+                      </span>
+                    </Link>
+
+                    {/* Quick Add To Cart Button */}
+                    <button
+                      type="button"
+                      aria-label={`إضافة ${h.nameAr} للحقيبة`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addItem(
+                          {
+                            id: h.id,
+                            slug: h.slug,
+                            nameAr: h.nameAr,
+                            price: h.price,
+                            image: h.image,
+                          },
+                          1
+                        );
+                        toast({
+                          title: 'أُضيف إلى الحقيبة 🌸',
+                          description: h.nameAr,
+                        });
+                      }}
+                      className="flex h-8 items-center gap-1 rounded-full bg-primary/10 px-3 text-xs font-bold text-primary transition-all hover:bg-primary hover:text-white shrink-0"
+                    >
+                      <ShoppingBag className="h-3.5 w-3.5" />
+                      <span>+ السلة</span>
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
           )}
 
-          {searched && !loading && hits.length === 0 && (
+          {searched && !loading && displayHits.length === 0 && (
             <div className="flex flex-col items-center gap-4 py-8 text-center">
               <p className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
                 <SearchX className="h-6 w-6 text-muted-foreground/50" aria-hidden />
                 {t.searchNoResults.split('{q}').join(q.trim())}
               </p>
-              {/* SEARCH-FUZZY — empty results offer the live categories instead
-                  of a dead end (the categories come from the same bootstrap the
-                  storefront already caches) */}
               {cats.length > 0 && (
                 <div className="flex max-w-sm flex-wrap items-center justify-center gap-2">
                   <span className="text-xs font-bold text-muted-foreground">{ar ? 'تصفحي التصنيفات:' : 'Browse categories:'}</span>
@@ -202,18 +336,76 @@ export function SearchDialogV2({ open, onOpenChange }: { open: boolean; onOpenCh
           )}
 
           {!searched && (
-            <div className="flex flex-wrap items-center gap-2 px-2 py-3">
-              <span className="text-xs font-bold text-muted-foreground">{t.searchTrending}</span>
-              {(t.searchTrends.split(/[,،]/).map((s) => s.trim()).filter(Boolean)).map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setQ(s)}
-                  className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-bold text-foreground/75 transition-colors hover:border-primary/40 hover:text-primary"
-                >
-                  {s}
-                </button>
-              ))}
+            <div className="space-y-4 px-2 py-3">
+              {/* Recent Searches */}
+              {recentSearches.length > 0 && (
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-xs font-bold text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <History className="h-3.5 w-3.5" />
+                      عمليات البحث الأخيرة
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRecentSearches([]);
+                        try {
+                          localStorage.removeItem('lubnel_recent_searches');
+                        } catch {}
+                      }}
+                      className="text-[11px] text-muted-foreground hover:text-destructive"
+                    >
+                      مسح الكل
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {recentSearches.map((s) => (
+                      <span
+                        key={s}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card py-1 pe-2 ps-3 text-xs font-bold text-foreground/85 transition-colors hover:border-primary/40"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQ(s);
+                            submitFullSearch(s);
+                          }}
+                        >
+                          {s}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeRecentSearch(s)}
+                          aria-label={`حذف ${s}`}
+                          className="rounded-full p-0.5 text-muted-foreground hover:bg-muted"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Trending suggestions */}
+              <div>
+                <span className="mb-2 block text-xs font-bold text-muted-foreground">{t.searchTrending}</span>
+                <div className="flex flex-wrap gap-2">
+                  {t.searchTrends.split(/[,،]/).map((s) => s.trim()).filter(Boolean).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => {
+                        setQ(s);
+                        saveRecentSearch(s);
+                      }}
+                      className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-bold text-foreground/75 transition-colors hover:border-primary/40 hover:text-primary"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
