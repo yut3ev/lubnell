@@ -1,22 +1,45 @@
 import { db } from '@/lib/db';
 import { CartView } from '@/components/store/cart-view';
+import { SHIPPING_FEE, FREE_SHIPPING_THRESHOLD, WHATSAPP_NUMBER } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
-// U19-SETTINGS — /cart now renders the settings-driven CartView (it was
-// pointing at an older checkout that baked the shipping fee / WhatsApp number
-// / greeting as constants and ignored Studio → الشحن والدفع entirely).
-// The orders WhatsApp number comes from her saved store settings.
 export default async function CartPage() {
-  let whatsapp: string | undefined;
+  let whatsapp = WHATSAPP_NUMBER;
+  let shipping = SHIPPING_FEE;
+  let freeFrom = FREE_SHIPPING_THRESHOLD;
+  let currency = 'ج.م';
+  let whatsappMessage = 'مرحبًا LUBNÉL 🌸';
+
   try {
     const rows = await db.storeSettings.findMany({ where: { key: 'store' } });
-    const val = JSON.parse(rows[0]?.value ?? '{}') as { whatsappNumber?: unknown };
+    const val = JSON.parse(rows[0]?.value ?? '{}') as Record<string, unknown>;
     if (typeof val.whatsappNumber === 'string' && val.whatsappNumber.trim()) {
       whatsapp = val.whatsappNumber.trim();
     }
+    const fee = Number(val.shippingFee);
+    if (Number.isFinite(fee) && fee >= 0) shipping = fee;
+    const threshold = Number(val.freeShippingThreshold);
+    if (Number.isFinite(threshold) && threshold >= 0) freeFrom = threshold;
+    if (typeof val.currency === 'string' && val.currency.trim()) currency = val.currency.trim();
+    if (typeof val.whatsappMessage === 'string' && val.whatsappMessage.trim()) {
+      whatsappMessage = val.whatsappMessage.trim();
+    }
   } catch {
-    // DB unavailable → CartView falls back to the shipped constant
+    // DB unavailable → fall back to defaults
   }
-  return <CartView whatsapp={whatsapp} />;
+
+  const cleanWhatsapp = whatsapp.replace(/[^0-9]/g, '');
+
+  return (
+    <CartView
+      initialSettings={{
+        whatsapp: cleanWhatsapp,
+        shipping,
+        freeFrom,
+        currency,
+        whatsappMessage,
+      }}
+    />
+  );
 }

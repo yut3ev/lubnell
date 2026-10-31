@@ -24,6 +24,22 @@ const ORDER_WINDOW_MS = 10 * 60 * 1000;
 const ORDER_MAX_PER_WINDOW = 5;
 const orderTimestamps = new Map<string, number[]>();
 
+// Idempotency cache: prevents duplicate orders from double-clicks or rapid retries
+const IDEMPOTENCY_WINDOW_MS = 2 * 60 * 1000;
+interface CachedOrderResult {
+  order: {
+    id: string;
+    orderNumber: string;
+    total: number;
+    discount: number;
+    couponCode: string | null;
+    itemCount: number;
+  };
+  emailSent: boolean;
+  time: number;
+}
+const idempotencyCache = new Map<string, CachedOrderResult>();
+
 function orderThrottled(ip: string): { throttled: boolean; retryAfter: number } {
   const now = Date.now();
   const recent = (orderTimestamps.get(ip) || []).filter((t) => now - t < ORDER_WINDOW_MS);
@@ -51,7 +67,7 @@ export async function POST(req: NextRequest) {
       );
     }
     const body = await req.json();
-    const { customerName, phone, city, address, notes, items, couponCode, email } = body as {
+    const { customerName, phone, city, address, notes, items, couponCode, email, idempotencyKey } = body as {
       customerName?: string;
       phone?: string;
       city?: string;
@@ -60,14 +76,62 @@ export async function POST(req: NextRequest) {
       items?: IncomingItem[];
       couponCode?: string;
       email?: string; // ORDER-NOTIFY — transient confirmation email (not stored)
+      idempotencyKey?: string;
     };
 
-    if (!customerName?.trim() || !phone?.trim() || !city?.trim() || !address?.trim()) {
+    // Idempotency check: if client sent the same request within window, return cached success
+    if (idempotencyKey) {
+      const cached = idempotencyCache.get(idempotencyKey);
+      if (cached && Date.now() - cached.time < IDEMPOTENCY_WINDOW_MS) {
+        return NextResponse.json({
+          ok: true,
+          order: cached.order,
+          emailSent: cached.emailSent,
+        });
+      }
+    }
+
+    // Strict Arabic field validations
+    const nameTrimmed = (customerName || '').trim();
+    const nameWords = nameTrimmed.split(/\s+/).filter(Boolean);
+    if (nameTrimmed.length < 3 || nameWords.length < 2) {
       return NextResponse.json(
-        { ok: false, error: 'الرجاء إكمال بيانات التوصيل كاملة' },
+        { ok: false, error: 'اكتبي الاسم بالكامل (اسمين على الأقل)' },
         { status: 400 }
       );
     }
+
+    const cleanPhone = (phone || '').replace(/[\s-]/g, '');
+    if (!/^01[0125]\d{8}$/.test(cleanPhone)) {
+      return NextResponse.json(
+        { ok: false, error: 'اكتبي رقم موبايل مصري صحيح (11 رقم يبدأ بـ 01)' },
+        { status: 400 }
+      );
+    }
+
+    const cityTrimmed = (city || '').trim();
+    if (cityTrimmed.length < 2) {
+      return NextResponse.json(
+        { ok: false, error: 'اختاري أو اكتبي المدينة' },
+        { status: 400 }
+      );
+    }
+
+    const addressTrimmed = (address || '').trim();
+    if (addressTrimmed.length < 8) {
+      return NextResponse.json(
+        { ok: false, error: 'اكتبي عنوان أوضح (الشارع ورقم العمارة - 8 حروف على الأقل)' },
+        { status: 400 }
+      );
+    }
+
+    if (email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
+      return NextResponse.json(
+        { ok: false, error: 'صيغة الإيميل غير صحيحة' },
+        { status: 400 }
+      );
+    }
+
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
         { ok: false, error: 'سلة المشتريات فارغة' },
@@ -77,12 +141,23 @@ export async function POST(req: NextRequest) {
 
     // resolve products server-side (never trust client prices)
     const slugs = [...new Set(items.map((i) => i.slug || i.id).filter(Boolean))] as string[];
-    const products = await db.product.findMany({ where: { slug: { in: slugs } } });
-    const bySlug = new Map(products.map((p) => [p.slug, p]));
+    const products = await db.product.findMany({
+      where: {
+        OR: [
+          { slug: { in: slugs } },
+          { id: { in: slugs } },
+        ],
+      },
+    });
+    const bySlugOrId = new Map<string, (typeof products)[0]>();
+    for (const p of products) {
+      bySlugOrId.set(p.slug, p);
+      bySlugOrId.set(p.id, p);
+    }
 
     const orderItems = [];
     for (const it of items) {
-      const p = bySlug.get(it.slug || it.id || '');
+      const p = bySlugOrId.get(it.slug || it.id || '');
       if (!p) continue;
       const qty = Math.max(1, Math.min(20, Math.floor(Number(it.qty) || 1)));
       orderItems.push({
@@ -153,7 +228,8 @@ export async function POST(req: NextRequest) {
     // plus the placement IP / user-agent so the Studio orders & customers
     // views can show name → orders → IP exactly as the owner requested.
     const meta = requestMeta(req);
-    const orderNumber = `LN-${Date.now().toString(36).toUpperCase()}${Math.floor(Math.random() * 900 + 100)}`;
+    // Server-generated unique order code matching LN-XXXXXX
+    const orderNumber = `LN-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
     const order = await db.order.create({
       data: {
@@ -191,7 +267,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({
+    const responsePayload = {
       ok: true,
       order: {
         id: order.id,
@@ -202,7 +278,17 @@ export async function POST(req: NextRequest) {
         itemCount: order.items.length,
       },
       emailSent,
-    });
+    };
+
+    if (idempotencyKey) {
+      idempotencyCache.set(idempotencyKey, {
+        order: responsePayload.order,
+        emailSent,
+        time: Date.now(),
+      });
+    }
+
+    return NextResponse.json(responsePayload);
   } catch (err) {
     console.error('[orders]', err);
     return NextResponse.json(
