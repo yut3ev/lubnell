@@ -12,6 +12,7 @@ export type OrderEmailPayload = {
   city: string;
   subtotal: number;
   shipping: number;
+  isFreeShipping?: boolean;
   total: number;
   items: { nameAr: string; qty: number; price: number; variant?: string | null }[];
 };
@@ -52,7 +53,7 @@ export async function sendOrderConfirmationEmail(email: string, o: OrderEmailPay
           </table>
           <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:10px">
             <tr><td style="padding:4px 0;color:#666">المجموع</td><td style="text-align:left">${money(o.subtotal)}</td></tr>
-            <tr><td style="padding:4px 0;color:#666">الشحن</td><td style="text-align:left">${o.shipping === 0 ? "مجاني" : money(o.shipping)}</td></tr>
+            <tr><td style="padding:4px 0;color:#666">الشحن</td><td style="text-align:left">${o.isFreeShipping ? "مجاني 🌸" : o.shipping === 0 ? "يُحدد مع المسؤولة عبر واتساب" : money(o.shipping)}</td></tr>
             <tr><td style="padding:8px 0;font-weight:bold;border-top:2px solid #7a2e3b">الإجمالي (الدفع عند الاستلام)</td><td style="text-align:left;font-weight:bold;color:#7a2e3b;border-top:2px solid #7a2e3b">${money(o.total)}</td></tr>
           </table>
           <p style="margin:16px 0 0;font-size:13px;color:#666;line-height:1.7">التوصيل إلى ${o.city} خلال 2–5 أيام عمل. لو في أي استفسار راسلينا واتساب وسنكون سعداء بمساعدتكِ.</p>

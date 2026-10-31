@@ -179,37 +179,20 @@ export async function POST(req: NextRequest) {
 
     const subtotal = orderItems.reduce((s, i) => s + i.price * i.qty, 0);
 
-    // SHIP-ZONES-2026-10 — server-side shipping now mirrors the client cart:
-    // settings bag (fee / free-shipping threshold / per-governorate zones)
-    // with the baked constants only as fallbacks. Lines format:
-    // «المحافظة | الشحن | مدة التوصيل»
+    // Store policy: Shipping fees are NOT added to the order total.
+    // Delivery price & method are coordinated with the customer directly via WhatsApp.
+    // The only shipping rule applied is the free shipping threshold (default 1500 EGP or admin value).
     let threshold = FREE_SHIPPING_THRESHOLD;
-    let baseFee = SHIPPING_FEE;
-    let zonesText = '';
     try {
       const storeRow = await db.storeSettings.findUnique({ where: { key: 'store' } });
       const bag = JSON.parse(storeRow?.value || '{}') as Record<string, unknown>;
       const t = Number(bag.freeShippingThreshold);
-      const f = Number(bag.shippingFee);
       if (Number.isFinite(t) && t >= 0) threshold = t;
-      if (Number.isFinite(f) && f >= 0) baseFee = f;
-      if (typeof bag.shippingZonesText === 'string') zonesText = bag.shippingZonesText;
     } catch {
       // settings hiccup → baked constants
     }
-    const zone = (() => {
-      if (!zonesText.trim()) return null;
-      const cityNorm = (city || '').trim();
-      for (const line of zonesText.split('\n')) {
-        const parts = line.split('|').map((p) => p.trim());
-        if (parts.length >= 2 && parts[0] && parts[0] === cityNorm) {
-          const fee = Number(parts[1]);
-          return { fee: Number.isFinite(fee) && fee >= 0 ? fee : baseFee, days: parts[2] || '' };
-        }
-      }
-      return null;
-    })();
-    const shipping = subtotal >= threshold ? 0 : zone ? zone.fee : baseFee;
+    const isFreeShipping = subtotal >= threshold;
+    const shipping = 0;
 
     // coupon: always re-validated server-side against the real subtotal
     let discount = 0;
@@ -222,7 +205,7 @@ export async function POST(req: NextRequest) {
       discount = result.discount;
       appliedCoupon = result.code;
     }
-    const total = Math.max(0, subtotal - discount + shipping);
+    const total = Math.max(0, subtotal - discount);
 
     // SUP-8 — person log: stamp every order with a human-readable reference
     // plus the placement IP / user-agent so the Studio orders & customers
@@ -262,6 +245,7 @@ export async function POST(req: NextRequest) {
         city: order.city,
         subtotal: order.subtotal,
         shipping: order.shipping,
+        isFreeShipping,
         total: order.total,
         items: order.items.map((i) => ({ nameAr: i.nameAr, qty: i.qty, price: i.price, variant: i.variant })),
       });

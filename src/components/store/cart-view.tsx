@@ -354,9 +354,12 @@ export function CartView({ initialSettings, whatsapp }: CartViewProps) {
   // Calculate totals
   const subtotal = items.reduce((acc, i) => acc + i.price * i.qty, 0);
   const isFreeShipping = items.length > 0 && subtotal >= freeThreshold;
-  const shipping = items.length > 0 && !isFreeShipping ? shippingFee : 0;
+  // Shipping fees are NOT added to the order total.
+  // Delivery price & method are determined directly with the store agent on WhatsApp,
+  // unless the order reaches the free shipping threshold.
+  const shipping = 0;
   const discount = appliedCoupon ? appliedCoupon.discount : 0;
-  const total = Math.max(0, subtotal + shipping - discount);
+  const total = Math.max(0, subtotal - discount);
   const totalQty = items.reduce((acc, i) => acc + i.qty, 0);
   const remainingForFree = Math.max(0, freeThreshold - subtotal);
   const freeProgressPct = Math.min(100, (subtotal / freeThreshold) * 100);
@@ -494,9 +497,14 @@ export function CartView({ initialSettings, whatsapp }: CartViewProps) {
       lines.push(`• ${i.name} × ${i.qty} = ${formatNumber(i.price * i.qty)} ${currency}`);
     });
     lines.push('');
-    lines.push(`الشحن: ${isFreeShipping || shipping === 0 ? 'مجاني' : formatNumber(shipping) + ' ' + currency}`);
+    lines.push(`المجموع الفرعي: ${formatNumber(subtotal)} ${currency}`);
     if (discount > 0) {
       lines.push(`الخصم: -${formatNumber(discount)} ${currency}`);
+    }
+    if (isFreeShipping) {
+      lines.push(`الشحن وطريقة التوصيل: مجاني (تجاوز حد الشحن المجاني) 🌸`);
+    } else {
+      lines.push(`سعر وطريقة التوصيل: يُحدد مع المسؤولة عبر واتساب`);
     }
     lines.push(`الإجمالي: ${formatNumber(total)} ${currency}`);
     lines.push('');
@@ -1043,11 +1051,11 @@ export function CartView({ initialSettings, whatsapp }: CartViewProps) {
             </div>
             <div className="ln sh">
               <span>الشحن</span>
-              {isFreeShipping || shipping === 0 ? (
+              {isFreeShipping ? (
                 <b className="fr">مجاني</b>
               ) : (
-                <b>
-                  {formatNumber(shipping)} {currency}
+                <b style={{ fontSize: '0.85rem', color: 'var(--wd)' }}>
+                  يُحدد مع المسؤولة عبر واتساب
                 </b>
               )}
             </div>
