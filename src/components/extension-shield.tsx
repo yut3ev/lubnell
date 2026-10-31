@@ -1,10 +1,11 @@
 // U23-HYDRA-SHIELD — pre-hydration extension shield.
 //
 // The owner's browser extensions inject attributes (observed in the wild:
-// `bis_size`, plus the usual suspects Grammarly / LanguageTool / ColorZilla)
-// into the server HTML BEFORE React hydrates. React then reports
+// `bis_size`, the Bing Visual Search extension's newer `bis_skin_checked` +
+// `bis__new_window`, plus the usual suspects Grammarly / LanguageTool /
+// ColorZilla) into the server HTML BEFORE React hydrates. React then reports
 // "A tree hydrated but some attributes of the server rendered HTML didn't
-// match the client properties" with hundreds of `bis_size={...}` diff lines.
+// match the client properties" with hundreds of `bis_*={...}` diff lines.
 // Our SSR output is verified correct; the mismatch is 100% extension noise.
 //
 // Fix: a tiny inline script rendered as the FIRST child of <body>. It runs
@@ -16,6 +17,8 @@ const SHIELD_SCRIPT = `(function(){
   try {
     var BAD = [
       'bis_size',
+      'bis_skin_checked',
+      'bis__new_window',
       'data-gr-ext-installed',
       'data-new-gr-c-s-check-loaded',
       'data-new-gr-c-s-loaded',
