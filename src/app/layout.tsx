@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { db } from "@/lib/db";
 import { getSettingsRows } from "@/lib/settings-cache"; // U54-PERF-ROBUST
 import { siteUrl } from "@/lib/site-url";
-import { Geist, Geist_Mono, Cairo } from "next/font/google";
+import { Geist, Geist_Mono, Cairo, Aref_Ruqaa } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ConfirmHost } from "@/components/ui/confirm-service";
@@ -23,6 +23,13 @@ const geistMono = Geist_Mono({
 const cairo = Cairo({
   variable: "--font-cairo",
   subsets: ["arabic", "latin"],
+});
+
+const arefRuqaa = Aref_Ruqaa({
+  variable: "--font-aref-ruqaa",
+  weight: ["400", "700"],
+  subsets: ["arabic", "latin"],
+  display: "swap",
 });
 
 // U15-SEO — default metadata now follows Studio → الإعدادات → SEO when set.
@@ -146,7 +153,7 @@ export default function RootLayout({
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} font-sans antialiased bg-background text-foreground min-h-screen flex flex-col`}
+        className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} ${arefRuqaa.variable} font-sans antialiased bg-background text-foreground min-h-screen flex flex-col`}
       >
         {/* U23 — strips extension-injected attrs (bis_size…) before hydration */}
         <ExtensionShield />

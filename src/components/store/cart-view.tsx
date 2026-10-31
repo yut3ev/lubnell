@@ -14,23 +14,8 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Aref_Ruqaa, Cairo } from 'next/font/google';
 import { useCart, FREE_SHIPPING_THRESHOLD, SHIPPING_FEE, WHATSAPP_NUMBER } from '@/lib/cart-store';
 import { trackVisit } from '@/components/store/visit-tracker';
-
-const ruqaa = Aref_Ruqaa({
-  subsets: ['arabic'],
-  weight: ['400', '700'],
-  variable: '--font-checkout-ruqaa',
-  display: 'swap',
-});
-
-const cairo = Cairo({
-  subsets: ['arabic'],
-  weight: ['400', '600', '700', '800'],
-  variable: '--font-checkout-cairo',
-  display: 'swap',
-});
 
 // Egyptian governorates list
 const EG_GOVERNORATES = [
@@ -115,7 +100,7 @@ interface CartViewProps {
 }
 
 const CHECKOUT_CSS = `
-.chk-root{--w:#8a3a46;--wd:#5a2230;--rose:#e9a9ae;--bl:#fbeee9;--peach:#f7d9c8;--sage:#d3e0c9;--lilac:#e4d8ec;--sun:#f9e7b8;--cream:#fffaf3;--ink:#3a2226;--mut:#8a6d70;--line:#ecd9d1;--wa:#2fa866;--err:#c0392b;--ease:cubic-bezier(.2,.8,.2,1);--spring:cubic-bezier(.34,1.56,.64,1);--hand:var(--font-checkout-ruqaa,'Aref Ruqaa'),'Noto Naskh Arabic',serif;--font-sans:var(--font-checkout-cairo,Cairo),system-ui,sans-serif;font-family:var(--font-sans);background:var(--bl);color:var(--ink);min-height:100vh;direction:rtl;position:relative;overflow-x:clip}
+.chk-root{--w:#8a3a46;--wd:#5a2230;--rose:#e9a9ae;--bl:#fbeee9;--peach:#f7d9c8;--sage:#d3e0c9;--lilac:#e4d8ec;--sun:#f9e7b8;--cream:#fffaf3;--ink:#3a2226;--mut:#8a6d70;--line:#ecd9d1;--wa:#2fa866;--err:#c0392b;--ease:cubic-bezier(.2,.8,.2,1);--spring:cubic-bezier(.34,1.56,.64,1);--hand:var(--font-aref-ruqaa,'Aref Ruqaa'),'Noto Naskh Arabic',serif;--font-sans:var(--font-cairo,Cairo),system-ui,sans-serif;font-family:var(--font-sans);background:var(--bl);color:var(--ink);min-height:100vh;direction:rtl;position:relative;overflow-x:clip}
 .chk-root *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 .chk-root .pg{max-width:1120px;margin:0 auto;padding:26px 20px 40px;position:relative}
 .chk-root .pg>*{position:relative;z-index:2}
@@ -705,7 +690,7 @@ export function CartView({ initialSettings, whatsapp }: CartViewProps) {
   const { errors } = validateForm();
 
   return (
-    <div className={`chk-root ${ruqaa.variable} ${cairo.variable}`}>
+    <div className="chk-root">
       <style dangerouslySetInnerHTML={{ __html: CHECKOUT_CSS }} />
 
       {/* SVG hand-drawn noise filter */}

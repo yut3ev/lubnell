@@ -12,14 +12,6 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Aref_Ruqaa } from 'next/font/google';
-
-const ruqaa = Aref_Ruqaa({
-  weight: ['400', '700'],
-  subsets: ['arabic', 'latin'],
-  variable: '--font-rw-ruqaa',
-  display: 'swap',
-});
 
 export interface ReviewCardData {
   id: string;
@@ -83,7 +75,7 @@ function formatCountText(n: number): string {
 }
 
 const RW_CSS = `
-.rw{--w:#8a3a46;--wd:#5a2230;--rose:#e9a9ae;--bl:#fbeee9;--ink:#3a2226;--mut:#8a6d70;--ease:cubic-bezier(.2,.8,.2,1);--spring:cubic-bezier(.34,1.56,.64,1);--hand:var(--font-rw-ruqaa,'Aref Ruqaa'),'Noto Naskh Arabic',serif;--font-sans:var(--font-cairo,Cairo),system-ui,sans-serif;font-family:var(--font-sans);color:var(--ink);direction:rtl}
+.rw{--w:#8a3a46;--wd:#5a2230;--rose:#e9a9ae;--bl:#fbeee9;--ink:#3a2226;--mut:#8a6d70;--ease:cubic-bezier(.2,.8,.2,1);--spring:cubic-bezier(.34,1.56,.64,1);--hand:var(--font-aref-ruqaa,'Aref Ruqaa'),'Noto Naskh Arabic',serif;--font-sans:var(--font-cairo,Cairo),system-ui,sans-serif;font-family:var(--font-sans);color:var(--ink);direction:rtl}
 .rw .sec{position:relative;overflow:hidden;padding:56px 0 64px;background:var(--bl)}
 .rw .in{position:relative;z-index:2;max-width:1160px;margin:0 auto;padding:0 20px}
 .rw .hd{text-align:center;margin-bottom:34px}
@@ -344,7 +336,7 @@ export function ReviewsSection({ reviews: initialReviews = [] }: ReviewsSectionP
       .slice(0, max);
   };
 
-  // Scroll to a specific card index
+  // Scroll to a specific card index (scoping scroll strictly to container, zero vertical page scroll)
   const scrollToIndex = useCallback((index: number) => {
     const wl = wallRef.current;
     if (!wl) return;
@@ -353,11 +345,13 @@ export function ReviewsSection({ reviews: initialReviews = [] }: ReviewsSectionP
     const targetIdx = Math.max(0, Math.min(cards.length - 1, index));
     activeIdxRef.current = targetIdx;
     setActiveIndex(targetIdx);
-    cards[targetIdx]?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'nearest',
-      inline: 'center',
-    });
+    const targetCard = cards[targetIdx];
+    if (targetCard) {
+      const wlRect = wl.getBoundingClientRect();
+      const cardRect = targetCard.getBoundingClientRect();
+      const deltaX = (cardRect.left + cardRect.width / 2) - (wlRect.left + wlRect.width / 2);
+      wl.scrollBy({ left: deltaX, behavior: 'smooth' });
+    }
   }, []);
 
   const goToPrev = () => {
@@ -438,27 +432,38 @@ export function ReviewsSection({ reviews: initialReviews = [] }: ReviewsSectionP
     }
   };
 
-  // Autoplay timer effect: advance every 2000ms (~2s)
+  // Autoplay timer effect: advance every 2500ms ONLY when the section is visible in the viewport
   useEffect(() => {
+    const wl = wallRef.current;
+    const container = containerRef.current;
+    if (!wl || !container) return;
+
+    let isSectionVisible = false;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          isSectionVisible = entry.isIntersecting;
+        }
+      },
+      { threshold: 0.15 }
+    );
+    observer.observe(container);
+
     const interval = setInterval(() => {
-      if (isInteractingRef.current || document.hidden) return;
-      const wl = wallRef.current;
-      if (!wl) return;
+      // Never scroll if the reviews section is off-screen, or user is interacting, or tab is hidden
+      if (!isSectionVisible || isInteractingRef.current || document.hidden) return;
       const cards = Array.from(wl.querySelectorAll<HTMLElement>('.nt'));
       if (cards.length <= 1) return;
 
       const next = (activeIdxRef.current + 1) % cards.length;
-      activeIdxRef.current = next;
-      setActiveIndex(next);
-      cards[next]?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center',
-      });
-    }, 2000);
+      scrollToIndex(next);
+    }, 2500);
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      observer.disconnect();
+      clearInterval(interval);
+    };
+  }, [scrollToIndex]);
 
   // Client fetch and live update
   useEffect(() => {
@@ -545,7 +550,7 @@ export function ReviewsSection({ reviews: initialReviews = [] }: ReviewsSectionP
   }, [applyList, initialReviews]);
 
   return (
-    <div className={`rw ${ruqaa.variable}`} ref={containerRef}>
+    <div className="rw" ref={containerRef}>
       <style dangerouslySetInnerHTML={{ __html: RW_CSS }} />
       <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
         <defs>
