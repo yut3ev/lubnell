@@ -11,7 +11,7 @@
 // validation, server-side idempotency, database order persistence BEFORE WhatsApp redirect,
 // success modal with copyable LN-XXXXXX order number, falling petals, and auto-redirect.
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Aref_Ruqaa, Cairo } from 'next/font/google';
