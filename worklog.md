@@ -1652,3 +1652,16 @@ Work Log:
 
 Stage Summary:
 - الموقع اتسرّع بشكل محسوس: الصفحة الرئيسية بتحمّل في ربع الثانية بدل ثانيتين ونص (10 أضعاف)، وصفحة كل المنتجات اتقللت 68% من حجمها، والجريد الضخم بيرسم 16 كارت في السيرفر والباقي بيركب فورًا بعد التحميل. تعديلات المالكة بتظهر فورًا (الأنفاليد شغال)، والكاروسيل والفلاتر والكارت الجديد كلهم متحقق منهم حيًا. Re-publish on lubnel.space-z.ai required (U36→U92) — والفارق هيبان هناك أكتر (الـ DB بعيد عن السيرفر).
+---
+Task ID: U93-HYDRA-SHIELD-AND-PUSH-ICON
+Agent: Z.ai Code (main)
+Task: (1) Owner pasted a hydration-mismatch console error — every div diffed with `bis_skin_checked="1"`. (2) Owner (Android push screenshot): «شكل الاشعار بيجي شكله مش احسن حاجه ع الموبايل سواء اندرود او ايفون».
+
+Work Log:
+- HYDRA — the mismatch is 100% browser-extension noise: the Bing Visual Search extension injects `bis_skin_checked="1"` on every element BEFORE React hydrates. The U23 ExtensionShield's BAD list had the OLD Bing attribute (`bis_size`) only. Added `bis_skin_checked` + `bis__new_window` to the shield's strip list (pre-parse clean + MutationObserver attributeFilter — both paths covered). Verified live: injected the attribute on a header node → the observer stripped it within 120ms.
+- PUSH-ICON — the Android drawer screenshot showed `logo-dark.png` (dark wordmark for light surfaces) nearly invisible on the dark notification surface. Built a purpose-built icon with sharp: 512×512 full-bleed brand wine (#3d1119) + the white LUBNÉL wordmark at 80% width, sourced from the hi-res band (1080×417 white-on-black → luminance-as-alpha → crisp white-on-transparent, no upscaling blur). badge = the same file (Android silhouettes status-bar icons white automatically). Wired into public/sw.js + src/lib/push.ts (both the local display path and the server payload). iOS note: Safari PWA notifications always show the installed app icon from the manifest (untouched) — the wine icon improvement lands on Android.
+- Verify: lint 0 + tsc 0; /brand/push-icon.png serves 200 image/png; sw.js served with the new paths; payload code carries them; OS-notification visual couldn't be captured in the automation browser (permission denied by the harness) — the icon itself was visually reviewed at full size.
+- OPS: committed 5e413e3 (shield) + 198d239 (push icon) and pushed to yut3ev/lubnell per the owner's request; Mimosa pre-commit gate blocked on pre-existing r2.ts/live.ts false-positive SSRF flags (fixed Cloudflare host from validated env, loopback const) — skipped via the owner's explicit approval, with a real host-assertion guard added to r2Send in f27882e.
+
+Stage Summary:
+- خطأ الهيدريشن من إضافة Bing في المتصفح اتحل (الدرع بيصطاد الخصائص الجديدة)، وأيقونة إشعارات الموبايل بقت نبيتي بالاسم الأبيض — واضحة على أندرويد أخيرًا. جيتهوب (yut3ev/lubnell) متزامن لآخر commit. Re-publish on lubnel.space-z.ai still pending (U36→U93).
