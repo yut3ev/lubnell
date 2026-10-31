@@ -110,35 +110,43 @@ export function ProductTrack({
     const el = trackRef.current;
     if (!el) return;
     drag.current = { active: true, startX: e.clientX, startSL: el.scrollLeft, moved: false };
-    try {
-      el.setPointerCapture(e.pointerId);
-    } catch {
-      /* pointer already released (synthetic events) — drag still works */
-    }
-    el.classList.add('select-none', 'cursor-grabbing');
   }
   function onPointerMove(e: React.PointerEvent) {
     if (!drag.current.active) return;
     const el = trackRef.current;
     if (!el) return;
     const dx = e.clientX - drag.current.startX;
-    if (Math.abs(dx) > 6) drag.current.moved = true;
-    const rtl = getComputedStyle(el).direction === 'rtl';
-    el.scrollLeft = drag.current.startSL + (rtl ? dx : -dx);
+    if (Math.abs(dx) > 6) {
+      if (!drag.current.moved) {
+        drag.current.moved = true;
+        el.classList.add('select-none', 'cursor-grabbing');
+        try {
+          el.setPointerCapture(e.pointerId);
+        } catch {
+          /* pointer already released (synthetic events) — drag still works */
+        }
+      }
+      const rtl = getComputedStyle(el).direction === 'rtl';
+      el.scrollLeft = drag.current.startSL + (rtl ? dx : -dx);
+    }
   }
   function endDrag(e: React.PointerEvent) {
     if (!drag.current.active) return;
     const el = trackRef.current;
+    const wasMoved = drag.current.moved;
     drag.current.active = false;
+    drag.current.moved = false;
     el?.classList.remove('select-none', 'cursor-grabbing');
     try {
-      el?.releasePointerCapture?.(e.pointerId);
+      if (el && typeof el.hasPointerCapture === 'function' && el.hasPointerCapture(e.pointerId)) {
+        el.releasePointerCapture(e.pointerId);
+      }
     } catch {
       /* nothing captured */
     }
-    if (drag.current.moved) {
+    if (wasMoved) {
       suppressClick.current = true; // السحب مش ضغطة
-      setTimeout(() => (suppressClick.current = false), 0);
+      setTimeout(() => (suppressClick.current = false), 50);
     }
   }
   function onClickCapture(e: React.MouseEvent) {

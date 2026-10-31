@@ -42,21 +42,24 @@ export function EditorialCard({ product }: { product: ProductCardData }) {
 
   return (
     <article className="group relative h-full overflow-hidden rounded-2xl border border-border/60 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-primary/15">
+      {/* Full card backdrop link: clicking anywhere on the card opens product details */}
       <Link
         href={`/p/${product.slug}`}
-        className="relative block aspect-[4/5] overflow-hidden bg-secondary/40"
+        className="absolute inset-0 z-[1]"
         aria-label={name}
-      >
+      />
+
+      <div className="relative block aspect-[4/5] overflow-hidden bg-secondary/40">
         <img
           src={product.image}
           alt={name}
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
-      </Link>
+      </div>
 
       {soldOut && (
-        <div className="absolute inset-0 z-20 grid place-items-center bg-background/70" aria-hidden>
+        <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-background/70" aria-hidden>
           <span className="rounded-full bg-foreground/80 px-4 py-1.5 text-xs font-bold text-background">
             {ar ? 'نفدت الكمية' : 'Sold out'}
           </span>
@@ -64,18 +67,18 @@ export function EditorialCard({ product }: { product: ProductCardData }) {
       )}
 
       {/* neutral cinematic gradient — identical to the categories mosaic */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" aria-hidden />
+      <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/75 via-black/25 to-transparent" aria-hidden />
 
       {/* amber discount medallion — same accent language as the header's
           «حتى X%» and the catalog badges */}
       {discount > 0 && (
-        <span className="absolute right-3 top-3 z-10 grid h-10 w-10 place-items-center rounded-full bg-accent text-[10px] font-extrabold text-accent-foreground shadow-md ring-2 ring-white/50">
+        <span className="pointer-events-none absolute right-3 top-3 z-10 grid h-10 w-10 place-items-center rounded-full bg-accent text-[10px] font-extrabold text-accent-foreground shadow-md ring-2 ring-white/50">
           <span dir="ltr">-{discount}%</span>
         </span>
       )}
 
       {product.badgeAr && (
-        <span className="absolute left-3 top-3 z-10 max-w-[52%] truncate rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
+        <span className="pointer-events-none absolute left-3 top-3 z-10 max-w-[52%] truncate rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
           {ar ? product.badgeAr : product.badgeEn || product.badgeAr}
         </span>
       )}
@@ -83,10 +86,10 @@ export function EditorialCard({ product }: { product: ProductCardData }) {
       {/* bottom overlay — categories anatomy: name / price / glassy chip.
           Soft text-shadow keeps the white type legible over bright studio
           photos (the categories tiles use darker lifestyle shots). */}
-      <div className="absolute bottom-0 w-full p-3 text-primary-foreground [text-shadow:0_1px_6px_rgb(0_0_0/0.45),0_0_2px_rgb(0_0_0/0.35)] sm:p-4">
+      <div className="pointer-events-none absolute bottom-0 z-[3] w-full p-3 text-primary-foreground [text-shadow:0_1px_6px_rgb(0_0_0/0.45),0_0_2px_rgb(0_0_0/0.35)] sm:p-4">
         <Link
           href={`/p/${product.slug}`}
-          className="line-clamp-2 min-h-[2.5em] text-[13px] font-extrabold leading-tight sm:text-sm"
+          className="pointer-events-auto line-clamp-2 min-h-[2.5em] text-[13px] font-extrabold leading-tight sm:text-sm hover:underline"
         >
           {name}
         </Link>
@@ -109,15 +112,18 @@ export function EditorialCard({ product }: { product: ProductCardData }) {
           </p>
         )}
 
-        <div className="mt-2.5 flex items-center justify-between gap-2">
+        <div className="pointer-events-auto mt-2.5 flex items-center justify-between gap-2">
           {/* glassy chip = the categories «تسوّقي الآن» treatment; expanded
               hit area keeps a 44px touch target around the small chip */}
           <button
             type="button"
             disabled={soldOut}
             aria-label={`${t.addToBag} — ${name}`}
-            className="relative inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold text-white backdrop-blur-sm transition-all duration-300 after:absolute after:-inset-2 hover:bg-white hover:text-foreground active:scale-95 disabled:pointer-events-none disabled:opacity-50"
-            onClick={() => {
+            className="relative z-10 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[11px] font-bold text-white backdrop-blur-sm transition-all duration-300 after:absolute after:-inset-2 hover:bg-white hover:text-foreground active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
               add({
                 id: product.id,
                 slug: product.slug,
@@ -138,10 +144,15 @@ export function EditorialCard({ product }: { product: ProductCardData }) {
           {/* quick view — glassy circle mirroring the chip language */}
           <button
             type="button"
-            onClick={() => setQuickOpen(true)}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setQuickOpen(true);
+            }}
             aria-label={ar ? `معاينة سريعة لـ ${product.nameAr}` : `Quick view ${product.nameEn}`}
             title={ar ? 'معاينة سريعة' : 'Quick view'}
-            className="relative grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-all duration-300 after:absolute after:-inset-1.5 hover:bg-white hover:text-foreground"
+            className="relative z-10 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-all duration-300 after:absolute after:-inset-1.5 hover:bg-white hover:text-foreground"
           >
             <Eye className="h-3.5 w-3.5" aria-hidden />
           </button>
