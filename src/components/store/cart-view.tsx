@@ -228,11 +228,8 @@ const CHECKOUT_CSS = `
 .chk-root .B .rv{display:grid;gap:6px;background:var(--cream);padding:16px;border-radius:16px;margin-bottom:14px;font-size:.9rem;line-height:1.8}
 .chk-root .B .rv b{color:var(--wd)}
 
-/* شريط الإجمالي الثابت بالموبايل */
-.chk-root .B .mb{position:fixed;inset-inline:0;bottom:calc(3.5rem + env(safe-area-inset-bottom, 0px));z-index:30;background:#fff;border-top:1px solid var(--line);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 -10px 20px -14px #5a223055}
-@media(min-width:768px){.chk-root .B .mb{bottom:0}}
-.chk-root .B .mb span{color:var(--mut);font-size:.85rem}
-.chk-root .B .mb b{font-size:1.2rem;color:var(--w)}
+/* شريط الإجمالي الثابت بالموبايل - ملغي لأن السلة تحتوي على الإجمالي وزر الإجراء المباشر وتعارضه مع النافبار السفلي */
+.chk-root .B .mb{display:none!important}
 
 /* مودال النجاح */
 .chk-root .md{position:fixed;inset:0;z-index:60;display:none;place-items:center;background:#3a1a2088;padding:20px}
@@ -245,7 +242,7 @@ const CHECKOUT_CSS = `
 .chk-root .md h2{margin:0 0 8px;font:700 2rem var(--hand);color:var(--wd)}
 .chk-root .md p{margin:0 0 6px;color:var(--mut);line-height:1.9}
 .chk-root .md .no{display:inline-flex;align-items:center;gap:10px;margin:10px 0;padding:8px 8px 8px 16px;border:2px dashed #d9a98f;border-radius:14px;font:800 1.15rem var(--font-sans);color:var(--w);direction:ltr;letter-spacing:1px}
-.chk-root .md .no button{border:0;background:var(--w);color:#fff;font:700 .75rem var(--font-sans);padding:6px 12px;border-radius:9px;cursor:pointer;transition:background .2s}
+.chk-root .md .no button{border:0;background:var(--w);color:#fff;font:700 .75rem var(--font-sans);padding:6px 12px;border-radius:99px;cursor:pointer;transition:background .2s}
 .chk-root .md .no button:hover{background:var(--wd)}
 .chk-root .md .acts{display:grid;gap:10px;margin-top:18px}
 .chk-root .md .acts a,.chk-root .md .acts button{height:54px;border-radius:18px 22px 18px 24px;border:0;font:800 1rem var(--font-sans);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;text-decoration:none;transition:transform .2s}
@@ -256,26 +253,50 @@ const CHECKOUT_CSS = `
 .chk-root .pt{position:absolute;top:-30px;width:22px;height:22px;color:var(--rose);opacity:.8;animation:chk-fall linear infinite;fill:none;stroke:currentColor;stroke-width:2;pointer-events:none}
 @keyframes chk-fall{to{transform:translateY(520px) rotate(300deg)}}
 
-.chk-root .B .pg{padding-bottom:120px}
+.chk-root .B .pg{padding-bottom:60px}
 
-/* Cart Upsell / Order Bump */
-.chk-root .ob{margin-top:16px;background:#fff8f6;border:1.5px dashed var(--rose);border-radius:18px;padding:14px 16px;box-shadow:0 4px 14px rgba(138,58,70,0.04)}
-.chk-root .ob-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+/* Cart Upsell / Order Bump - متوافق بالكامل مع الموبايل واللاب توب والديسكتوب */
+.chk-root .ob{margin-top:16px;background:#fff8f6;border:1.5px dashed var(--rose);border-radius:20px;padding:14px 16px;box-shadow:0 4px 14px rgba(138,58,70,0.04);width:100%;box-sizing:border-box;overflow:hidden}
+.chk-root .ob-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
 .chk-root .ob-hd b{font-family:var(--hand);font-size:1.15rem;color:var(--wd);display:flex;align-items:center;gap:6px}
-.chk-root .ob-hd span{font-size:0.75rem;color:var(--wa);font-weight:700;background:rgba(47,168,102,0.1);padding:3px 8px;border-radius:99px}
-.chk-root .ob-ls{display:grid;grid-template-columns:1fr;gap:10px}
-@media(min-width:600px){.chk-root .ob-ls{grid-template-columns:1fr 1fr}}
-.chk-root .ob-it{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:8px 10px;transition:transform .2s ease,border-color .2s ease}
+.chk-root .ob-hd span{font-size:0.75rem;color:var(--wa);font-weight:700;background:rgba(47,168,102,0.1);padding:3px 8px;border-radius:99px;white-space:nowrap}
+.chk-root .ob-ls{display:grid;grid-template-columns:minmax(0, 1fr);gap:10px;width:100%;box-sizing:border-box}
+@media(min-width:640px){.chk-root .ob-ls{grid-template-columns:repeat(2, minmax(0, 1fr));gap:12px}}
+.chk-root .ob-it{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:8px 12px;transition:transform .2s ease,border-color .2s ease;min-width:0;width:100%;box-sizing:border-box}
 .chk-root .ob-it:hover{transform:translateY(-1px);border-color:var(--rose)}
-.chk-root .ob-im{width:48px;height:48px;border-radius:10px;background:#fbeee9;background-size:cover;background-position:center;flex-shrink:0}
-.chk-root .ob-dt{flex:1;min-width:0}
-.chk-root .ob-nm{font-size:0.86rem;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chk-root .ob-pr{font-size:0.82rem;font-weight:800;color:var(--w);margin-top:2px}
-.chk-root .ob-btn{background:var(--w);color:#fff;border:none;border-radius:20px;padding:6px 12px;font-size:0.78rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .2s ease;flex-shrink:0}
+.chk-root .ob-im{width:46px;height:46px;border-radius:10px;background:#fbeee9;background-size:cover;background-position:center;flex-shrink:0}
+.chk-root .ob-dt{flex:1 1 0%;min-width:0;overflow:hidden}
+.chk-root .ob-nm{font-size:0.86rem;font-weight:700;color:var(--ink);line-height:1.35;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.chk-root .ob-pr{font-size:0.82rem;font-weight:800;color:var(--w);margin-top:2px;white-space:nowrap}
+.chk-root .ob-btn{background:var(--w);color:#fff;border:none;border-radius:20px;padding:6px 12px;font-size:0.78rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .2s ease;flex-shrink:0;white-space:nowrap}
 .chk-root .ob-btn:hover{background:var(--wd);transform:scale(1.03)}
+.chk-root .ob-btn:active{transform:scale(0.96)}
 
-@media(max-width:900px){.chk-root .fg{grid-template-columns:1fr}.chk-root h1{font-size:2rem}.chk-root .st .s span{display:none}.chk-root .st .s.on span{display:inline}.chk-root .pg{padding:20px 14px 30px}}
-@media(max-width:520px){.chk-root .it{flex-wrap:wrap}.chk-root .it .im{width:72px;height:72px}.chk-root .B .card{padding:20px 16px}}
+@media(max-width:900px){.chk-root .fg{grid-template-columns:1fr}.chk-root h1{font-size:2rem}.chk-root .st .s span{display:none}.chk-root .st .s.on span{display:inline}.chk-root .pg{padding:20px 14px 40px}}
+@media(max-width:520px){
+  .chk-root .pg{padding:14px 10px 48px}
+  .chk-root .B .card{padding:18px 12px;border-radius:22px}
+  .chk-root .it{padding:10px;gap:10px}
+  .chk-root .it .im{width:64px;height:64px;border-radius:12px}
+  .chk-root .it .nm{font-size:1.02rem}
+  .chk-root .ob{padding:12px 10px;border-radius:16px}
+  .chk-root .ob-hd b{font-size:1.05rem}
+  .chk-root .ob-it{padding:8px 10px;gap:8px}
+  .chk-root .ob-im{width:42px;height:42px}
+  .chk-root .ob-nm{font-size:0.82rem}
+  .chk-root .ob-btn{padding:5px 10px;font-size:0.75rem}
+  .chk-root .go{height:52px;font-size:0.98rem}
+}
+@media(max-width:375px){
+  .chk-root .pg{padding:12px 8px 48px}
+  .chk-root .B .card{padding:14px 10px;border-radius:18px}
+  .chk-root .ob-it{padding:6px 8px;gap:6px}
+  .chk-root .ob-im{width:38px;height:38px}
+  .chk-root .ob-nm{font-size:0.8rem}
+  .chk-root .ob-pr{font-size:0.78rem}
+  .chk-root .ob-btn{padding:5px 8px;font-size:0.72rem}
+}
+@media(prefers-reduced-motion:reduce){.chk-root *{animation-duration:.01s!important;animation-iteration-count:1!important;transition-duration:.01s!important}.chk-root .pt{display:none}}
 @media(prefers-reduced-motion:reduce){.chk-root *{animation-duration:.01s!important;animation-iteration-count:1!important;transition-duration:.01s!important}.chk-root .pt{display:none}}
 `;
 
@@ -1278,18 +1299,6 @@ export function CartView({ initialSettings, whatsapp }: CartViewProps) {
             </div>
           </section>
         </div>
-
-        {/* Mobile Sticky Bar: fixed at bottom on small viewports */}
-        {items.length > 0 && (
-          <div className="mb">
-            <span>
-              الإجمالي <small>({totalQty} منتج)</small>
-            </span>
-            <b>
-              {formatNumber(total)} {currency}
-            </b>
-          </div>
-        )}
       </main>
 
       {/* Success Modal */}
