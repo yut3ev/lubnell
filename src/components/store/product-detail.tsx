@@ -443,7 +443,7 @@ export function ProductDetail({
               className="mt-2.5 flex h-12 w-full items-center justify-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-50/80 px-4 text-sm font-bold text-emerald-800 transition-all hover:bg-emerald-100 hover:shadow-sm dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
             >
               <MessageCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              <span>طلب فوري عبر واتساب</span>
+              <span>{t.orderViaWa}</span>
             </a>
           )}
 
@@ -507,19 +507,6 @@ export function ProductDetail({
               )}
             </div>
           )}
-
-          {/* whatsapp direct order — number from Studio settings when set */}
-          <a
-            href={`https://wa.me/${(whatsapp || WHATSAPP_NUMBER).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-              `مرحبًا LUBNÉL، أريد طلب: ${product.nameAr} (${product.price} ج.م) — الكمية: ${qty}`
-            )}`}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-4 flex items-center justify-center gap-2 rounded-full border border-emerald-600/30 bg-emerald-50 px-5 py-3 text-sm font-bold text-emerald-800 transition-colors hover:bg-emerald-100"
-          >
-            <MessageCircle className="h-4.5 w-4.5" aria-hidden />
-            {t.orderViaWa}
-          </a>
 
           {/* guarantees */}
           <ul className="mt-7 grid gap-3 text-sm sm:grid-cols-3">
