@@ -155,36 +155,42 @@ export function SearchDialogV2({ open, onOpenChange }: { open: boolean; onOpenCh
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="rounded-3xl p-0 sm:max-w-xl">
-        <DialogHeader className="px-5 pt-5">
-          <DialogTitle className="text-lg font-bold">{t.searchTitle}</DialogTitle>
+      <DialogContent
+        className="rounded-3xl p-0 sm:max-w-xl flex flex-col gap-0 overflow-hidden"
+        style={{
+          width: 'calc(100vw - 2rem)',
+          maxWidth: 'min(576px, calc(100vw - 2rem))',
+        }}
+      >
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6 pb-2 min-w-0">
+          <DialogTitle className="text-base sm:text-lg font-bold">{t.searchTitle}</DialogTitle>
           <DialogDescription className="sr-only">{t.searchHintAria}</DialogDescription>
         </DialogHeader>
 
-        <div className="px-5">
+        <div className="px-3 sm:px-5 w-full min-w-0 overflow-hidden">
           <form
             onSubmit={(e) => {
               e.preventDefault();
               submitFullSearch();
             }}
-            className="relative"
+            className="relative w-full min-w-0"
           >
-            <Search className="pointer-events-none absolute right-4 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
+            <Search className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
             <input
               autoFocus
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={t.searchPlaceholder}
               aria-label={t.search}
-              className="h-12 w-full rounded-full border border-border bg-background pr-11 pl-24 text-[15px] font-semibold outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/50"
+              className="h-11 sm:h-12 w-full rounded-full border border-border bg-background pr-10 pl-20 sm:pl-24 text-sm sm:text-[15px] font-semibold outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/50"
             />
             {loading ? (
-              <Loader2 className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary" aria-hidden />
+              <Loader2 className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary" aria-hidden />
             ) : (
               <Button
                 type="submit"
                 size="sm"
-                className="absolute left-1.5 top-1/2 h-8 -translate-y-1/2 rounded-full bg-primary px-4 text-xs font-bold text-primary-foreground"
+                className="absolute left-1.5 top-1/2 h-8 -translate-y-1/2 rounded-full bg-primary px-3 sm:px-4 text-xs font-bold text-primary-foreground"
               >
                 {t.search}
               </Button>
@@ -192,7 +198,7 @@ export function SearchDialogV2({ open, onOpenChange }: { open: boolean; onOpenCh
           </form>
 
           {/* Quick Filter Chips (Feature 7) */}
-          <div className="mt-3 flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+          <div className="mt-2.5 flex items-center gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden text-xs w-full min-w-0">
             <button
               type="button"
               onClick={() => setActiveFilter('all')}
@@ -243,38 +249,38 @@ export function SearchDialogV2({ open, onOpenChange }: { open: boolean; onOpenCh
           </div>
         </div>
 
-        <div className="max-h-[52vh] overflow-y-auto px-3 pb-4 pt-2">
+        <div className="max-h-[54vh] overflow-y-auto overflow-x-hidden px-2 sm:px-4 pb-4 pt-2 w-full min-w-0">
           {displayHits.length > 0 && (
-            <ul className="space-y-1.5">
+            <ul className="space-y-1.5 w-full min-w-0">
               {displayHits.map((h) => (
-                <li key={h.id}>
-                  <div className="group flex items-center justify-between gap-3 rounded-2xl p-2.5 transition-colors hover:bg-secondary">
+                <li key={h.id} className="w-full min-w-0">
+                  <div className="group flex items-center justify-between gap-2 sm:gap-3 rounded-2xl p-2 sm:p-2.5 transition-colors hover:bg-secondary w-full min-w-0">
                     <Link
                       href={`/p/${h.slug}`}
                       onClick={() => {
                         saveRecentSearch(h.nameAr);
                         onOpenChange(false);
                       }}
-                      className="flex flex-1 items-center gap-3 min-w-0"
+                      className="flex flex-1 items-center gap-2.5 sm:gap-3 min-w-0 overflow-hidden"
                     >
                       <img
                         src={h.image}
                         alt=""
                         aria-hidden
-                        className="h-12 w-12 rounded-xl object-cover border border-border/40 shrink-0"
+                        className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl object-cover border border-border/40 shrink-0"
                         loading="lazy"
                       />
-                      <span className="flex-1 min-w-0">
-                        <span className="block text-sm font-bold leading-snug truncate">
+                      <span className="flex-1 min-w-0 overflow-hidden">
+                        <span className="block text-xs sm:text-sm font-bold leading-snug truncate">
                           {ar ? h.nameAr : h.nameEn}
                         </span>
                         {h.category?.nameAr && (
-                          <span className="block text-xs text-muted-foreground truncate">
+                          <span className="block text-[11px] sm:text-xs text-muted-foreground truncate">
                             {h.category.nameAr}
                           </span>
                         )}
                       </span>
-                      <span className="text-sm font-bold text-primary shrink-0 px-2">
+                      <span className="text-xs sm:text-sm font-bold text-primary shrink-0 px-1 sm:px-1.5 whitespace-nowrap">
                         {h.price.toLocaleString('en-US')} <span className="text-[10px]">{currency || t.egp}</span>
                       </span>
                     </Link>
@@ -300,10 +306,10 @@ export function SearchDialogV2({ open, onOpenChange }: { open: boolean; onOpenCh
                           description: h.nameAr,
                         });
                       }}
-                      className="flex h-8 items-center gap-1 rounded-full bg-primary/10 px-3 text-xs font-bold text-primary transition-all hover:bg-primary hover:text-white shrink-0"
+                      className="flex h-8 items-center justify-center gap-1 rounded-full bg-primary/10 px-2.5 sm:px-3 text-xs font-bold text-primary transition-all hover:bg-primary hover:text-white shrink-0 active:scale-95"
                     >
                       <ShoppingBag className="h-3.5 w-3.5" />
-                      <span>+ السلة</span>
+                      <span className="text-[11px] sm:text-xs">+ السلة</span>
                     </button>
                   </div>
                 </li>
