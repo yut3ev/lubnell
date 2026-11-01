@@ -494,11 +494,31 @@ export function ProductReviews({
           ))}
         </ul>
       ) : (
-        <p className="mt-5 rounded-3xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
-          {filterPhotoOnly
-            ? (ar ? 'لا توجد تقييمات بالصور حاليًا لهذا المنتج' : 'No photo reviews yet for this product')
-            : t.rvEmpty}
-        </p>
+        <div className="mt-5 relative text-center p-8 rounded-[26px_22px_28px_24px] bg-card border-2 border-dashed border-[#e6cfc6] text-muted-foreground overflow-hidden">
+          <div className="w-24 h-24 mx-auto mb-2 text-[#8a3a46]">
+            {/* Swaying pot illustration from lubnel-product-final.html */}
+            <svg viewBox="0 0 96 96" className="w-full h-full fill-none stroke-current stroke-[1.7] stroke-linecap-round stroke-linejoin-round overflow-visible" aria-hidden>
+              <path d="M30 62h36l-4 24H34z" fill="#f7d9c8" />
+              <path d="M28 62h40" />
+              <g className="origin-[50%_70px] animate-lubnel-sway">
+                <path d="M48 62V36" />
+                <path d="M48 50c-8 0-12-5-12-11 8 0 12 5 12 11zM48 44c8 0 12-5 12-11-8 0-12 5-12 11z" fill="#b9d3a8" />
+                <circle cx="48" cy="26" r="4" fill="#f9e7b8" />
+                <path d="M48 22c-3-6-1-9 0-9s3 3 0 9zM44 26c-6-3-9-1-9 0s3 3 9 0zM52 26c6 3 9 1 9 0s-3-3-9 0z" fill="#e9a9ae" />
+              </g>
+            </svg>
+          </div>
+          <b className="block text-lg font-bold text-[#5a2230] dark:text-foreground">
+            {filterPhotoOnly
+              ? (ar ? 'لا توجد تقييمات بالصور بعد' : 'No photo reviews yet')
+              : (ar ? 'لسه مفيش تقييمات' : 'No reviews yet')}
+          </b>
+          <span className="text-sm text-muted-foreground mt-1 block">
+            {filterPhotoOnly
+              ? (ar ? 'كوني أول من يشارك صورة تجربتها 📸' : 'Be the first to share a photo 📸')
+              : (ar ? 'كوني أول من يشارك تجربتها 🌸' : 'Be the first to share your experience 🌸')}
+          </span>
+        </div>
       )}
 
       {/* Customer Photo Lightbox Modal (Feature 7) */}

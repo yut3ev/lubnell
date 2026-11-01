@@ -488,6 +488,98 @@ img {
   to { transform: rotate(7deg); }
 }
 
+/* LUBNEL PDP Reference Design Classes & Keyframes (lubnel-product-final.html) */
+@keyframes lubnel-fl {
+  from { transform: translateY(-5px) rotate(var(--r, 0deg)); }
+  to { transform: translateY(7px) rotate(calc(var(--r, 0deg) + 6deg)); }
+}
+@keyframes lubnel-flap {
+  to { transform: scaleX(0.5); }
+}
+@keyframes lubnel-shn {
+  0% { transform: translateX(-400%) skewX(-18deg); }
+  40%, 100% { transform: translateX(450%) skewX(-18deg); }
+}
+@keyframes lubnel-sy {
+  from { transform: rotate(-5deg); }
+  to { transform: rotate(5deg); }
+}
+@keyframes lubnel-pop {
+  50% { transform: scale(1.25); }
+}
+
+.animate-lubnel-float {
+  animation: lubnel-fl 7s ease-in-out infinite alternate;
+}
+.animate-lubnel-flap {
+  animation: lubnel-flap 0.55s ease-in-out infinite alternate;
+  transform-origin: center;
+}
+.animate-lubnel-sway {
+  animation: lubnel-sy 4s ease-in-out infinite alternate;
+  transform-origin: 50% 70px;
+}
+.animate-lubnel-pop {
+  animation: lubnel-pop 0.35s ease;
+}
+
+/* Washi tape strip simulating handcrafted tape on product photos */
+.lubnel-washi-tape {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  width: 100px;
+  height: 24px;
+  margin-left: -50px;
+  background: rgba(233, 169, 174, 0.85);
+  transform: rotate(-3deg);
+  z-index: 10;
+  box-shadow: 0 1px 3px rgba(90, 34, 48, 0.12);
+  pointer-events: none;
+}
+
+/* Vintage price ticket tag */
+.lubnel-price-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  background: #f9e7b8;
+  padding: 6px 26px 6px 22px;
+  border-radius: 8px 30px 30px 8px;
+  transform: rotate(-2deg);
+  box-shadow: 0 12px 16px -12px rgba(90, 34, 48, 0.65);
+}
+.lubnel-price-tag::before {
+  content: "";
+  position: absolute;
+  inset-inline-end: 10px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: var(--background, #fbeee9);
+  box-shadow: inset 0 0 0 2px #d9bb86;
+}
+
+/* Primary Lubnel shimmer CTA */
+.lubnel-btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.lubnel-btn-shimmer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 30%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: translateX(-400%) skewX(-18deg);
+  animation: lubnel-shn 5s 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
 .u64-wheel {
   transform-box: fill-box;
   transform-origin: center;
