@@ -11,6 +11,9 @@ import {
   ShoppingBag,
   Zap,
   MessageCircle,
+  Share2,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, CheckCircle2, ZoomIn } from 'lucide-react';
@@ -60,6 +63,7 @@ export function ProductDetail({
   useEffect(() => { void useStorePrefs.getState().ensure(); }, []);
   const add = useCart((s) => s.add);
   const [qty, setQty] = useState(1);
+  const [copied, setCopied] = useState(false);
   // RESTOCK-ALERTS — notify-me state for sold-out products
   const [notifyPhone, setNotifyPhone] = useState('');
   const [notifyBusy, setNotifyBusy] = useState(false);
@@ -446,6 +450,44 @@ export function ProductDetail({
               <span>{t.orderViaWa}</span>
             </a>
           )}
+
+          {/* Quick Share to WhatsApp (Feature 4) */}
+          <div className="mt-2.5 flex items-center gap-2">
+            <a
+              href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                `${ar ? '🌸 شوفي هذا المنتج الجميل من لوبنيل:' : '🌸 Check out this beautiful product from LUBNÉL:'}\n` +
+                `✨ ${name}\n` +
+                `💰 ${ar ? 'السعر' : 'Price'}: ${product.price.toLocaleString('en-US')} ${currency || t.egp}\n` +
+                `${typeof window !== 'undefined' ? window.location.href : ''}`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-50/60 px-4 text-xs font-bold text-emerald-800 transition-all hover:bg-emerald-100 hover:shadow-sm dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
+              title={ar ? 'مشاركة المنتج على واتساب' : 'Share product on WhatsApp'}
+            >
+              <Share2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <span>{ar ? 'مشاركة مع صديقتكِ عبر واتساب' : 'Share with a friend on WhatsApp'}</span>
+            </a>
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  navigator.clipboard.writeText(window.location.href);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                  toast({
+                    title: ar ? 'تم نسخ الرابط 🌸' : 'Link copied 🌸',
+                    description: ar ? 'يمكنكِ الآن مشاركته في أي مكان' : 'You can now share it anywhere',
+                  });
+                }
+              }}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/70 bg-card text-muted-foreground transition-all hover:border-primary/40 hover:text-primary active:scale-95"
+              aria-label={ar ? 'نسخ رابط المنتج' : 'Copy link'}
+              title={ar ? 'نسخ رابط المنتج' : 'Copy link'}
+            >
+              {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+            </button>
+          </div>
 
           {/* RESTOCK-ALERTS-2026-10 — sold-out products offer a phone-capture
               notify form; the Studio products screen turns the queue into

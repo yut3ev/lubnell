@@ -3,7 +3,7 @@
 // Quick View — inspect a product in a modal without leaving the listing.
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { ShoppingBag, Minus, Plus, Eye, Loader2 } from 'lucide-react';
+import { ShoppingBag, Minus, Plus, Eye, Loader2, Share2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useCart } from '@/lib/cart-store';
 import { useT } from '@/lib/i18n';
@@ -185,14 +185,28 @@ export function QuickView({
                 {adding ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <ShoppingBag className="h-4 w-4" />}
                 {soldOut ? (ar ? 'غير متاح حاليًا' : 'Unavailable') : t.addToBag}
               </Button>
-              <Button asChild variant="outline"
-                className="h-11 rounded-full border-primary/30 font-bold text-primary hover:bg-secondary"
-                onClick={() => onOpenChange(false)}>
-                <Link href={`/p/${product.slug}`}>
-                  <Eye className="h-4 w-4" aria-hidden />
-                  {ar ? 'التفاصيل الكاملة' : 'Full details'}
-                </Link>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button asChild variant="outline"
+                  className="h-11 flex-1 rounded-full border-primary/30 font-bold text-primary hover:bg-secondary"
+                  onClick={() => onOpenChange(false)}>
+                  <Link href={`/p/${product.slug}`}>
+                    <Eye className="h-4 w-4" aria-hidden />
+                    {ar ? 'التفاصيل الكاملة' : 'Full details'}
+                  </Link>
+                </Button>
+                <a
+                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                    `${ar ? '🌸 شوفي هذا المنتج الرائع من لوبنيل:' : '🌸 Check out this product from LUBNÉL:'}\n• ${name}\n• ${product.price.toLocaleString('en-US')} ${currency || t.egp}\n${typeof window !== 'undefined' ? `${window.location.origin}/p/${product.slug}` : ''}`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-50/80 text-emerald-700 transition-colors hover:bg-emerald-100 hover:shadow-sm dark:bg-emerald-950 dark:text-emerald-300"
+                  title={ar ? 'مشاركة عبر واتساب' : 'Share on WhatsApp'}
+                  aria-label={ar ? 'مشاركة عبر واتساب' : 'Share on WhatsApp'}
+                >
+                  <Share2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                </a>
+              </div>
             </div>
           </div>
         </div>
